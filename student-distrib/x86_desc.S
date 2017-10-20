@@ -101,7 +101,8 @@ idt_desc_ptr:
     .align  16
 idt:
 _idt:
-    .rept NUM_VEC
+    # The system call handler should have DPL set to 3 so that it is accessible from the user space via the 'int' instruction. 
+    .rept NUM_VEC # define NUM_VEC = 256
     .quad 0
     .endr
 
