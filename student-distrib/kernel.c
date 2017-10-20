@@ -8,6 +8,7 @@
 #include "i8259.h"
 #include "debug.h"
 #include "tests.h"
+#include "exceptions.h"
 
 #define RUN_TESTS
 
@@ -18,6 +19,8 @@
 /* Check if MAGIC is valid and print the Multiboot information structure
    pointed by ADDR. */
 void entry(unsigned long magic, unsigned long addr) {
+
+    init_idt_exceptions();
 
     multiboot_info_t *mbi;
 
@@ -150,8 +153,8 @@ void entry(unsigned long magic, unsigned long addr) {
     sti();*/
 
 #ifdef RUN_TESTS
-    /* Run tests */
-    launch_tests();
+    /* Run tests -- comment-out line to disable tests */
+    launch_tests(); 
 #endif
     /* Execute the first program ("shell") ... */
 
