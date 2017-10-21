@@ -57,20 +57,26 @@ void i8259_init(void) {
 }
 
 /* Enable (unmask) the specified IRQ */
+/*derived from http://wiki.osdev.org/8259_PIC Masking code*/
 void enable_irq(uint32_t irq_num) {
   uint8_t mask;
+  uint16_t data_port;
   if(irq_num>15) return; //invalid IRQ, return
   if(irq_num<0) return;
 
   if(irq_num<8){ //If master IRQ
+      data_port = 0x21;
       master_mask &= ~(1 << irq_num); //Set IRQ num position of master masks to 0
-      outb_p(master_mask, MASTER_8259_PORT + 1);
+      mask = master_mask;
   }
 
   else{
+        data_port = 0xA1;
         slave_mask &= ~(1 << (irq_num-8)); //Set IRQ num position of slave masks to 0
-        outb_p(slave_mask, SLAVE_8259_PORT + 1)
+        mask = slave_mask;
   }
+
+  outb_p(mask, port);
 
 return;
 
@@ -78,20 +84,27 @@ return;
 
 /* Disable (mask) the specified IRQ */
 void disable_irq(uint32_t irq_num) {
-  uint8_t mask
-  if(irq_num>15) return; //invalid IRQ, return;
+  uint8_t mask;
+  uint16_t data_port;
+  if(irq_num>15) return; //invalid IRQ, return
   if(irq_num<0) return;
 
-  if(irq_num<8){
+  if(irq_num<8){ //If master IRQ
+      data_port = 0x21;
+      master_mask |= (1 << irq_num); //Set IRQ num position of master masks to 0
       mask = master_mask;
-      mask |= (1 << irq_num);  //Set IRQ num position of master masks to 1
-      outb_p(master_mask, MASTER_8259_PORT + 1)
   }
 
   else{
-        slave_mask |= (1 << (irq_num-8)); //Set IRQ num position of slave masks to 1
-        outb_p(slave_mask, SLAVE_8259_PORT + 1)
+        data_port = 0xA1;
+        slave_mask |= (1 << (irq_num-8)); //Set IRQ num position of slave masks to 0
+        mask = slave_mask;
   }
+
+  outb_p(mask, port);
+
+return;
+
 }
 
 /* Send end-of-interrupt signal for the specified IRQ
@@ -109,7 +122,7 @@ void send_eoi(uint32_t irq_num) {
 
   else{
       outb_p(EOI | slave_number , MASTER_8259_PORT); //if slave, eoi to master bit that slave is on
-      outb_p(EOI | (irq_num-8) , SLAVE_8259_PORT); //and to slave itself. 
+      outb_p(EOI | (irq_num-8) , SLAVE_8259_PORT); //and to slave itself.
 
   }
 }
