@@ -10,71 +10,124 @@
 // http://minirighi.sourceforge.net/html/group__KInterrupt.html
 
 /* Interrupt masks to determine which interrupts are enabled and disabled */
-uint8_t master_mask; /* IRQs 0-7  */
-uint8_t slave_mask;  /* IRQs 8-15 */
+uint8_t master_mask = 0xFF; /* IRQs 0-7  */
+uint8_t slave_mask = 0xFF;  /* IRQs 8-15 */
+
+uint8_t slave_number;
+
+//pthread_spinlock_t i8259A_lock = SPIN_LOCK_UNLOCKED;
 
 /* Initialize the 8259 PIC */
 void i8259_init(void) {
-    /* add a spinlock over here */
 
-    outb(0xff , MASTER_8259_PORT ); /* mask all of MASTER_8259_PORT */
-    outb(0xff , SLAVE_8259_PORT ); /* mask all of SLAVE_8259_PORT */
+  unsigned long flags;
+  int master_counter;
 
-    outb( ICW1 , MASTER_8259_PORT); // select 8259A-1 init
-    outb( ICW2_MASTER , MASTER_8259_PORT + 1 ); // 8259A-1 IR0-7 mappend to 0x20-0x27
-    outb( ICW3_MASTER , MASTER_8259_PORT + 1 ); // 8259A-1 has a slave on IR2
-    outb( ICW4 , MASTER_8259_PORT + 1 ); //
+//  spinlock_irqsave(&i8259A_lock, flags); //WHT?
 
-    outb( ICW1 , SLAVE_8259_PORT); // select 8259A-2 init
-    outb( ICW2_SLAVE , SLAVE_8259_PORT + 1 ); // 8259A-2 IR0-7 mapped to 0x28 - 0x2f
-    outb( ICW3_SLAVE , SLAVE_8259_PORT + 1 ); // 8259A-2 is a slave on master's IR2
-    outb( ICW4 , SLAVE_8259_PORT + 1 );
+  outb(0xFF, MASTER_8259_PORT + 1); //mask all irqs
+  outb(0xFF, SLAVE_8259_PORT + 1);
 
-    //delay to wait for the 8259A to Initialize
-    //udelay(1000);
+  outb(ICW1, MASTER_8259_PORT); //write all ICWs for master
+  outb(ICW2_MASTER + 0, MASTER_8259_PORT + 1);
+  outb(ICW3_MASTER, MASTER_8259_PORT + 1);
+  outb(ICW4 , MASTER_8259_PORT + 1);
 
-    /* spinklock unlock over here? */
+
+  outb(ICW1 , SLAVE_8259_PORT); //write all ICWs for slave
+  outb(ICW2_SLAVE , SLAVE_8259_PORT + 1);
+  outb(ICW3_SLAVE , SLAVE_8259_PORT + 1);
+  outb(ICW4 , SLAVE_8259_PORT + 1);
+
+ /* udelay(100);*/
+
+  outb(master_mask, MASTER_8259_PORT + 1); //restore current IRQs
+  outb(slave_mask, SLAVE_8259_PORT + 1);
+
+
+  master_counter = 0;
+  slave_number = 0;
+  // while(!(master_counter & ICW3_MASTER)){
+  //   slave_number++;
+  //   master_counter<<= 1;
+  // }
+  slave_number = ICW3_SLAVE;
+
+  master_mask &= ~(1 << slave_number);
+  outb(master_mask, MASTER_8259_PORT + 1); //unmask slave port on master
+
+  //spin_lock_irqrestore(&i8259A_lock, flags);//WHT?
+
 
 }
 
 /* Enable (unmask) the specified IRQ */
+/*derived from http://wiki.osdev.org/8259_PIC Masking code*/
 void enable_irq(uint32_t irq_num) {
-    uint32_t mask;
-    if (irq_num > 15 || irq_num < 0) return ;
-    if (irq_num < 8 ){
-        mask = inb(ICW1);
-        mask &= ~(1 << irq_num); // is it ~
-        outb(mask,MASTER_8259_PORT);
-    }
-    else {
-        mask = inb(ICW2_SLAVE);
-        mask &= ~(1 << (irq_num - 8 )); // is it ~
-        outb(mask,SLAVE_8259_PORT);
-    }
+  uint8_t mask;
+  uint16_t data_port;
+  if(irq_num>15) return; //invalid IRQ, return
+  if(irq_num<0) return;
+
+  if(irq_num<8){ //If master IRQ
+      data_port = 0x21;
+      master_mask &= ~(1 << irq_num); //Set IRQ num position of master masks to 0
+      mask = master_mask;
+  }
+
+  else{
+        data_port = 0xA1;
+        slave_mask &= ~(1 << (irq_num-8)); //Set IRQ num position of slave masks to 0
+        mask = slave_mask;
+  }
+
+  outb(mask, data_port);
+
+return;
+
 }
 
 /* Disable (mask) the specified IRQ */
 void disable_irq(uint32_t irq_num) {
-    uint32_t mask; // maybe we could set mask = 0x1 . not sure how to use inb
-    if (irq_num > 15 || irq_num < 0 ) return;
-    if (irq_num < 8) {
-        mask = inb(ICW1); // ?
-        mask |= 1 << irq_num;
-        /*outb(ICW1,mask);*/
-        outb(mask, MASTER_8259_PORT);
-    }
-    else {
-        mask = 0x01;//inb(ICW2);
-        mask |= 1 << (irq_num - 8);
-        // outb(ICW2,mask);
-        outb(mask,SLAVE_8259_PORT);
-    }
+  uint8_t mask;
+  uint16_t data_port;
+  if(irq_num>15) return; //invalid IRQ, return
+  if(irq_num<0) return;
+
+  if(irq_num<8){ //If master IRQ
+      data_port = 0x21;
+      master_mask |= (1 << irq_num); //Set IRQ num position of master masks to 0
+      mask = master_mask;
+  }
+
+  else{
+        data_port = 0xA1;
+        slave_mask |= (1 << (irq_num-8)); //Set IRQ num position of slave masks to 0
+        mask = slave_mask;
+  }
+
+  outb(mask, data_port);
+
+return;
+
 }
 
-/* Send end-of-interrupt signal for the specified IRQ */
+/* Send end-of-interrupt signal for the specified IRQ
+http://wiki.osdev.org/8259_PIC
+If the IRQ came from the Master PIC, it is sufficient to issue this command only to the Master PIC;
+however if the IRQ came from the Slave PIC, it is necessary to issue the command to both PIC chips.*/
 void send_eoi(uint32_t irq_num) {
-    if (irq_num > 8 ){
-            outb(EOI , SLAVE_8259_PORT);
-    }
-        outb(EOI , MASTER_8259_PORT );
+  uint8_t mask;
+  if(irq_num>15) return;  //invalid IRQ, return;
+  if(irq_num<0) return;
+
+  if(irq_num<8){
+      outb(EOI | irq_num , MASTER_8259_PORT); // OR irq number with EOI and write
+  }
+
+  else{
+      outb(EOI | slave_number , MASTER_8259_PORT); //if slave, eoi to master bit that slave is on
+      outb(EOI | (irq_num-8) , SLAVE_8259_PORT); //and to slave itself.
+
+  }
 }
