@@ -9,14 +9,17 @@
 uint8_t master_mask = 0xFF; /* IRQs 0-7  */
 uint8_t slave_mask = 0xFF;  /* IRQs 8-15 */
 
-pthread_spinlock_t i8259A_lock = SPIN_LOCK_UNLOCKED;
+unint8_t slave_number;
+
+//pthread_spinlock_t i8259A_lock = SPIN_LOCK_UNLOCKED;
 
 /* Initialize the 8259 PIC */
 void i8259_init(void) {
 
   unsigned long flags;
+  int master_counter;
 
-  spinlock_irqsave(&i8259A_lock, flags); //WHT?
+//  spinlock_irqsave(&i8259A_lock, flags); //WHT?
 
   outb(0xFF, MASTER_8259_PORT + 1); //mask all irqs
   outb(0xFF, SLAVE_8259_PORT + 1);
@@ -37,7 +40,18 @@ void i8259_init(void) {
   outb(master_mask, MASTER_8259_PORT + 1); //restore current IRQs
   outb(slave_mask, SLAVE_8259_PORT + 1);
 
-  spin_lock_irqrestore(&i8259A_lock, flags);//WHT?
+
+  master_counter = 0;
+  slave_number = 0;
+  while(!(master_counter & ICW3_MASTER)){
+    slave_number++;
+    master_counter<<= 1;
+  }
+
+  master_mask &= ~(1 << slave_number);
+  outb_p(master_mask, MASTER_8259_PORT + 1); //unmask slave port on master
+
+  //spin_lock_irqrestore(&i8259A_lock, flags);//WHT?
 
 
 }
@@ -80,7 +94,10 @@ void disable_irq(uint32_t irq_num) {
   }
 }
 
-/* Send end-of-interrupt signal for the specified IRQ */
+/* Send end-of-interrupt signal for the specified IRQ
+http://wiki.osdev.org/8259_PIC
+If the IRQ came from the Master PIC, it is sufficient to issue this command only to the Master PIC;
+however if the IRQ came from the Slave PIC, it is necessary to issue the command to both PIC chips.*/
 void send_eoi(uint32_t irq_num) {
   uint8_t mask;
   if(irq_num>15) return;  //invalid IRQ, return;
@@ -91,6 +108,8 @@ void send_eoi(uint32_t irq_num) {
   }
 
   else{
-      outb_p(EOI | (irq_num-8) , SLAVE_8259_PORT);
+      outb_p(EOI | slave_number , MASTER_8259_PORT); //if slave, eoi to master bit that slave is on
+      outb_p(EOI | (irq_num-8) , SLAVE_8259_PORT); //and to slave itself. 
+
   }
 }
