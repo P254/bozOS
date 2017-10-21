@@ -31,7 +31,7 @@ void i8259_init(void) {
     outb( ICW4 , SLAVE_8259_PORT + 1 );
 
     //delay to wait for the 8259A to Initialize
-    udelay(1000);
+    //udelay(1000);
 
     /* spinklock unlock over here? */
 
@@ -64,7 +64,7 @@ void disable_irq(uint32_t irq_num) {
         outb(mask, MASTER_8259_PORT);
     }
     else {
-        mask = inb(ICW2);
+        mask = 0x01;//inb(ICW2);
         mask |= 1 << (irq_num - 8);
         // outb(ICW2,mask);
         outb(mask,SLAVE_8259_PORT);
@@ -75,6 +75,6 @@ void disable_irq(uint32_t irq_num) {
 void send_eoi(uint32_t irq_num) {
     if (irq_num > 8 ){
             outb(EOI , SLAVE_8259_PORT);
-        outb(EOI , MASTER_8259_PORT );
     }
+        outb(EOI , MASTER_8259_PORT );
 }
