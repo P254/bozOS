@@ -4,6 +4,10 @@
 
 #include "i8259.h"
 #include "lib.h"
+//#include <linux/delay.h>
+// do we need to include sys/io.h to get outb ?
+
+// http://minirighi.sourceforge.net/html/group__KInterrupt.html
 
 /* Interrupt masks to determine which interrupts are enabled and disabled */
 uint8_t master_mask = 0xFF; /* IRQs 0-7  */
