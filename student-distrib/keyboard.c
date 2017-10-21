@@ -1,6 +1,7 @@
 // http://wiki.osdev.org/PS/2_Keyboard
-
-unsigned char kbdus[128] =
+#include "keyboard.h"
+#include "lib.h"
+unsigned char scancode[128] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
   '9', '0', '-', '=', '\b',	/* Backspace */
@@ -41,7 +42,7 @@ unsigned char kbdus[128] =
 };
 
 void init_kb(void){
-    enable_irq(/* 1  */); // the keyboard interrupt
+    enable_irq(1); // the keyboard interrupt
 }
 
 
