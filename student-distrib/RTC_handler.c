@@ -10,7 +10,7 @@ void rtc_init(void){
   char  previous;
   outb(0x8B, 0x70); //select status register B and disable interuppts using x80.
   previous = inb(0x71); //	  read immediately after or the RTC may be left in an unknown state.
-  outb(0x8B, 0x70)
+  outb(0x8B, 0x70);
   outb(previous | 0x40, 0x71); // write the previous value ORed with 0x40. This turns on bit 6 of register B
   enable_irq(8); //enable 8th IRQ
   sti();

@@ -9,7 +9,7 @@
 uint8_t master_mask = 0xFF; /* IRQs 0-7  */
 uint8_t slave_mask = 0xFF;  /* IRQs 8-15 */
 
-unint8_t slave_number;
+uint8_t slave_number;
 
 //pthread_spinlock_t i8259A_lock = SPIN_LOCK_UNLOCKED;
 
@@ -24,18 +24,18 @@ void i8259_init(void) {
   outb(0xFF, MASTER_8259_PORT + 1); //mask all irqs
   outb(0xFF, SLAVE_8259_PORT + 1);
 
-  outb_p(ICW1, MASTER_8259_PORT); //write all ICWs for master
-  outb_p(ICW2_MASTER + 0, MASTER_8259_PORT + 1);
-  outb_p(ICW3_MASTER, MASTER_8259_PORT + 1);
-  outb_p(ICW4 , MASTER_8259_PORT + 1);
+  outb(ICW1, MASTER_8259_PORT); //write all ICWs for master
+  outb(ICW2_MASTER + 0, MASTER_8259_PORT + 1);
+  outb(ICW3_MASTER, MASTER_8259_PORT + 1);
+  outb(ICW4 , MASTER_8259_PORT + 1);
 
 
-  outb_p(ICW1 , SLAVE_8259_PORT); //write all ICWs for slave
-  outb_p(ICW2_SLAVE , SLAVE_8259_PORT + 1);
-  outb_p(ICW3_SLAVE , SLAVE_8259_PORT + 1);
-  outb_p(ICW4 , SLAVE_8259_PORT + 1);
+  outb(ICW1 , SLAVE_8259_PORT); //write all ICWs for slave
+  outb(ICW2_SLAVE , SLAVE_8259_PORT + 1);
+  outb(ICW3_SLAVE , SLAVE_8259_PORT + 1);
+  outb(ICW4 , SLAVE_8259_PORT + 1);
 
-  udelay(100);
+ /* udelay(100);*/
 
   outb(master_mask, MASTER_8259_PORT + 1); //restore current IRQs
   outb(slave_mask, SLAVE_8259_PORT + 1);
@@ -43,13 +43,14 @@ void i8259_init(void) {
 
   master_counter = 0;
   slave_number = 0;
-  while(!(master_counter & ICW3_MASTER)){
-    slave_number++;
-    master_counter<<= 1;
-  }
+  // while(!(master_counter & ICW3_MASTER)){
+  //   slave_number++;
+  //   master_counter<<= 1;
+  // }
+  slave_number = ICW3_SLAVE;
 
   master_mask &= ~(1 << slave_number);
-  outb_p(master_mask, MASTER_8259_PORT + 1); //unmask slave port on master
+  outb(master_mask, MASTER_8259_PORT + 1); //unmask slave port on master
 
   //spin_lock_irqrestore(&i8259A_lock, flags);//WHT?
 
@@ -76,7 +77,7 @@ void enable_irq(uint32_t irq_num) {
         mask = slave_mask;
   }
 
-  outb_p(mask, port);
+  outb(mask, data_port);
 
 return;
 
@@ -101,7 +102,7 @@ void disable_irq(uint32_t irq_num) {
         mask = slave_mask;
   }
 
-  outb_p(mask, port);
+  outb(mask, data_port);
 
 return;
 
@@ -117,12 +118,12 @@ void send_eoi(uint32_t irq_num) {
   if(irq_num<0) return;
 
   if(irq_num<8){
-      outb_p(EOI | irq_num , MASTER_8259_PORT); // OR irq number with EOI and write
+      outb(EOI | irq_num , MASTER_8259_PORT); // OR irq number with EOI and write
   }
 
   else{
-      outb_p(EOI | slave_number , MASTER_8259_PORT); //if slave, eoi to master bit that slave is on
-      outb_p(EOI | (irq_num-8) , SLAVE_8259_PORT); //and to slave itself.
+      outb(EOI | slave_number , MASTER_8259_PORT); //if slave, eoi to master bit that slave is on
+      outb(EOI | (irq_num-8) , SLAVE_8259_PORT); //and to slave itself.
 
   }
 }
