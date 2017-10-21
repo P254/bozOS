@@ -30,20 +30,39 @@ void handle_e19();
 void handle_default();
 
 // Function pointer array
-void (*handle_exceptions[N_EXCEPTIONS])() = {handle_e0, handle_e1, handle_e2, handle_e3, handle_e4, handle_e5, handle_e6, handle_e7, handle_e8, handle_e9, handle_e10, handle_e11, handle_e12, handle_e13, handle_e14, handle_e16, handle_e17, handle_e18, handle_e19};
+// Entry #15 is empty, (according to documentation)
+void (*handle_exceptions[N_EXCEPTIONS-1])() = {handle_e0, handle_e1, handle_e2, handle_e3, handle_e4, handle_e5, handle_e6, handle_e7, handle_e8, handle_e9, handle_e10, handle_e11, handle_e12, handle_e13, handle_e14, handle_e16, handle_e17, handle_e18, handle_e19};
 
 // Initialize the exception handlers in the IDT
 void init_idt_exceptions() {
     unsigned int i;
     // Initalizes the exceptions by writing them to the IDT
-    for (i = 0; i < N_EXCEPTIONS + 1; i++) {
-        if (i < 15) SET_IDT_ENTRY(idt[i], handle_exceptions[i]);
-        else if (i == 15) SET_IDT_ENTRY(idt[i], handle_default); // Entry 15 is empty according to documentation
-        else SET_IDT_ENTRY(idt[i], handle_exceptions[i-1]);
+    for (i = 0; i < N_EXCEPTIONS_RESERVED + 1; i++) {
+        if (i < EMPTY_EXCEPTION) {
+            SET_IDT_ENTRY(idt[i], handle_exceptions[i]);
+        }
+        else if (i == EMPTY_EXCEPTION) {
+            // Entry 15 (EMPTY_EXCEPTION) is empty, according to documentation
+            SET_IDT_ENTRY(idt[i], handle_default);
+        }
+        else if (i > EMPTY_EXCEPTION && i < N_EXCEPTIONS) {
+            SET_IDT_ENTRY(idt[i], handle_exceptions[i-1]);
+        }
+        else {
+            // Indices 20-31 are reserved for some other purpose (according to the spec), so we write a default handler
+            SET_IDT_ENTRY(idt[i], handle_default);
+        }
     }
-    // Indices 32-255 are user-defined, so we write a default handler. 
-    for (i = N_EXCEPTIONS + 1; i < NUM_VEC; i++) {
-        SET_IDT_ENTRY(idt[i], handle_default);   
+
+    /* Initialize hardware interrupts, which start at IDT entry 32.
+     * Source: https://courses.engr.illinois.edu/ece391/fa2017/secure/references/descriptors.pdf
+     * According to spec, there are 15 default hardware interrupts.
+     * Source: http://wiki.osdev.org/Interrupts#General_IBM-PC_Compatible_Interrupt_Information
+     */
+    // TODO Sean: Move this segment of code below to i8259.c
+    unsigned int irq_num;
+    for (irq_num = 32; irq_num < 32+15; irq_num++ ) {
+        // SET_IDT_ENTRY(idt[i], <insert hardware int handler function here>);
     }
 }
 
