@@ -4,7 +4,7 @@
 
 #include "i8259.h"
 #include "lib.h"
-#include <linux/delay.h>
+//#include <linux/delay.h>
 // do we need to include sys/io.h to get outb ?
 
 // http://minirighi.sourceforge.net/html/group__KInterrupt.html
@@ -44,12 +44,12 @@ void enable_irq(uint32_t irq_num) {
     if (irq_num < 8 ){
         mask = inb(ICW1);
         mask &= ~(1 << irq_num); // is it ~
-        outb(ICW1,mask);
+        outb(mask,MASTER_8259_PORT);
     }
     else {
-        mask = inb(ICW2);
+        mask = inb(ICW2_SLAVE);
         mask &= ~(1 << (irq_num - 8 )); // is it ~
-        outb(ICW2,mask);
+        outb(mask,SLAVE_8259_PORT);
     }
 }
 
@@ -60,20 +60,21 @@ void disable_irq(uint32_t irq_num) {
     if (irq_num < 8) {
         mask = inb(ICW1); // ?
         mask |= 1 << irq_num;
-        outb(ICW1,mask);
+        /*outb(ICW1,mask);*/
+        outb(mask, MASTER_8259_PORT);
     }
     else {
         mask = inb(ICW2);
         mask |= 1 << (irq_num - 8);
-        outb(ICW2,mask);
+        // outb(ICW2,mask);
+        outb(mask,SLAVE_8259_PORT);
     }
 }
 
 /* Send end-of-interrupt signal for the specified IRQ */
 void send_eoi(uint32_t irq_num) {
-    if (irq > 8 ){
-        if (irq_num > 8 )
-            outb(ICW2 , EOI);
-        outb(ICW1 , EOI );
+    if (irq_num > 8 ){
+            outb(EOI , SLAVE_8259_PORT);
+        outb(EOI , MASTER_8259_PORT );
     }
 }
