@@ -1,7 +1,7 @@
 // http://wiki.osdev.org/PS/2_Keyboard
 #include "keyboard.h"
 #include "lib.h"
-#include "exceptions.h"
+#include "IDT.h"
 #include "i8259.h"
 #include "x86_desc.h"
 unsigned char scancode []={'\0', '\0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\0', '\0',
@@ -9,10 +9,9 @@ unsigned char scancode []={'\0', '\0', '1', '2', '3', '4', '5', '6', '7', '8', '
 	 'd', 'f', 'g', 'h', 'j', 'k', 'l' , ';', '\'', '`', '\0', '\\', 'z', 'x', 'c', 'v',
 	 'b', 'n', 'm',',', '.', '/', '\0', '*', '\0', ' ', '\0'};
 
-void init_kb(void){
+void kb_init(void){
     enable_irq(1); // the keyboard interrupt
     set_IDT_wrapper(SOFT_INT_START + 1, get_char);
-    // set_idt_reserved(&idt[i]);
 }
 
 

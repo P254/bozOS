@@ -3,6 +3,6 @@
 * http://wiki.osdev.org/%228042%22_PS/2_Controller
 *
 */
-void init_kb(void);
+void kb_init(void);
 char getScancode();
 void get_char();
