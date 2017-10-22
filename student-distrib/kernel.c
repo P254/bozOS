@@ -152,14 +152,16 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Do not enable the following until after you have set up your
      * IDT correctly otherwise QEMU will triple fault and simple close
      * without showing you any output */
-    // printf("Enabling Interrupts\n");
-    // sti();
+    printf("Enabling Interrupts\n");
+    sti();
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */
-    launch_tests();
+    // launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
+    // while(1);
+    // asm("int $0x20"); --> Calling an interrupt at memory location 0x20 
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");
