@@ -29,6 +29,17 @@ void handle_e19();
 
 void handle_default();
 
+void set_idt_reserved(idt_desc_t * item) {
+    item->reserved4 = 0;
+    item->reserved3 = 1;
+    item->reserved2 = 1;
+    item->reserved1 = 1;
+    item->reserved0 = 0;
+    item->present = 1;
+    item->dpl = 0;
+    item->seg_selector = KERNEL_CS;
+}
+
 // Function pointer array
 // Entry #15 is empty, (according to documentation)
 void (*handle_exceptions[N_EXCEPTIONS-1])() = {handle_e0, handle_e1, handle_e2, handle_e3, handle_e4, handle_e5, handle_e6, handle_e7, handle_e8, handle_e9, handle_e10, handle_e11, handle_e12, handle_e13, handle_e14, handle_e16, handle_e17, handle_e18, handle_e19};
@@ -40,13 +51,16 @@ void init_idt_exceptions() {
     for (i = 0; i < N_EXCEPTIONS_RESERVED + 1; i++) {
         if (i < EMPTY_EXCEPTION) {
             SET_IDT_ENTRY(idt[i], handle_exceptions[i]);
+            set_idt_reserved(&idt[i]);
         }
         else if (i == EMPTY_EXCEPTION) {
             // Entry 15 (EMPTY_EXCEPTION) is empty, according to documentation
             SET_IDT_ENTRY(idt[i], handle_default);
+            set_idt_reserved(&idt[i]);
         }
         else if (i > EMPTY_EXCEPTION && i < N_EXCEPTIONS) {
             SET_IDT_ENTRY(idt[i], handle_exceptions[i-1]);
+            set_idt_reserved(&idt[i]);
         }
         else {
             // Indices 20-31 are reserved for some other purpose (according to the spec), so we write a default handler
