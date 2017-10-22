@@ -5,4 +5,4 @@
 */
 void init_kb(void);
 char getScancode();
-char getchar();
+void get_char();
