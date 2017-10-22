@@ -1,30 +1,38 @@
 #include "lib.h"
-#include "x86_desc.h"
 #include "RTC_handler.h"
 #include "i8259.h"
-/*http://wiki.osdev.org/RTC*/
-void rtc_init(void){
-  /*Not entirely sure what this means???
-  Be sure that you install the IRQ handler
-  before you enable the RTC IRQ.
-  The interrupt will happen almost immediately.*/
-  //cli();
-  char  previous;
-  outb(0x8B, 0x70); //select status register B and disable interuppts using x80.
-  previous = inb(0x71); //	  read immediately after or the RTC may be left in an unknown state.
-  outb(0x8B, 0x70);
-  outb(previous | 0x40, 0x71);  // write the previous value ORed with 0x40. This turns on bit 6 of register B
-  enable_irq(8); //enable 8th IRQ
-  SET_IDT_ENTRY(idt[32+8], rtc_handler);
+#include "IDT.h"
 
-  /*sti();*/
-  outb(0x0B, 0x70);  //enable 80 bit NMI?? IDK
+/* source from http://wiki.osdev.org/RTC
+ * Inputs: void
+ * Return Value: void
+ * Function: Initialize real time clock and add RTC to IDT. Also slow RTC from 1024 to 1 Hz*/
+void rtc_init(void){
+  char previous;
+  unsigned int rate;
+  rate = 15; //set rate to 15 or 1HZ. 32768 >> (rate-1);
+  outb(NMI_MASK+REG_B, RTC_REG); //select status register B and disable interuppts using x80.
+  previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
+  outb(NMI_MASK+REG_B, RTC_REG);
+  outb(previous | BIT_6_SWITCH, RTC_REG+1);  // write the previous value ORed with 0x40. This turns on bit 6 of register B
+  enable_irq(RTC_IRQ_ADDR); //enable 8th IRQ
+  set_IDT_wrapper(SOFT_INT_START + RTC_IRQ_ADDR, rtc_handler);
+  outb(REG_B, RTC_REG);  //enable 80 bit NMI
+
+  outb(NMI_MASK+REG_A, RTC_REG); //remask NMI
+  previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
+  outb(NMI_MASK+REG_A, RTC_REG);
+  outb((previous & 0xF0) | rate, RTC_REG+1);////write only our rate to A. Rate is the bottom 4 bits.
+  outb(REG_A, RTC_REG);  //enable 80 bit NMI
 }
 
-void rtc_handler(void){
-    printf("RTC handler call");
+/* Inputs: void
+ * Return Value: void
+ * Function: Handles RTC interrupts by call test_interrupts and sending EOI signal to PIC */
+void rtc_handler(void) {
+  // printf("Calling RTC handler\n");
   test_interrupts(); //we must prove this function is being called.
-  send_eoi(8); //end 8th IRQ
-  outb(0x0C, 0x70);	// select register C
-  inb(0x71);		// just throw away contents, we must do this otherwise IRQ8 will never be called again.
+  send_eoi(RTC_IRQ_ADDR); //end 8th IRQ
+  outb(REG_C, RTC_REG);	// select register C
+  inb(RTC_REG+1);		// just throw away contents, we must do this otherwise IRQ8 will never be called again.
 }

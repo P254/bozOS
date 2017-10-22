@@ -10,7 +10,8 @@
 #include "RTC_handler.h"
 #include "debug.h"
 #include "tests.h"
-#include "exceptions.h"
+#include "IDT.h"
+#include "paging.h"
 
 #define RUN_TESTS
 
@@ -133,6 +134,7 @@ void entry(unsigned long magic, unsigned long addr) {
 
         SET_TSS_PARAMS(the_tss_desc, &tss, tss_size);
 
+
         tss_desc_ptr = the_tss_desc;
 
         tss.ldt_segment_selector = KERNEL_LDT;
@@ -143,8 +145,10 @@ void entry(unsigned long magic, unsigned long addr) {
 
     /* Init the PIC */
     i8259_init();
-    //init_kb();
+    kb_init();
     rtc_init();
+    // paging_init();
+
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
 
@@ -152,14 +156,19 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Do not enable the following until after you have set up your
      * IDT correctly otherwise QEMU will triple fault and simple close
      * without showing you any output */
-    // printf("Enabling Interrupts\n");
-    // sti();
+
+     printf("Enabling Interrupts\n");
+     sti();
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */
-    launch_tests();
+    // launch_tests();
 #endif
+
+
     /* Execute the first program ("shell") ... */
+    // while(1);
+    // asm("int $0x80"); // --> Calling an interrupt at memory location 0x80
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");
