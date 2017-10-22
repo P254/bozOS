@@ -6,4 +6,4 @@
 
 void paging_init();
 
-#endif /* PAGING_H */
+#endif  PAGING_H

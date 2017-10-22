@@ -6,16 +6,24 @@
 /* source from http://wiki.osdev.org/RTC
  * Inputs: void
  * Return Value: void
- * Function: Initialize real time clock and add RTC to IDT*/
+ * Function: Initialize real time clock and add RTC to IDT. Also slow RTC from 1024 to 1 Hz*/
 void rtc_init(void){
   char previous;
+  unsigned int rate;
+  rate = 15; //set rate to 15 or 1HZ. 32768 >> (rate-1);
   outb(NMI_MASK+REG_B, RTC_REG); //select status register B and disable interuppts using x80.
-  previous = inb(RTC_REG+1); //	  read immediately after or the RTC may be left in an unknown state.
+  previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
   outb(NMI_MASK+REG_B, RTC_REG);
   outb(previous | BIT_6_SWITCH, RTC_REG+1);  // write the previous value ORed with 0x40. This turns on bit 6 of register B
   enable_irq(RTC_IRQ_ADDR); //enable 8th IRQ
   set_IDT_wrapper(SOFT_INT_START + RTC_IRQ_ADDR, rtc_handler);
   outb(REG_B, RTC_REG);  //enable 80 bit NMI
+
+  outb(NMI_MASK+REG_A, RTC_REG); //remask NMI
+  previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
+  outb(NMI_MASK+REG_A, RTC_REG);
+  outb((previous & 0xF0) | rate, RTC_REG+1);////write only our rate to A. Rate is the bottom 4 bits.
+  outb(REG_A, RTC_REG);  //enable 80 bit NMI
 }
 
 /* Inputs: void
