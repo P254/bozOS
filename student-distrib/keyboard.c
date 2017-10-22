@@ -1,6 +1,9 @@
 // http://wiki.osdev.org/PS/2_Keyboard
 #include "keyboard.h"
 #include "lib.h"
+#include "IDT.h"
+#include "i8259.h"
+#include "x86_desc.h"
 unsigned char scancode[128] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
@@ -41,8 +44,9 @@ unsigned char scancode[128] =
     0,	/* All other keys are undefined */
 };
 
-void init_kb(void){
+void kb_init(void){
     enable_irq(1); // the keyboard interrupt
+    set_IDT_wrapper(SOFT_INT_START + 1, get_char);
 }
 
 
@@ -57,8 +61,10 @@ char getScancode() {
     } while(1);
 }
 
-char getchar() {
+void get_char() {
     // we have to use this somewhere to print to the screen.
     // outb smthing
-    return scancode[getScancode() + 1];
+
+    send_eoi(1);
+    putc(scancode[getScancode() + 1]);
 }
