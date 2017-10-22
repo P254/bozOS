@@ -11,6 +11,7 @@
 #include "debug.h"
 #include "tests.h"
 #include "IDT.h"
+#include "paging.h"
 
 #define RUN_TESTS
 
@@ -144,9 +145,10 @@ void entry(unsigned long magic, unsigned long addr) {
 
     /* Init the PIC */
     i8259_init();
-    init_kb();
+    kb_init();
+    rtc_init();
+    // paging_init();
 
-    //rtc_init();
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
 
@@ -160,13 +162,13 @@ void entry(unsigned long magic, unsigned long addr) {
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */
-    launch_tests();
+    // launch_tests();
 #endif
 
 
     /* Execute the first program ("shell") ... */
     // while(1);
-    // asm("int $20"); // --> Calling an interrupt at memory location 0x20
+    // asm("int $0x80"); // --> Calling an interrupt at memory location 0x80
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

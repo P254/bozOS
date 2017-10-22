@@ -22,11 +22,12 @@ void handle_e11();
 void handle_e12();
 void handle_e13();
 void handle_e14();
+void handle_e15();
 void handle_e16();
 void handle_e17();
 void handle_e18();
 void handle_e19();
-
+void handle_sys_call();
 void handle_default();
 
 // Wrapper function to set the IDT entry
@@ -45,23 +46,16 @@ void set_IDT_wrapper(uint8_t idt_num, void* handler_function) {
 
 // Function pointer array
 // Entry #15 is empty, (according to documentation)
-void (*handle_exceptions[N_EXCEPTIONS-1])() = {handle_e0, handle_e1, handle_e2, handle_e3, handle_e4, handle_e5, handle_e6, handle_e7, handle_e8, handle_e9, handle_e10, handle_e11, handle_e12, handle_e13, handle_e14, handle_e16, handle_e17, handle_e18, handle_e19};
+void (*handle_exceptions[N_EXCEPTIONS])() = {handle_e0, handle_e1, handle_e2, handle_e3, handle_e4, handle_e5, handle_e6, handle_e7, handle_e8, handle_e9, handle_e10, handle_e11, handle_e12, handle_e13, handle_e14, handle_e15, handle_e16, handle_e17, handle_e18, handle_e19};
 
 // Initialize the exception handlers in the IDT
 // TODO Sean: Clean up this function
 void init_idt_exceptions() {
     unsigned int i;
     // Initalizes the exceptions by writing them to the IDT
-    for (i = 0; i < N_EXCEPTIONS_RESERVED + 1; i++) {
-        if (i < EMPTY_EXCEPTION) {
+    for (i = 0; i < N_EXCEPTIONS_RESERVED; i++) {
+        if (i < N_EXCEPTIONS) {
             set_IDT_wrapper(i, handle_exceptions[i]);
-        }
-        else if (i == EMPTY_EXCEPTION) {
-            // Entry 15 (EMPTY_EXCEPTION) is empty, according to documentation
-            set_IDT_wrapper(i, handle_default);
-        }
-        else if (i > EMPTY_EXCEPTION && i < N_EXCEPTIONS) {
-            set_IDT_wrapper(i, handle_exceptions[i-1]);
         }
         else {
             // Indices 20-31 are reserved for some other purpose (according to the spec), so we write a default handler
@@ -77,6 +71,13 @@ void init_idt_exceptions() {
     // TODO Sean: Move this segment of code below to i8259.c
     for (i = 32; i < NUM_VEC; i++ ) {
         set_IDT_wrapper(i, handle_default);
+
+        if (i == 0x80) { 
+            // System call 'execute'
+            set_IDT_wrapper(i, handle_sys_call);
+            // idt[i].dpl = 3; --> ??
+            // idt[i].seg_selector = USER_CS;  --> ??
+        }
     }
 }
 
@@ -144,6 +145,10 @@ void handle_e14() {
     printf("Interrupt 14 - Page-Fault Exception (#PF)\n");
     while(1);
 }
+void handle_e15() {
+    printf("Interrupt 15 - Reserved\n");
+    while(1);
+}
 void handle_e16() {
     printf("Interrupt 16 - x87 FPU Floating-Point Error (#MF)\n");
     while(1);
@@ -163,5 +168,10 @@ void handle_e19() {
 
 void handle_default() {
     printf("Default interrupt handler called. Nothing specified here.\n");
+    while(1);
+}
+
+void handle_sys_call() {
+    printf("System call.\n");
     while(1);
 }

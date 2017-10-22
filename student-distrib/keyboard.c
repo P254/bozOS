@@ -44,10 +44,9 @@ unsigned char scancode[128] =
     0,	/* All other keys are undefined */
 };
 
-void init_kb(void){
+void kb_init(void){
     enable_irq(1); // the keyboard interrupt
     set_IDT_wrapper(SOFT_INT_START + 1, get_char);
-    // set_idt_reserved(&idt[i]);
 }
 
 

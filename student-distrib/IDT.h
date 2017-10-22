@@ -1,5 +1,5 @@
-#ifndef EXCEPTIONS_H
-#define EXCEPTIONS_H
+#ifndef IDT_H
+#define IDT_H
 
 /* Exception handlers are defined here */
 
@@ -10,4 +10,4 @@
 void init_idt_exceptions();
 void set_IDT_wrapper(uint8_t idt_num, void* handler_function);
 
-#endif /* TESTS_H */
+#endif /* IDT_H */

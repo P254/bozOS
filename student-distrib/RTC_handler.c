@@ -21,7 +21,8 @@ void rtc_init(void){
 /* Inputs: void
  * Return Value: void
  * Function: Handles RTC interrupts by call test_interrupts and sending EOI signal to PIC */
-void rtc_handler(void){
+void rtc_handler(void) {
+  // printf("Calling RTC handler\n");
   test_interrupts(); //we must prove this function is being called.
   send_eoi(RTC_IRQ_ADDR); //end 8th IRQ
   outb(REG_C, RTC_REG);	// select register C
