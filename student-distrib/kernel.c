@@ -6,6 +6,8 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "keyboard.h"
+#include "RTC_handler.h"
 #include "debug.h"
 #include "tests.h"
 #include "exceptions.h"
@@ -141,7 +143,8 @@ void entry(unsigned long magic, unsigned long addr) {
 
     /* Init the PIC */
     i8259_init();
-
+    //init_kb();
+    rtc_init();
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
 
@@ -154,7 +157,7 @@ void entry(unsigned long magic, unsigned long addr) {
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */
-    launch_tests(); 
+    launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
 
