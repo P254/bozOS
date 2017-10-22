@@ -1,5 +1,5 @@
 #include "lib.h"
-#include "exceptions.h"
+#include "IDT.h"
 #include "x86_desc.h"
 
 /* Functions to handle exceptions

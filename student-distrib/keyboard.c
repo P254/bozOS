@@ -1,7 +1,7 @@
 // http://wiki.osdev.org/PS/2_Keyboard
 #include "keyboard.h"
 #include "lib.h"
-#include "exceptions.h"
+#include "IDT.h"
 #include "i8259.h"
 #include "x86_desc.h"
 unsigned char scancode[128] =

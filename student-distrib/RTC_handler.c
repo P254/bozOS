@@ -1,7 +1,7 @@
 #include "lib.h"
 #include "RTC_handler.h"
 #include "i8259.h"
-#include "exceptions.h"
+#include "IDT.h"
 
 /* source from http://wiki.osdev.org/RTC
  * Inputs: void
