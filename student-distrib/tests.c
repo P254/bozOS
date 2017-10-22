@@ -45,6 +45,10 @@ int idt_test(){
 	return result;
 }
 
+int div0_test() {
+	int x = 1/0;
+	return 1;
+}
 
 // add more tests here
 
@@ -58,4 +62,5 @@ int idt_test(){
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
 	// launch your tests here
+	TEST_OUTPUT("exception_test", div0_test());
 }
