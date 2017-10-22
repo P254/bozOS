@@ -29,6 +29,9 @@
 
 /* Externally-visible functions */
 
+/* Other constants */
+#define SOFT_INT_START 32
+
 /* Initialize both PICs */
 void i8259_init(void);
 /* Enable (unmask) the specified IRQ */
