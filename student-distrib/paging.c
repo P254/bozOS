@@ -6,11 +6,11 @@
 uint32_t page_directory[PAGE_SIZE] __attribute__((aligned(ALIGN_4KB)));
 uint32_t page_table[PAGE_SIZE] __attribute__((aligned(ALIGN_4KB)));
 
-/* The PDE look like this: 
- * 
- *             31:12               11:9    8   7   6   5   4   3   2   1   0 
+/* The PDE look like this:
+ *
+ *             31:12               11:9    8   7   6   5   4   3   2   1   0
  * [ Page table 4KB aligned addr | Avail | G | S | 0 | A | D | W | U | R | P ]
- *  
+ *
  * Avail: Used by the OS to store accounting information
  * 8 - G: Global page (ignored)
  * 7 - S: Page Size (1: 4 MiB, 0: 4 KiB)
@@ -56,7 +56,7 @@ void enable_paging() {
         or $0x00000010, %%eax   \n\
         mov %%eax, %%cr4        \n\
         mov %%cr0, %%eax        \n\
-        or $0x80000001, %%eax   \n\
+        or $0x80000000, %%eax   \n\
         mov %%eax, %%cr0"
         : /* no outputs */
         : /* no inputs */
@@ -66,12 +66,12 @@ void enable_paging() {
 
 /*
  * paging_init
- *   DESCRIPTION: Initializes the process that enables paging on our OS 
+ *   DESCRIPTION: Initializes the process that enables paging on our OS
  *                by building a table of PDEs and PTEs.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: void
- *   SIDE EFFECTS: Enables paging on our OS. 
+ *   SIDE EFFECTS: Enables paging on our OS.
  */
 void paging_init() {
     unsigned int i;
@@ -95,5 +95,5 @@ void paging_init() {
 
     // Last step: See http://wiki.osdev.org/Setting_Up_Paging#Enable_Paging
     load_page_directory();
-    enable_paging();   
+    enable_paging();
 }
