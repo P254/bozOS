@@ -4,67 +4,51 @@
 #include "IDT.h"
 #include "i8259.h"
 #include "x86_desc.h"
-unsigned char scancode[128] =
-{
-    0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
-  '9', '0', '-', '=', '\b',	/* Backspace */
-  '\t',			/* Tab */
-  'q', 'w', 'e', 'r',	/* 19 */
-  't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',	/* Enter key */
-    0,			/* 29   - Control */
-  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';',	/* 39 */
- '\'', '`',   0,		/* Left shift */
- '\\', 'z', 'x', 'c', 'v', 'b', 'n',			/* 49 */
-  'm', ',', '.', '/',   0,				/* Right shift */
-  '*',
-    0,	/* Alt */
-  ' ',	/* Space bar */
-    0,	/* Caps lock */
-    0,	/* 59 - F1 key ... > */
-    0,   0,   0,   0,   0,   0,   0,   0,
-    0,	/* < ... F10 */
-    0,	/* 69 - Num lock*/
-    0,	/* Scroll Lock */
-    0,	/* Home key */
-    0,	/* Up Arrow */
-    0,	/* Page Up */
-  '-',
-    0,	/* Left Arrow */
-    0,
-    0,	/* Right Arrow */
-  '+',
-    0,	/* 79 - End key*/
-    0,	/* Down Arrow */
-    0,	/* Page Down */
-    0,	/* Insert Key */
-    0,	/* Delete Key */
-    0,   0,   0,
-    0,	/* F11 Key */
-    0,	/* F12 Key */
-    0,	/* All other keys are undefined */
-};
+unsigned char scancode []={'\0', '\0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\0', '\0',
+	 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\'', '\0', 'a', 's',
+	 'd', 'f', 'g', 'h', 'j', 'k', 'l' , ';', '\'', '`', '\0', '\\', 'z', 'x', 'c', 'v',
+	 'b', 'n', 'm',',', '.', '/', '\0', '*', '\0', ' ', '\0'};
 
+/*
+ * kb_init
+ *   DESCRIPTION: enables IRQ line 1 and writes keyboard handler into IDT table.
+ *   INPUTS: void
+ *   OUTPUTS: writes handler into IDT table.
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: none
+ */
 void kb_init(void){
     enable_irq(1); // the keyboard interrupt
-    set_IDT_wrapper(SOFT_INT_START + 1, get_char);
+    set_IDT_wrapper(SOFT_INT_START + 1, get_char); //add to IDT table at pos 33
 }
 
-
-
-char getScancode() {
-    char c = 0 ;
+/*
+ * getScancode
+ *   DESCRIPTION: Recieves byte from keyboard port and returns it if not 0.
+ *   INPUTS: void
+ *   OUTPUTS: none
+ *   RETURN VALUE: char to write to screen
+ *   SIDE EFFECTS: none
+ */
+unsigned char getScancode(void) {
+    unsigned char c = 0;
     do {
-        if (inb(0x60) != c ) {
-            c = inb(0x60);
-            if (c>0) return c;
+        if (inb(KEYBOARD_PORT) != c ) { //if value of keyboard port is not 0
+            c = inb(KEYBOARD_PORT); //get char and save
+            if (c>0) return c; // if character is not 0, return it.
         }
-    } while(1);
+    } while(1); //we continue checking port until we have a non-zero char.
 }
 
-void get_char() {
-    // we have to use this somewhere to print to the screen.
-    // outb smthing
-
-    send_eoi(1);
-    putc(scancode[getScancode() + 1]);
+/*
+ * get_char
+ *   DESCRIPTION: calls getScancode and prints its return value onto screen.
+ *   INPUTS: void
+ *   OUTPUTS: puts char onto screen
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: none
+ */
+void get_char(void) {
+    putc(scancode[getScancode()]); //get character to print and putc it.
+	send_eoi(1); //signal that interrupt is complete.
 }

@@ -48,7 +48,8 @@ void enablePaging() {
  * 0 - P: Presence of the page (1: Present, 0: Page is swapped out)
  */
 
-// TODO Sean: Clean up this code and add comments
+
+/*TODO Sean: Clean up this code and add comments*/
 void paging_init() {
     unsigned int i;
     // Step 1: Page directory
