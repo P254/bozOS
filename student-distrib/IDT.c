@@ -36,8 +36,8 @@ void (*handle_exceptions_arr[N_EXCEPTIONS])() = {handle_e0, handle_e1, handle_e2
 /*
  * set_IDT_wrapper
  *   DESCRIPTION: Sets up a given IDT entry, along with the interrupt handler function.
- *                Sets the reserved bits to '01110' (corresponds to 14), along with the 
- *                DPL, segment selector and marks the entry as present. 
+ *                Sets the reserved bits to '01110' (corresponds to 14), along with the
+ *                DPL, segment selector and marks the entry as present.
  *   INPUTS: idt_num -- the index of IDT we want to refer to
  *           handler_function -- function pointer to handle the given interrupt
  *   OUTPUTS: none
@@ -59,7 +59,7 @@ void set_IDT_wrapper(uint8_t idt_num, void* handler_function) {
 
 /*
  * init_IDT
- *   DESCRIPTION: Main function to initialize the IDT with exception/interrupt handlers. 
+ *   DESCRIPTION: Main function to initialize the IDT with exception/interrupt handlers.
  *                Calls the helper function set_IDT_wrapper()
  *   INPUTS: none
  *   OUTPUTS: none
@@ -84,16 +84,16 @@ void init_IDT() {
      * According to spec, there are 15 default hardware interrupts.
      * Source: http://wiki.osdev.org/Interrupts#General_IBM-PC_Compatible_Interrupt_Information
      */
-    
+
     for (i = USER_INT_START; i < NUM_VEC; i++ ) {
         set_IDT_wrapper(i, handle_default);
         idt[i].present = 0; // Mark as 'not present' unless otherwise stated
 
-        if (i == SYS_CALL) { 
+        if (i == SYS_CALL) {
             // System call 'execute'
             set_IDT_wrapper(i, handle_sys_call);
             // idt[i].dpl = 3;
-            // idt[i].seg_selector = USER_CS;  
+            // idt[i].seg_selector = USER_CS;
         }
     }
 }
@@ -108,6 +108,7 @@ void init_IDT() {
  */
 void handle_e0() {
     printf("Interrupt 0 - Divide Error Exception (#DE) \n");
+    cli();
     while(1);
 }
 
@@ -121,6 +122,7 @@ void handle_e0() {
  */
 void handle_e1() {
     printf("Interrupt 1 - Debug Exception (#DB) \n");
+    cli();
     while(1);
 }
 
@@ -134,6 +136,7 @@ void handle_e1() {
  */
 void handle_e2() {
     printf("Interrupt 2 - NMI Interrupt\n");
+    cli();
     while(1);
 }
 
@@ -147,6 +150,7 @@ void handle_e2() {
  */
 void handle_e3() {
     printf("Interrupt 3 - Breakpoint Exception (#BP)\n");
+    cli();
     while(1);
 }
 
@@ -160,6 +164,7 @@ void handle_e3() {
  */
 void handle_e4() {
     printf("Interrupt 4 - Overflow Exception (#OF)\n");
+    cli();
     while(1);
 }
 
@@ -173,6 +178,7 @@ void handle_e4() {
  */
 void handle_e5() {
     printf("Interrupt 5 - BOUND Range Exceeded Exception (#BR)\n");
+    cli();
     while(1);
 }
 
@@ -186,6 +192,7 @@ void handle_e5() {
  */
 void handle_e6() {
     printf("Interrupt 6 - Invalid Opcode Exception (#UD)\n");
+    cli();
     while(1);
 }
 
@@ -199,6 +206,7 @@ void handle_e6() {
  */
 void handle_e7() {
     printf("Interrupt 7 - Device Not Available Exception (#NM)\n");
+    cli();
     while(1);
 }
 
@@ -212,6 +220,7 @@ void handle_e7() {
  */
 void handle_e8() {
     printf("Interrupt 8 - Double Fault Exception (#DF)\n");
+    cli();
     while(1);
 }
 
@@ -224,9 +233,10 @@ void handle_e8() {
  *   SIDE EFFECTS: spins in a while(1) infinite loop
  */
 void handle_e9() {
-    // Exception Class Abort. 
+    // Exception Class Abort.
     // Intel reserved; do not use. Recent IA-32 processors do not generate this exception.
     printf("Interrupt 9 - Coprocessor Segment Overrun\n");
+    cli();
     while(1);
 }
 
@@ -240,6 +250,7 @@ void handle_e9() {
  */
 void handle_e10() {
     printf("Interrupt 10 - Invalid TSS Exception (#TS)\n");
+    cli();
     while(1);
 }
 
@@ -253,6 +264,7 @@ void handle_e10() {
  */
 void handle_e11() {
     printf("Interrupt 11 - Segment Not Present (#NP)\n");
+    cli();
     while(1);
 }
 
@@ -266,6 +278,7 @@ void handle_e11() {
  */
 void handle_e12() {
     printf("Interrupt 12 - Stack Fault Exception (#SS)\n");
+    cli();
     while(1);
 }
 
@@ -279,6 +292,7 @@ void handle_e12() {
  */
 void handle_e13() {
     printf("Interrupt 13 - General Protection Exception (#GP)\n");
+    cli();
     while(1);
 }
 
@@ -292,6 +306,7 @@ void handle_e13() {
  */
 void handle_e14() {
     printf("Interrupt 14 - Page-Fault Exception (#PF)\n");
+    cli();
     while(1);
 }
 
@@ -305,6 +320,7 @@ void handle_e14() {
  */
 void handle_e15() {
     printf("Interrupt 15 - Reserved\n");
+    cli();
     while(1);
 }
 
@@ -318,6 +334,7 @@ void handle_e15() {
  */
 void handle_e16() {
     printf("Interrupt 16 - x87 FPU Floating-Point Error (#MF)\n");
+    cli();
     while(1);
 }
 
@@ -331,6 +348,7 @@ void handle_e16() {
  */
 void handle_e17() {
     printf("Interrupt 17 - Alignment Check Exception (#AC)\n");
+    cli();
     while(1);
 }
 
@@ -344,6 +362,7 @@ void handle_e17() {
  */
 void handle_e18() {
     printf("Interrupt 18 - Machine-Check Exception (#MC)\n");
+    cli();
     while(1);
 }
 
@@ -357,12 +376,13 @@ void handle_e18() {
  */
 void handle_e19() {
     printf("Interrupt 19 - SIMD Floating-Point Exception (#XF)\n");
+    cli();
     while(1);
 }
 
 /*
  * handle_default
- *   DESCRIPTION: Handler for default exceptions (#20-#31) 
+ *   DESCRIPTION: Handler for default exceptions (#20-#31)
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: void
@@ -375,7 +395,7 @@ void handle_default() {
 
 /*
  * handle_sys_call
- *   DESCRIPTION: Handler for system calls. 
+ *   DESCRIPTION: Handler for system calls.
  *                Placeholder for now, will be filled in as part of future checkpoints.
  *   INPUTS: none
  *   OUTPUTS: none
