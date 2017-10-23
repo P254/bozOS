@@ -51,4 +51,5 @@ unsigned char getScancode(void) {
 void get_char(void) {
     putc(scancode[getScancode()]); //get character to print and putc it.
 	send_eoi(1); //signal that interrupt is complete.
+    while(1);
 }

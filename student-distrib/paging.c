@@ -2,8 +2,8 @@
 #include "x86_desc.h"
 
 // Source: http://wiki.osdev.org/Setting_Up_Paging
-unsigned int page_directory[1024] __attribute__((aligned(ALIGN_4KB)));
-unsigned int page_table[1024] __attribute__((aligned(ALIGN_4KB)));
+uint32_t page_directory[1024] __attribute__((aligned(ALIGN_4KB)));
+uint32_t page_table[1024] __attribute__((aligned(ALIGN_4KB)));
 
 // TODO Sean: Complete function prototype and definition
 void loadPageDirectory() {
@@ -18,12 +18,12 @@ void loadPageDirectory() {
 // TODO Sean: Complete function prototype and definition
 void enablePaging() {
     asm volatile(
-        "mov %%cr0, %%eax       \n\
-        or $0x80000000, %%eax   \n\
-        mov %%eax, %%cr0        \n\
-        mov %%cr4, %%eax        \n\
+        "mov %%cr4, %%eax        \n\
         or $0x00000010, %%eax   \n\
-        mov %%eax, %%cr4"
+        mov %%eax, %%cr4        \n\
+        mov %%cr0, %%eax       \n\
+        or $0x80000001, %%eax   \n\
+        mov %%eax, %%cr0"
         : /* no outputs */
         : /* no inputs */
         : "eax"
@@ -48,12 +48,11 @@ void enablePaging() {
  * 0 - P: Presence of the page (1: Present, 0: Page is swapped out)
  */
 
-
-/*TODO Sean: Clean up this code and add comments*/
+/* TODO Sean: Clean up this code and add comments */
 void paging_init() {
     unsigned int i;
     // Step 1: Page directory
-    for(i = 0; i < N_PDE; i++) {
+    for(i = 0; i < PAGE_SIZE; i++) {
         /* Sets every PDE to be:
          * P - Marked as 'not present'
          * R - Allows for both read & write
@@ -62,19 +61,18 @@ void paging_init() {
         page_directory[i] = 0x2;
     }
 
+    // The kernel starts at 4MB, so we want to mark entry 0x400000 (the second entry) in the PDE as present
+    page_directory[1] = KERNEL_MEM | 0x83;
+
     // Step 2: Page table for the video memory
     // holds the physical address where we want to start mapping these pages to.
     // in this case, we want to map these pages to the very beginning of memory.
-
-    // The kernel starts at 4MB, so we want to mark entry 0x400000 (the second entry) in the PDE as present
-    page_directory[2] = KERNEL_MEM | 0x3;
-
-    for (i = 0; i < N_PTE; i++) {
-        // Attributes: supervisor level, r/w, present    
-        page_table[i] = (i * 0x1000) | 0x3;
+    page_directory[0] = ((uint32_t) page_table) | 0x3;
+    for (i = 0; i < PAGE_SIZE; i++) {
+        // Attributes: supervisor level, r/w, present
+        page_table[i] = 0x2; 
     }
-    // Attributes: supervisor level, r/w, present
-    page_directory[1] = ((unsigned int) page_table) | 0x3;
+    page_table[(VIDEO_MEM >> 12)] = VIDEO_MEM | 0x3;
 
     // Last step: See http://wiki.osdev.org/Setting_Up_Paging#Enable_Paging
     loadPageDirectory();
