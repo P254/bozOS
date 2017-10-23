@@ -164,10 +164,7 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Run tests -- comment-out line to disable tests */
     // launch_tests();
 #endif
-
-
     /* Execute the first program ("shell") ... */
-    // while(1);
     // asm("int $0x80"); // --> Calling an interrupt at memory location 0x80
 
     /* Spin (nicely, so we don't chew up cycles) */

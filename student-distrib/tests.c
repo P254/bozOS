@@ -50,6 +50,12 @@ int div0_test() {
 	return 1;
 }
 
+int pagefault_test() {
+    int* x = NULL;
+    int y = *x;
+    return 1;
+}
+
 // add more tests here
 
 /* Checkpoint 2 tests */
@@ -63,4 +69,5 @@ void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
 	// launch your tests here
 	TEST_OUTPUT("exception_test", div0_test());
+	TEST_OUTPUT("pagefault_test", pagefault_test());
 }
