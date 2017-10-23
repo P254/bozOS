@@ -11,6 +11,8 @@
 #define RTC_REG 0x70
 #define RTC_IRQ_ADDR 8
 #define BIT_6_SWITCH 0x40
+#define UPPER_MASK 0xF0
+#define MAX_RATE 15
 
 /*forward declarations*/
 void rtc_init(void);
