@@ -44,4 +44,5 @@ void rtc_handler(void) {
     send_eoi(RTC_IRQ_ADDR); //end 8th IRQ
     outb(REG_C, RTC_REG); // select register C
     inb(RTC_REG+1); // just throw away contents, we must do this otherwise IRQ8 will never be called again.
+    while(1);
 }
