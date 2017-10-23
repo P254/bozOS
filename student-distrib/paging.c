@@ -1,10 +1,8 @@
 #include "paging.h"
-#include "x86_desc.h"
+// #include "x86_desc.h"
 
 // Source: http://wiki.osdev.org/Setting_Up_Paging
 /* Instantiation of our page directory and page table */
-uint32_t page_directory[PAGE_SIZE] __attribute__((aligned(ALIGN_4KB)));
-uint32_t page_table[PAGE_SIZE] __attribute__((aligned(ALIGN_4KB)));
 
 /* The PDE look like this:
  *
