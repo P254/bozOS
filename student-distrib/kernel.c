@@ -143,11 +143,11 @@ void entry(unsigned long magic, unsigned long addr) {
         ltr(KERNEL_TSS);
     }
 
-    /* Init the PIC */
-    i8259_init();
-    kb_init();
-    rtc_init();
-    paging_init();
+
+    i8259_init(); /* Init the PIC */
+    kb_init(); /* Init the keyboard */
+    rtc_init(); /* Init the RTC */
+    paging_init(); /* Init the paging */
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */

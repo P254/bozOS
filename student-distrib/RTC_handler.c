@@ -40,7 +40,7 @@ void rtc_init(void){
  *   SIDE EFFECTS: none
  */
 void rtc_handler(void) {
-    // test_interrupts(); //we must prove this function is being called.
+    //test_interrupts(); //we must prove this function is being called.
     send_eoi(RTC_IRQ_ADDR); //end 8th IRQ
     outb(REG_C, RTC_REG); // select register C
     inb(RTC_REG+1); // just throw away contents, we must do this otherwise IRQ8 will never be called again.
