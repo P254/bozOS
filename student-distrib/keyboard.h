@@ -9,5 +9,7 @@
 
 /*Forward Declarations*/
 void kb_init(void);
-unsigned char getScancode(void);
+char getScancode(void);
 void get_char(void);
+
+extern void keyboard_handler();
