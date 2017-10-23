@@ -147,7 +147,7 @@ void entry(unsigned long magic, unsigned long addr) {
     i8259_init();
     kb_init();
     rtc_init();
-    // paging_init();
+    paging_init();
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
