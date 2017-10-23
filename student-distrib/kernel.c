@@ -23,7 +23,7 @@
    pointed by ADDR. */
 void entry(unsigned long magic, unsigned long addr) {
 
-    init_idt_exceptions();
+    init_IDT();
 
     multiboot_info_t *mbi;
 
