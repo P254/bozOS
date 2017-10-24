@@ -56,7 +56,7 @@ unsigned char scancode[KB_SIZE] =
  */
 void kb_init(void){
     enable_irq(KB_IRQ); // the keyboard interrupt
-    set_IDT_wrapper(SOFT_INT_START + 1, get_char);
+    set_IDT_wrapper(SOFT_INT_START + 1, keyboard_handler_asm);
 }
 
 

@@ -6,32 +6,8 @@
  * Source: http://www.osdever.net/bkerndev/Docs/isrs.htm
  */
 
-/* Exception handler prototype */
-void handle_e0();
-void handle_e1();
-void handle_e2();
-void handle_e3();
-void handle_e4();
-void handle_e5();
-void handle_e6();
-void handle_e7();
-void handle_e8();
-void handle_e9();
-void handle_e10();
-void handle_e11();
-void handle_e12();
-void handle_e13();
-void handle_e14();
-void handle_e15();
-void handle_e16();
-void handle_e17();
-void handle_e18();
-void handle_e19();
-void handle_sys_call();
-void handle_default();
-
 /* Function pointer array for exceptions */
-void (*handle_exceptions_arr[N_EXCEPTIONS])() = {handle_e0, handle_e1, handle_e2, handle_e3, handle_e4, handle_e5, handle_e6, handle_e7, handle_e8, handle_e9, handle_e10, handle_e11, handle_e12, handle_e13, handle_e14, handle_e15, handle_e16, handle_e17, handle_e18, handle_e19};
+void (*handle_exceptions_arr[N_EXCEPTIONS])() = {handle_e0_asm, handle_e1_asm, handle_e2_asm, handle_e3_asm, handle_e4_asm, handle_e5_asm, handle_e6_asm, handle_e7_asm, handle_e8_asm, handle_e9_asm, handle_e10_asm, handle_e11_asm, handle_e12_asm, handle_e13_asm, handle_e14_asm, handle_e15_asm, handle_e16_asm, handle_e17_asm, handle_e18_asm, handle_e19_asm};
 
 /*
  * set_IDT_wrapper
