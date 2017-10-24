@@ -29,6 +29,15 @@
 
 /* Externally-visible functions */
 
+/* Other constants */
+#define SOFT_INT_START 32
+
+/*Other magic numbers*/
+#define MASK 0xFF
+#define MAX_IRQ 15
+#define MIN_IRQ 0
+#define MAX_MASTER_IRQ 8
+
 /* Initialize both PICs */
 void i8259_init(void);
 /* Enable (unmask) the specified IRQ */

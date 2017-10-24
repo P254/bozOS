@@ -6,8 +6,12 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "keyboard.h"
+#include "RTC_handler.h"
 #include "debug.h"
 #include "tests.h"
+#include "IDT.h"
+#include "paging.h"
 
 #define RUN_TESTS
 
@@ -18,6 +22,8 @@
 /* Check if MAGIC is valid and print the Multiboot information structure
    pointed by ADDR. */
 void entry(unsigned long magic, unsigned long addr) {
+
+    init_IDT();
 
     multiboot_info_t *mbi;
 
@@ -128,6 +134,7 @@ void entry(unsigned long magic, unsigned long addr) {
 
         SET_TSS_PARAMS(the_tss_desc, &tss, tss_size);
 
+
         tss_desc_ptr = the_tss_desc;
 
         tss.ldt_segment_selector = KERNEL_LDT;
@@ -136,8 +143,11 @@ void entry(unsigned long magic, unsigned long addr) {
         ltr(KERNEL_TSS);
     }
 
-    /* Init the PIC */
-    i8259_init();
+
+    i8259_init(); /* Init the PIC */
+    kb_init(); /* Init the keyboard */
+    rtc_init(); /* Init the RTC */
+    paging_init(); /* Init the paging */
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
@@ -146,14 +156,16 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Do not enable the following until after you have set up your
      * IDT correctly otherwise QEMU will triple fault and simple close
      * without showing you any output */
-    /*printf("Enabling Interrupts\n");
-    sti();*/
+
+     printf("Enabling Interrupts\n");
+     sti();
 
 #ifdef RUN_TESTS
-    /* Run tests */
-    launch_tests();
+    /* Run tests -- comment-out line to disable tests */
+     launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
+    //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

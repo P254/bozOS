@@ -25,6 +25,10 @@ _start:
 
 continue:
     # Load the GDT
+    # Probably need to use the LGDT instruction here, with x86_desc_t as the argument
+    # Look at x86_desc.S for the addresses
+    lgdt gdt_desc
+    lidt idt_desc_ptr
 
     # Load CS with the new descriptor value
     ljmp    $KERNEL_CS, $keep_going
@@ -35,11 +39,11 @@ keep_going:
 
     # Set up the rest of the segment selector registers
     movw    $KERNEL_DS, %cx
-    movw    %cx, %ss
-    movw    %cx, %ds
-    movw    %cx, %es
-    movw    %cx, %fs
-    movw    %cx, %gs
+    movw    %cx, %ss # Code-segment
+    movw    %cx, %ds # Data-segment
+    movw    %cx, %es # Additional data-segment register
+    movw    %cx, %fs # Additional data-segment register
+    movw    %cx, %gs # Additional data-segment register
 
     # Push the parameters that entry() expects (see kernel.c):
     # eax = multiboot magic
