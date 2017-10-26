@@ -1,11 +1,11 @@
-// http://wiki.osdev.org/PS/2_Keyboard
+// References are listed in keyboard.h
 #include "keyboard.h"
 #include "lib.h"
 #include "IDT.h"
 #include "i8259.h"
 #include "x86_desc.h"
-// scancode taken from osdever.com
 
+/* Scancodes taken from osdever.com*/
 unsigned char scancode[KB_SIZE] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
@@ -46,6 +46,7 @@ unsigned char scancode[KB_SIZE] =
     0,	/* All other keys are undefined */
 };
 
+
 /*
  * kb_init
  *   DESCRIPTION: Main function that initializes the keyboard interrupt. 
@@ -69,13 +70,21 @@ void kb_init(void){
  *   SIDE EFFECTS: none
  */
 char getScanCode() {
-    char c = 0 ;
-    do {
-        if (inb(KEYBOARD_PORT) != c ) {
-            c = inb(KEYBOARD_PORT);
-            if (c>0) return c;
-        }
-    } while(1);
+    // char c = 0 ;
+    // do {
+    //     if (inb(KB_DATA_PORT) != c ) {
+    //         c = inb(KB_DATA_PORT);
+    //         if (c>0) return c;
+    //     }
+    // } while(1);
+    char code;
+    // cli();
+    code = inb(KB_DATA_PORT);
+    // val =  inb(0x61);       // Get keyboard acknowledge
+    // outb(0x61, val | 0x80); // Disable bit 7
+    // outb(0x61, val);  
+    // sti();
+    return code;
 }
 
 /*
@@ -89,7 +98,10 @@ char getScanCode() {
 void get_char() {
     // we have to use this somewhere to print to the screen.
     // outb smthing
-    send_eoi(1);
-    putc(scancode[(int)getScanCode()]);
-    while(1);
+    
+    char c = getScanCode();
+    char d = inb(0x64);
+    printf("c");
+    send_eoi(KB_IRQ);
+    asm("hlt");
 }
