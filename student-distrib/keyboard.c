@@ -5,6 +5,10 @@
 #include "i8259.h"
 #include "x86_desc.h"
 
+// Text buffer that holds whatever we've typed so far
+static unsigned char text_buf[KB_SIZE];
+static uint8_t text_idx = 0; // Pointer (index) for text buffer
+
 /* Scancodes taken from osdever.com*/
 unsigned char scancode[KB_SIZE] =
 {
@@ -63,7 +67,7 @@ void kb_init(void){
 
 /*
  * getScanCode
- *   DESCRIPTION: Grabs the scancode from the keyboard and returns the code if it is non-zero.
+ *   DESCRIPTION: Grabs the scancode from the keyboard and ret the code if it is non-zero.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: char -- the character scanned in from the keyboard
@@ -78,12 +82,7 @@ char getScanCode() {
     //     }
     // } while(1);
     char code;
-    // cli();
     code = inb(KB_DATA_PORT);
-    // val =  inb(0x61);       // Get keyboard acknowledge
-    // outb(0x61, val | 0x80); // Disable bit 7
-    // outb(0x61, val);  
-    // sti();
     return code;
 }
 
@@ -97,11 +96,59 @@ char getScanCode() {
  */
 void get_char() {
     // we have to use this somewhere to print to the screen.
-    // outb smthing
-    
-    char c = getScanCode();
-    char d = inb(0x64);
-    printf("c");
     send_eoi(KB_IRQ);
+    char c = inb(KB_DATA_PORT); // This will be replaced by Abhishek's function
+    if (scancode[(int)c] == ' ') {
+        uint8_t i;
+        for (i = 0; i < 128; i++) {
+            add_char_to_buf((unsigned char) i%26 + 0x41);
+        }
+        // print_buf();
+    } else if (scancode[(int)c] == '\b') { // Check for backspace
+        delete_char_from_buf();
+        // print_buf();
+    }
     asm("hlt");
 }
+
+// TODO Sean: Add function definition and comments
+// Prints a string from the text buffer to the screen
+void print_buf() {
+    int x = get_screen_x();
+    int y = get_screen_y();
+    char* video_mem = (char *) VIDEO; 
+
+    uint8_t i;
+    for (i = 0; i < text_idx; i++) {
+        if (i == NUM_COLS) {
+            y++;
+        }
+        
+        // Trying to write my own printf function here
+        *(uint8_t *)(video_mem + ((NUM_COLS * y + x) << 1)) = text_buf[i];
+        x++;
+        x %= NUM_COLS;
+        y = (y + (x / NUM_COLS)) % NUM_ROWS;
+    }
+}
+
+// TODO Sean: Add function definition and comments
+// Adds a character to the buffer when any alphanumeric key is pressed
+void add_char_to_buf(unsigned char c) {
+    // TODO Sean: Check for text buffer overflow
+    if (text_idx < KB_SIZE) {
+        text_buf[text_idx] = c;
+        text_idx++;
+        print_buf();
+    }
+}
+
+// TODO Sean: Add function definition and comments
+// Deletes a character from the buffer when 'backspace' key is pressed
+void delete_char_from_buf() {
+    if (text_idx > 0) {
+        text_idx--;
+        print_buf();
+    }
+}
+

@@ -474,3 +474,16 @@ void test_interrupts(void) {
         video_mem[i << 1]++;
     }
 }
+
+
+// TODO Sean: Add function definition and comments
+// Returns the value of screen_x
+int get_screen_x() {
+    return screen_x;
+}
+
+// TODO Sean: Add function definition and comments
+// Returns the value of screen_x
+int get_screen_y() {
+    return screen_y;
+}
