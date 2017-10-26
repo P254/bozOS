@@ -6,8 +6,12 @@
 
 /*Magic Numbers*/
 #define KEYBOARD_PORT 0x60
+#define KB_SIZE 128
+#define KB_IRQ 1
 
 /*Forward Declarations*/
 void kb_init(void);
-unsigned char getScancode(void);
+char getScanCode(void);
 void get_char(void);
+
+extern void keyboard_handler_asm();
