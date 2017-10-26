@@ -33,7 +33,7 @@ keyboard_handler_asm:
     pushl %eax  # Callee-save
     pushl %ecx
     pushl %edx
-    call get_char # Calling interrupt handler defined in C
+    call getScanCode # Calling interrupt handler defined in C
     popl %edx # Callee-restore
     popl %ecx
     popl %eax

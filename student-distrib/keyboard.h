@@ -11,7 +11,7 @@
 
 /*Forward Declarations*/
 void kb_init(void);
-char getScanCode(void);
-void get_char(void);
+void getScanCode(void);
+//void get_char(void);
 
 extern void keyboard_handler_asm();

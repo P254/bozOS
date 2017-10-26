@@ -1,4 +1,4 @@
-.globl keyboard_handler, get_char
+.globl keyboard_handler, getScanCode
 
 
 keyboard_handler:
@@ -6,7 +6,7 @@ keyboard_handler:
     pushl %ecx
     pushl %edx
 
-    call get_char
+    call getScanCode
 
     popl %edx
     popl %ecx

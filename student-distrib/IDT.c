@@ -268,8 +268,8 @@ void handle_e12() {
  */
 void handle_e13() {
     printf("Interrupt 13 - General Protection Exception (#GP)\n");
-    cli();
-    asm("hlt");
+  //  cli();
+  //  asm("hlt");
 }
 
 /*
@@ -282,8 +282,8 @@ void handle_e13() {
  */
 void handle_e14() {
     printf("Interrupt 14 - Page-Fault Exception (#PF)\n");
-    cli();
-    asm("hlt");
+    //cli();
+    //asm("hlt");
 }
 
 /*
