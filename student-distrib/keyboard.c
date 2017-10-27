@@ -60,6 +60,7 @@ unsigned char scancode[KB_SIZE] =
  *   SIDE EFFECTS: modifies the KB entry in the IDT
  */
 void kb_init(void){
+    // TODO: Add macro for  KB_IDT_ENTRY
     enable_irq(KB_IRQ); // the keyboard interrupt
     set_IDT_wrapper(SOFT_INT_START + 1, keyboard_handler_asm);
 }
@@ -97,18 +98,20 @@ char getScanCode() {
 void get_char() {
     // we have to use this somewhere to print to the screen.
     send_eoi(KB_IRQ);
-    char c = inb(KB_DATA_PORT); // This will be replaced by Abhishek's function
-    if (scancode[(int)c] == ' ') {
-        uint8_t i;
-        for (i = 0; i < 128; i++) {
-            add_char_to_buf((unsigned char) i%26 + 0x41);
-        }
-        // print_buf();
-    } else if (scancode[(int)c] == '\b') { // Check for backspace
-        delete_char_from_buf();
-        // print_buf();
-    }
-    asm("hlt");
+    printf("Keyboard interrupt.\n");
+    // unsigned int c = (unsigned int) getScanCode(); // This will be replaced by Abhishek's function
+    // if (scancode[c] == ' ') {
+    //     uint8_t i;
+    //     for (i = 0; i < 150; i++) {
+    //         add_char_to_buf((unsigned char) i%26 + 0x41);
+    //     }
+    //     // print_buf();
+    // }
+    //  else if (scancode[c] == '\b') { // Check for backspace
+    //     delete_char_from_buf();
+    //     // print_buf();
+    // }
+    // asm("hlt");
 }
 
 // TODO Sean: Add function definition and comments
@@ -139,7 +142,7 @@ void add_char_to_buf(unsigned char c) {
     if (text_idx < KB_SIZE) {
         text_buf[text_idx] = c;
         text_idx++;
-        print_buf();
+        // print_buf();
     }
 }
 

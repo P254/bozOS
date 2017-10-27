@@ -30,13 +30,15 @@
 #    RETURN : none
 #    SIDE EFFECTS : none
 keyboard_handler_asm:
-    pushl %eax  # Callee-save
-    pushl %ecx
-    pushl %edx
+    # pushl %eax  # Callee-save
+    # pushl %ecx
+    # pushl %edx
+    pushal
     call get_char # Calling interrupt handler defined in C
-    popl %edx # Callee-restore
-    popl %ecx
-    popl %eax
+    popal
+    # popl %edx # Callee-restore
+    # popl %ecx
+    # popl %eax
     iret # Return control to interrupted program
 
 # rtc_handler_asm
@@ -46,13 +48,15 @@ keyboard_handler_asm:
 #    RETURN : none
 #    SIDE EFFECTS : none
 rtc_handler_asm:
-    pushl %eax  # Callee-save
-    pushl %ecx
-    pushl %edx
+    # pushl %eax  # Callee-save
+    # pushl %ecx
+    # pushl %edx
+    pushal
     call rtc_handler # Calling interrupt handler defined in C
-    popl %edx # Callee-restore
-    popl %ecx
-    popl %eax
+    popal
+    # popl %edx # Callee-restore
+    # popl %ecx
+    # popl %eax
     iret # Return control to interrupted program
 
 # handle_e0_asm
