@@ -11,6 +11,7 @@
 #define KB_CONTROL_REG 0x64
 #define KB_SIZE 128
 #define KB_IRQ 1
+#define KB_IDT_ENTRY (SOFT_INT_START + 1)
 
 #define VIDEO       0xB8000
 #define NUM_COLS    80
@@ -24,6 +25,5 @@ void print_buf(void);
 void add_char_to_buf(unsigned char c);
 void delete_char_from_buf(void);
 
-extern void keyboard_handler_asm();
 extern int get_screen_x();
 extern int get_screen_y();

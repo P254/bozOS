@@ -6,8 +6,7 @@
 #include "x86_desc.h"
 
 // Text buffer that holds whatever we've typed so far
-static unsigned char text_buf[KB_SIZE];
-static uint8_t text_idx = 0; // Pointer (index) for text buffer
+static unsigned char text_buffer[KB_SIZE];
 
 /* Scancodes taken from osdever.com*/
 unsigned char scancode[KB_SIZE] =
@@ -62,7 +61,8 @@ unsigned char scancode[KB_SIZE] =
 void kb_init(void){
     // TODO: Add macro for  KB_IDT_ENTRY
     enable_irq(KB_IRQ); // the keyboard interrupt
-    set_IDT_wrapper(SOFT_INT_START + 1, keyboard_handler_asm);
+    set_IDT_wrapper(KB_IDT_ENTRY, keyboard_handler_asm);
+    text_buffer[0] = '\0';
 }
 
 
@@ -75,13 +75,6 @@ void kb_init(void){
  *   SIDE EFFECTS: none
  */
 char getScanCode() {
-    // char c = 0 ;
-    // do {
-    //     if (inb(KB_DATA_PORT) != c ) {
-    //         c = inb(KB_DATA_PORT);
-    //         if (c>0) return c;
-    //     }
-    // } while(1);
     char code;
     code = inb(KB_DATA_PORT);
     return code;
@@ -98,20 +91,23 @@ char getScanCode() {
 void get_char() {
     // we have to use this somewhere to print to the screen.
     send_eoi(KB_IRQ);
-    printf("Keyboard interrupt.\n");
-    // unsigned int c = (unsigned int) getScanCode(); // This will be replaced by Abhishek's function
-    // if (scancode[c] == ' ') {
-    //     uint8_t i;
-    //     for (i = 0; i < 150; i++) {
-    //         add_char_to_buf((unsigned char) i%26 + 0x41);
-    //     }
-    //     // print_buf();
-    // }
-    //  else if (scancode[c] == '\b') { // Check for backspace
-    //     delete_char_from_buf();
-    //     // print_buf();
-    // }
-    // asm("hlt");
+    unsigned int c = (unsigned int) getScanCode(); // This will be replaced by Abhishek's function
+    if (scancode[c] == '\b') { // Check for backspace
+        delete_char_from_buf();
+        print_buf();
+    }
+    else if (scancode[c] == '\n') { 
+        // Newline character, call printf and clear text buffer
+        printf((int8_t*) text_buffer);
+        putc('\n');
+        text_buffer[0] = '\0';
+    }
+
+    else if (scancode[c] != 0) {
+        add_char_to_buf(scancode[c]);
+        print_buf();
+    }
+    
 }
 
 // TODO Sean: Add function definition and comments
@@ -121,14 +117,34 @@ void print_buf() {
     int y = get_screen_y();
     char* video_mem = (char *) VIDEO; 
 
-    uint8_t i;
-    for (i = 0; i < text_idx; i++) {
-        if (i == NUM_COLS) {
-            y++;
+    uint8_t i, eos = 0; // end-of-string flag 
+    unsigned char char2print;
+    for (i = 0; i < KB_SIZE; i++) {
+        // Sets the eos flag if we have reached the end of the string
+        if (text_buffer[i] == '\0') {
+            eos = 1;
         }
+
+        if (eos) { // Print spaces instead
+            char2print = ' ';
+            // We don't want to print an empty newline if the string has length < 80 
+            if (i == NUM_COLS) break;
+
+        } else {
+            char2print = text_buffer[i];
+            // Print newline while typing
+            if (i == NUM_COLS) y++;
+        }
+
+        // Print newline while typing
+        // if (i == NUM_COLS && eos) {
+        //     i = KB_SIZE;
+        // } else {
+        //     y++;
+        // }
         
         // Trying to write my own printf function here
-        *(uint8_t *)(video_mem + ((NUM_COLS * y + x) << 1)) = text_buf[i];
+        *(uint8_t *)(video_mem + ((NUM_COLS * y + x) << 1)) = char2print;
         x++;
         x %= NUM_COLS;
         y = (y + (x / NUM_COLS)) % NUM_ROWS;
@@ -139,19 +155,19 @@ void print_buf() {
 // Adds a character to the buffer when any alphanumeric key is pressed
 void add_char_to_buf(unsigned char c) {
     // TODO Sean: Check for text buffer overflow
-    if (text_idx < KB_SIZE) {
-        text_buf[text_idx] = c;
-        text_idx++;
-        // print_buf();
+    uint32_t buf_len = strlen((int8_t*) text_buffer); 
+    if (buf_len < KB_SIZE-1) {
+        text_buffer[buf_len] = c;
+        text_buffer[buf_len+1] = '\0';
     }
 }
 
 // TODO Sean: Add function definition and comments
 // Deletes a character from the buffer when 'backspace' key is pressed
 void delete_char_from_buf() {
-    if (text_idx > 0) {
-        text_idx--;
-        print_buf();
+    uint32_t buf_len = strlen((int8_t*) text_buffer); 
+    if (buf_len > 0) {
+        text_buffer[buf_len-1] = '\0';
     }
 }
 
