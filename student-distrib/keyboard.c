@@ -9,12 +9,11 @@
 #define TEST_KB_DRIVER 0
 
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
-static int scroll_flag; // Scroll flag that is held until we hit 'enter'
+//static int scroll_flag; // Scroll flag that is held until we hit 'enter'
 volatile int terminal_read_release;
 volatile int key_status;
 
-unsigned char scanCodeTable[KB_SIZE*3] =
-{
+unsigned char scanCodeTable[KB_SIZE*3] = {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
   '9', '0', '-', '=', '\b', /* Backspace */
   '\t',         /* Tab */
@@ -52,6 +51,63 @@ unsigned char scanCodeTable[KB_SIZE*3] =
     0,  /* F12 Key */
     0,  /* All other keys are undefined */
 
+
+
+
+
+
+    0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */ /*SHIFT TABLE*/
+  '(', ')', '_', '+', '\b', /* Backspace */
+  '\t',         /* Tab */
+  'Q', 'W', 'E', 'R',   /* 19 */
+  'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\n', /* Enter key */
+    0,          /* 29   - Control */
+  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', /* 39 */
+ '\'', '~',   0,        /* Left shift */
+ '\\', 'Z', 'X', 'C', 'V', 'B', 'N',            /* 49 */
+  'M', '<', '>', '?',   0,              /* Right shift */
+  '*',
+    0,  /* Alt */
+  ' ',  /* Space bar */
+    0,  /* Caps lock */
+    0,  /* 59 - F1 key ... > */
+    0,   0,   0,   0,   0,   0,   0,   0,
+    0,  /* < ... F10 */
+    0,  /* 69 - Num lock*/
+    0,  /* Scroll Lock */
+    0,  /* Home key */
+    0,  /* Up Arrow */
+    0,  /* Page Up */
+  '-',
+    0,  /* Left Arrow */
+    0,
+    0,  /* Right Arrow */
+  '+',
+    0,  /* 79 - End key*/
+    0,  /* Down Arrow */
+    0,  /* Page Down */
+    0,  /* Insert Key */
+    0,  /* Delete Key */
+    0,   0,   0,
+    0,  /* F11 Key */
+    0,  /* F12 Key */
+    0,  /* All other keys are undefined */
+
+
+
+
+
+
+    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
+    '9', '0', '-', '=', '\b',   /* Backspace */
+  '\t',         /* Tab */
+  'Q', 'W', 'E', 'R',   /* 19 */
+  'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\n', /* Enter key */
+    0,          /* 29   - Control */
+  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', /* 39 */
+ '\'', '~',   0,        /* Left shift */
+ '\\', 'Z', 'X', 'C', 'V', 'B', 'N',            /* 49 */
+  'M', '
 
 
     0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */ /*SHIFT TABLE*/
@@ -134,7 +190,7 @@ unsigned char scanCodeTable[KB_SIZE*3] =
 
 /*
  * kb_init
- *   DESCRIPTION: Main function that initializes the keyboard interrupt. 
+ *   DESCRIPTION: Main function that initializes the keyboard interrupt.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: void
@@ -159,29 +215,29 @@ void kb_init(void){
 void kb_int_handler() {
     // we have to use this somewhere to print to the screen.
     send_eoi(KB_IRQ);
-    unsigned int c = getScanCode(); 
-    if (scanCodeTable[c] == '\b') { 
+    unsigned int c = getScanCode();
+    if (scanCodeTable[c] == '\b') {
         // Check for backspace
         delCharFrBuf();
     }
-    else if (scanCodeTable[c] == '\n') { 
-        // Newline character: clear text buffer and reset scroll flag
-        // TODO Sean: Fix this
-        printf((int8_t*) kb_buf);
-        putc('\n');
-        kb_buf[0] = '\n';
-        scroll_flag = 0;
-    }
+    // else if (scanCodeTable[c] == '\n') {
+    //     // Newline character: clear text buffer and reset scroll flag
+    //     // TODO Sean: Fix this
+    //     printf((int8_t*) kb_buf);
+    //     putc('\n');
+    //     kb_buf[0] = '\n';
+    //     scroll_flag = 0;
+    // }
 
     else if (scanCodeTable[c] != 0) {
+        // Adds characters, including the line feed '\n' character
         addCharToBuf(scanCodeTable[c]);
     }
-    
 }
 
 /*
  * getScanCode
- *   DESCRIPTION: Grabs the scancode from the keyboard and updates the keyboard buffer. 
+ *   DESCRIPTION: Grabs the scancode from the keyboard and updates the keyboard buffer.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: unsigned int -- index into the scancode table
@@ -257,6 +313,7 @@ unsigned int getScanCode() {
     return 0;
 }
 
+
 /*
  * addCharToBuf
  *   DESCRIPTION: Adds a character to the keyboard buffer
@@ -266,7 +323,7 @@ unsigned int getScanCode() {
  *   SIDE EFFECTS: prints character to the screen and modifies kb_buf accordingly
  */
 void addCharToBuf(unsigned char c) {
-    uint32_t buf_len = strlen((int8_t*) kb_buf); 
+    uint32_t buf_len = strlen((int8_t*) kb_buf);
     if (buf_len < KB_SIZE-1) {
         kb_buf[buf_len] = c;
         kb_buf[buf_len+1] = '\n';
@@ -274,7 +331,7 @@ void addCharToBuf(unsigned char c) {
         /****** TYPING TEST BEGINS HERE *****/
         #if (TEST_KB_DRIVER == 1)
         int add_idx, x, y;
-        char* video_mem = (char *) VIDEO; 
+        char* video_mem = (char *) VIDEO;
         x = getScreenX();
         y = getScreenY();
 
@@ -326,5 +383,21 @@ void delCharFrBuf() {
  */
 int convertToVidIdx(int x, int y, int buf_len) {
     return ((NUM_COLS * y) + x + buf_len);
+}
+
+/*
+ * kb_read_release
+ *   DESCRIPTION: Returns the value of terminal_read_release. For use by terminal driver.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: int -- value of terminal_read_release
+ *   SIDE EFFECTS: none
+ */
+int kb_read_release() {
+    return terminal_read_release;
+}
+
+unsigned char* get_kb_buffer(){
+  return kb_buf;
 }
 

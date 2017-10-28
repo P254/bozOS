@@ -11,7 +11,7 @@
 static int screen_x;
 static int screen_y;
 static char* video_mem = (char *)VIDEO;
-static char* video_mem_r1 = (char *) VIDEO_MEM_ROW1; 
+static char* video_mem_r1 = (char *) VIDEO_MEM_ROW1;
 
 /* void clear(void);
  * Inputs: void
@@ -176,14 +176,14 @@ void putc(uint8_t c) {
         }
         else {
             screen_y++;
-            screen_x = 0;    
+            screen_x = 0;
         }
     } else {
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
 
         // Sean: Check if we have reached the bottom-right corner of the screen out-of-bounds, if yes, perform scrolling
-        if (screen_y == NUM_ROWS-1 && screen_x == NUM_COLS-1) { 
+        if (screen_y == NUM_ROWS-1 && screen_x == NUM_COLS-1) {
             videoScroll();
             screen_x = 0;
             screen_y = NUM_ROWS-1;
@@ -192,7 +192,7 @@ void putc(uint8_t c) {
             screen_x++;
             screen_x %= NUM_COLS;
             screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
-        }       
+        }
     }
 }
 

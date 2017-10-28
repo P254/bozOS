@@ -28,8 +28,8 @@ void set_IDT_wrapper(uint8_t idt_num, void* handler_function) {
     idt[idt_num].reserved1 = 1;
     idt[idt_num].reserved0 = 0;
     idt[idt_num].present = 1;
-    idt[idt_num].dpl = 0;
     idt[idt_num].size = 1;
+    idt[idt_num].dpl = 0;
     idt[idt_num].seg_selector = KERNEL_CS;
 }
 
