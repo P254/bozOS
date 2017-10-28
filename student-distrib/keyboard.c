@@ -226,19 +226,20 @@ int terminal_close(){
 int terminal_read(int fd, unsigned char* buf, int nbytes){
     int counter=0;
     int i=0;
-    while(keyboard_buffer[i]!='\n'){
-        counter++;
-        i++;
-    }
-    int j=0;
-    for(j=0 ; j<i ; j++){
-        buf[j] = keyboard_buffer[j];
-    }
-    for(j=0 ; j<i ; j++){
-        keyboard_buffer[i]=NULL;
-        keyboard_buffer[i] = keyboard_buffer[i-1];
-    }
-    return i;
+   while(keyboard_buffer[i]!='\0'){ // \0 vs \n???
+       counter++;
+       i++;
+   }
+   int j=0;
+   for(j=0 ; j<i ; j++){
+       buf[j] = keyboard_buffer[j];
+   }
+
+   for(j=0 ; j<i ; j++){
+       keyboard_buffer[j]=NULL;
+       keyboard_buffer[j] = keyboard_buffer[j+1];
+   }
+   return i;
 }
 
 int terminal_write(int fd, const unsigned char* buf, int nbytes)
