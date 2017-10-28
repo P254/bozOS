@@ -162,18 +162,19 @@ void entry(unsigned long magic, unsigned long addr) {
      printf("Enabling Interrupts\n");
      sti();
      int i;
-     for (i=0; i<5 ; i++){
-     terminal_write(0,sys_buf,0);
-}
+     for (i=0; i<5 ; i++) {
+        terminal_write(0,sys_buf,0);
+    }
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */
-     launch_tests();
+    //  launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
     //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
 
     /* Spin (nicely, so we don't chew up cycles) */
+    printf("Hello world! This is bozOS.\n");
     //make int x = 1/0;
     asm volatile (".1: hlt; jmp .1;");
 }

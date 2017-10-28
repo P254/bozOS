@@ -58,4 +58,8 @@ extern void handle_e17_asm();
 extern void handle_e18_asm();
 extern void handle_e19_asm();
 
+/* Interrupt linkage prototype */
+extern void rtc_handler_asm();
+extern void keyboard_handler_asm();
+
 #endif /* IDT_H */

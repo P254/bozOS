@@ -177,7 +177,6 @@ void kb_int_handler() {
         // Adds characters, including the line feed '\n' character
         addCharToBuf(scanCodeTable[c]);
     }
-
 }
 
 /*
@@ -191,7 +190,7 @@ void kb_int_handler() {
 unsigned int getScanCode() {
     unsigned char scanCode;
     unsigned int position;
-
+    
     // unsigned int pos = strlen(kb_buf);
     scanCode = inb(KB_DATA_PORT);
 
@@ -217,20 +216,20 @@ unsigned int getScanCode() {
         if (scanCode == 0x2A) { key_status = 0x1; }
         if (scanCode == 0x3A) { key_status ^= 0x10; }
         if (scanCode == 0x1C) { terminal_read_release = 1; }
-
+        
         else if (key_status == 0x0) {
             position = (int) (scanCode);
 
             if (position < 90 && 0 <= position) {
                 return position;
                 // putc(position);
-                // if(pos < KB_SIZE-1) {
-                //     kb_buf[pos] = position;
+                // if(pos < KB_SIZE-1) { 
+                //     kb_buf[pos] = position; 
                 // }
             }
 
         }
-
+        
         else if (key_status == 0x1) {
             position = (int) (scanCode) + 90;
 
@@ -242,7 +241,7 @@ unsigned int getScanCode() {
                 // }
             }
         }
-
+        
         else if (key_status == 0x10) {
             position = (int) (scanCode) + 180;
 
@@ -257,6 +256,7 @@ unsigned int getScanCode() {
     }
     return 0;
 }
+
 
 /*
  * addCharToBuf
@@ -299,7 +299,7 @@ void addCharToBuf(unsigned char c) {
  *   SIDE EFFECTS: removes character from the screen and modifies kb_buf accordingly
  */
 void delCharFrBuf() {
-    uint32_t buf_len = strlen((int8_t*) kb_buf);
+    uint32_t buf_len = strlen((int8_t*) kb_buf); 
     if (buf_len > 0) {
         kb_buf[buf_len-1] = '\n';
 
@@ -344,3 +344,4 @@ int kb_read_release() {
 unsigned char* get_kb_buffer(){
   return kb_buf;
 }
+
