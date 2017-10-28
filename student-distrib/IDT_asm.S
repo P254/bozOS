@@ -1,4 +1,4 @@
-.globl keyboard_handler_asm, get_char
+.globl keyboard_handler_asm, kb_int_handler
 .globl rtc_handler_asm, rtc_handler
 
 .globl handle_e0_asm, handle_e0
@@ -34,7 +34,7 @@ keyboard_handler_asm:
     # pushl %ecx
     # pushl %edx
     pushal
-    call get_char # Calling interrupt handler defined in C
+    call kb_int_handler # Calling interrupt handler defined in C
     popal
     # popl %edx # Callee-restore
     # popl %ecx

@@ -259,7 +259,7 @@ int8_t* strrev(int8_t* s) {
  * Function: return length of string s */
 uint32_t strlen(const int8_t* s) {
     register uint32_t len = 0;
-    while (s[len] != '\0')
+    while (s[len] != '\0' && s[len] != '\n')
         len++;
     return len;
 }

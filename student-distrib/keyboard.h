@@ -19,9 +19,8 @@
 
 /* Forward Declarations */
 void kb_init(void);
-char getScanCode(void);
-void get_char(void);
-void print_buf(void);
+unsigned int getScanCode(void);
+void kb_int_handler(void);
 void addCharToBuf(unsigned char c);
 void delCharFrBuf(void);
 int convertToVidIdx(int x, int y, int buf_len);
