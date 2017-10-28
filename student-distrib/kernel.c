@@ -12,6 +12,7 @@
 #include "tests.h"
 #include "IDT.h"
 #include "paging.h"
+#include "terminal.h"
 
 #define RUN_TESTS
 
@@ -148,7 +149,8 @@ void entry(unsigned long magic, unsigned long addr) {
     kb_init(); /* Init the keyboard */
     rtc_init(); /* Init the RTC */
     paging_init(); /* Init the paging */
-
+    terminal_open();
+    unsigned char sys_buf[128] = {'I', ' ', 'h', 'a', 't', 'e', ' ', 't', 'h', 'i', 's', ' ', 'c', 'l', 'a','s','s', '\n'};
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
 
@@ -159,6 +161,10 @@ void entry(unsigned long magic, unsigned long addr) {
 
      printf("Enabling Interrupts\n");
      sti();
+     int i;
+     for (i=0; i<5 ; i++){
+     terminal_write(0,sys_buf,0);
+}
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */

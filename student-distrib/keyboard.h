@@ -1,25 +1,29 @@
-/* http://www.osdever.net/bkerndev/Docs/keyboard.htm
-*http://minirighi.sourceforge.net/html/keyboard_8c.html
-* http://wiki.osdev.org/%228042%22_PS/2_Controller
-*
-*/
+/* Keyboard / Terminal Driver
+ * Sources:
+ * 1. http://www.osdever.net/bkerndev/Docs/keyboard.htm
+ * 2. http://minirighi.sourceforge.net/html/keyboard_8c.html
+ * 3. http://wiki.osdev.org/%228042%22_PS/2_Controller
+ * 4. http://wiki.osdev.org/PS/2_Keyboard
+ */
 
-#ifndef _KEYBOARD_H
-#define _KEYBOARD_H
-/*Magic Numbers*/
-#define KEYBOARD_PORT 0x60
+/* Magic Numbers */
+#define KB_DATA_PORT 0x60
+#define KB_CONTROL_REG 0x64
 #define KB_SIZE 128
 #define KB_IRQ 1
+#define KB_IDT_ENTRY (SOFT_INT_START + 1)
 
-/*Forward Declarations*/
+#define VIDEO       0xB8000
+#define NUM_COLS    80
+#define NUM_ROWS    25
+
+/* Forward Declarations */
 void kb_init(void);
-void getScanCode(void);
-
+unsigned int getScanCode(void);
+void kb_int_handler(void);
+void addCharToBuf(unsigned char c);
+void delCharFrBuf(void);
+int convertToVidIdx(int x, int y, int buf_len);
+int kb_read_release();
+unsigned char* get_kb_buffer();
 extern void keyboard_handler_asm();
-int terminal_read(int fd, unsigned char* buf, int nbytes);
-int terminal_write(int fd, const unsigned char* buf, int nbytes);
-int terminal_open(void);
-int terminal_close(void);
-
-
-#endif
