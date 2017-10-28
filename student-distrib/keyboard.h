@@ -22,9 +22,6 @@ void kb_init(void);
 char getScanCode(void);
 void get_char(void);
 void print_buf(void);
-void add_char_to_buf(unsigned char c);
-void delete_char_from_buf(void);
-int convert_buf_idx(int x, int y, int buf_len);
-
-extern int get_screen_x();
-extern int get_screen_y();
+void addCharToBuf(unsigned char c);
+void delCharFrBuf(void);
+int convertToVidIdx(int x, int y, int buf_len);

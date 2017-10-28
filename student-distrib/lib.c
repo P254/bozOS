@@ -171,7 +171,7 @@ int32_t puts(int8_t* s) {
 void putc(uint8_t c) {
     if(c == '\n' || c == '\r') {
         if (screen_y == NUM_ROWS-1) {
-            video_scroll();
+            videoScroll();
             screen_x = 0;
         }
         else {
@@ -184,7 +184,7 @@ void putc(uint8_t c) {
 
         // Sean: Check if we have reached the bottom-right corner of the screen out-of-bounds, if yes, perform scrolling
         if (screen_y == NUM_ROWS-1 && screen_x == NUM_COLS-1) { 
-            video_scroll();
+            videoScroll();
             screen_x = 0;
             screen_y = NUM_ROWS-1;
         }
@@ -494,38 +494,38 @@ void test_interrupts(void) {
 /*********** Functions added by Sean begin here ***********/
 
 /*
- * get_screen_x
+ * getScreenX
  *   DESCRIPTION: Returns the value of screen_x. Used by the keyboard driver.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int -- value of screen_x
  *   SIDE EFFECTS: none
  */
-int get_screen_x() {
+int getScreenX() {
     return screen_x;
 }
 
 /*
- * get_screen_y
+ * getScreenY
  *   DESCRIPTION: Returns the value of screen_y. Used by the keyboard driver.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int -- value of screen_y
  *   SIDE EFFECTS: none
  */
-int get_screen_y() {
+int getScreenY() {
     return screen_y;
 }
 
 /*
- * video_scroll
+ * videoScroll
  *   DESCRIPTION: Performs scrolling of the window
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: vooid
  *   SIDE EFFECTS: scrolls the main terminal window by one line
  */
-void video_scroll() {
+void videoScroll() {
     memcpy(video_mem, video_mem_r1, SCROLL_SIZE);
     // Clear the botttommost line
     uint16_t i, vid_idx;

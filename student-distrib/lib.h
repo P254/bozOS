@@ -30,9 +30,9 @@ int8_t* strcpy(int8_t* dest, const int8_t*src);
 int8_t* strncpy(int8_t* dest, const int8_t*src, uint32_t n);
 
 /* Functions added by Sean */
-int get_screen_x(); // Used by terminal driver
-int get_screen_y(); // Used by terminal driver
-void video_scroll(); // Performs scrolling
+int getScreenX(); // Used by terminal driver
+int getScreenY(); // Used by terminal driver
+void videoScroll(); // Performs scrolling
 
 /* Userspace address-check functions */
 int32_t bad_userspace_addr(const void* addr, int32_t len);
