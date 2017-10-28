@@ -6,7 +6,7 @@
 #include "x86_desc.h"
 
 // Text buffer that holds whatever we've typed so far
-static unsigned char text_buffer[KB_SIZE];
+static unsigned char keyboard_buf[KB_SIZE];
 
 /* Scancodes taken from osdever.com*/
 unsigned char scancode[KB_SIZE] =
@@ -62,7 +62,7 @@ void kb_init(void){
     // TODO: Add macro for  KB_IDT_ENTRY
     enable_irq(KB_IRQ); // the keyboard interrupt
     set_IDT_wrapper(KB_IDT_ENTRY, keyboard_handler_asm);
-    text_buffer[0] = '\0';
+    keyboard_buf[0] = '\0';
 }
 
 
@@ -94,80 +94,68 @@ void get_char() {
     unsigned int c = (unsigned int) getScanCode(); // This will be replaced by Abhishek's function
     if (scancode[c] == '\b') { // Check for backspace
         delete_char_from_buf();
-        print_buf();
+        // print_buf();
     }
     else if (scancode[c] == '\n') { 
         // Newline character, call printf and clear text buffer
-        printf((int8_t*) text_buffer);
+        printf((int8_t*) keyboard_buf);
         putc('\n');
-        text_buffer[0] = '\0';
+        keyboard_buf[0] = '\0';
     }
 
     else if (scancode[c] != 0) {
         add_char_to_buf(scancode[c]);
-        print_buf();
+        // print_buf();
     }
     
 }
 
 // TODO Sean: Add function definition and comments
-// Prints a string from the text buffer to the screen
-void print_buf() {
-    int x = get_screen_x();
-    int y = get_screen_y();
-    char* video_mem = (char *) VIDEO; 
-
-    uint8_t i, eos = 0; // end-of-string flag 
-    unsigned char char2print;
-    for (i = 0; i < KB_SIZE; i++) {
-        // Sets the eos flag if we have reached the end of the string
-        if (text_buffer[i] == '\0') {
-            eos = 1;
-        }
-
-        if (eos) { // Print spaces instead
-            char2print = ' ';
-            // We don't want to print an empty newline if the string has length < 80 
-            if (i == NUM_COLS) break;
-
-        } else {
-            char2print = text_buffer[i];
-            // Print newline while typing
-            if (i == NUM_COLS) y++;
-        }
-
-        // Print newline while typing
-        // if (i == NUM_COLS && eos) {
-        //     i = KB_SIZE;
-        // } else {
-        //     y++;
-        // }
-        
-        // Trying to write my own printf function here
-        *(uint8_t *)(video_mem + ((NUM_COLS * y + x) << 1)) = char2print;
-        x++;
-        x %= NUM_COLS;
-        y = (y + (x / NUM_COLS)) % NUM_ROWS;
-    }
-}
-
-// TODO Sean: Add function definition and comments
 // Adds a character to the buffer when any alphanumeric key is pressed
 void add_char_to_buf(unsigned char c) {
-    // TODO Sean: Check for text buffer overflow
-    uint32_t buf_len = strlen((int8_t*) text_buffer); 
+    int add_idx, x, y;
+    char* video_mem = (char *) VIDEO; 
+
+    uint32_t buf_len = strlen((int8_t*) keyboard_buf); 
     if (buf_len < KB_SIZE-1) {
-        text_buffer[buf_len] = c;
-        text_buffer[buf_len+1] = '\0';
+        keyboard_buf[buf_len] = c;
+        keyboard_buf[buf_len+1] = '\0';
+
+        x = get_screen_x();
+        y = get_screen_y();
+
+        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) {
+            video_scroll();
+        }
+        // Calculate the index that we should write the character to
+        add_idx = convert_buf_idx(x, y, buf_len);
+        *(uint8_t *)(video_mem + (add_idx << 1)) = keyboard_buf[buf_len];
     }
 }
 
 // TODO Sean: Add function definition and comments
 // Deletes a character from the buffer when 'backspace' key is pressed
 void delete_char_from_buf() {
-    uint32_t buf_len = strlen((int8_t*) text_buffer); 
+    int erase_idx, x, y;
+    char* video_mem = (char *) VIDEO;
+
+    uint32_t buf_len = strlen((int8_t*) keyboard_buf); 
     if (buf_len > 0) {
-        text_buffer[buf_len-1] = '\0';
+        keyboard_buf[buf_len-1] = '\0';
+
+        x = get_screen_x();
+        y = get_screen_y();
+
+        // Calculate index that we should erase the character from
+        erase_idx = convert_buf_idx(x, y, buf_len) - 1;
+        *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
     }
+}
+
+// TODO Sean: Add function definition and comments
+// Converts a buffer index to the video memory index
+int convert_buf_idx(int x, int y, int buf_len) {
+    int yval = (buf_len >= NUM_COLS-1) ? (y-1) : y;
+    return ((NUM_COLS * yval) + x + buf_len);
 }
 

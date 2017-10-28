@@ -11,6 +11,7 @@
 static int screen_x;
 static int screen_y;
 static char* video_mem = (char *)VIDEO;
+static char* video_mem_r1 = (char *) VIDEO_MEM_ROW1; 
 
 /* void clear(void);
  * Inputs: void
@@ -169,14 +170,29 @@ int32_t puts(int8_t* s) {
  *  Function: Output a character to the console */
 void putc(uint8_t c) {
     if(c == '\n' || c == '\r') {
-        screen_y++;
-        screen_x = 0;
+        if (screen_y == NUM_ROWS-1) {
+            video_scroll();
+            screen_x = 0;
+        }
+        else {
+            screen_y++;
+            screen_x = 0;    
+        }
     } else {
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
-        screen_x++;
-        screen_x %= NUM_COLS;
-        screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+
+        // Sean: Check if we have reached the bottom-right corner of the screen out-of-bounds, if yes, perform scrolling
+        if (screen_y == NUM_ROWS-1 && screen_x == NUM_COLS-1) { 
+            video_scroll();
+            screen_x = 0;
+            screen_y = NUM_ROWS-1;
+        }
+        else {
+            screen_x++;
+            screen_x %= NUM_COLS;
+            screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+        }       
     }
 }
 
@@ -475,15 +491,47 @@ void test_interrupts(void) {
     }
 }
 
+/*********** Functions added by Sean begin here ***********/
 
-// TODO Sean: Add function definition and comments
-// Returns the value of screen_x
+/*
+ * get_screen_x
+ *   DESCRIPTION: Returns the value of screen_x. Used by the keyboard driver.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: int -- value of screen_x
+ *   SIDE EFFECTS: none
+ */
 int get_screen_x() {
     return screen_x;
 }
 
-// TODO Sean: Add function definition and comments
-// Returns the value of screen_x
+/*
+ * get_screen_y
+ *   DESCRIPTION: Returns the value of screen_y. Used by the keyboard driver.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: int -- value of screen_y
+ *   SIDE EFFECTS: none
+ */
 int get_screen_y() {
     return screen_y;
+}
+
+/*
+ * video_scroll
+ *   DESCRIPTION: Performs scrolling of the window
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: vooid
+ *   SIDE EFFECTS: scrolls the main terminal window by one line
+ */
+void video_scroll() {
+    memcpy(video_mem, video_mem_r1, SCROLL_SIZE);
+    // Clear the botttommost line
+    uint16_t i, vid_idx;
+    for (i = 0; i < NUM_COLS; i++) {
+        vid_idx = NUM_COLS*(NUM_ROWS-1) + i;
+        *(uint8_t *)(video_mem + (vid_idx << 1)) = ' ';
+        *(uint8_t *)(video_mem + (vid_idx << 1) + 1) = ATTRIB;
+    }
 }

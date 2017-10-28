@@ -168,6 +168,6 @@ void entry(unsigned long magic, unsigned long addr) {
     //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
 
     /* Spin (nicely, so we don't chew up cycles) */
-    // int x = 1/0;
+    printf("Hello world! This is bozOS.\n");
     asm volatile (".1: hlt; jmp .1;");
 }

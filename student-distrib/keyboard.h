@@ -24,6 +24,7 @@ void get_char(void);
 void print_buf(void);
 void add_char_to_buf(unsigned char c);
 void delete_char_from_buf(void);
+int convert_buf_idx(int x, int y, int buf_len);
 
 extern int get_screen_x();
 extern int get_screen_y();
