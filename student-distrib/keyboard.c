@@ -6,6 +6,7 @@
 #include "x86_desc.h"
 // scancode taken from osdever.com
 int pos = 0;
+volatile int TERMINAL_READ_RELEASE=0;
 unsigned char keyboard_buffer[128];
 volatile int KEY_STATUS = 0;
 unsigned char scancode[KB_SIZE*3] =
@@ -185,6 +186,7 @@ void getScanCode() {
       *  you would add 128 to the scancode when you look for it */
       if(scanCode==0x2A){KEY_STATUS=0x1;}
       if(scanCode==0x3A){KEY_STATUS^=0x10;}
+      if(scanCode==0x1C){TERMINAL_READ_RELEASE=1;}
       else if(KEY_STATUS==0x0){
           position = (int)(scanCode);
           if(position<90 && 0<=position)
@@ -224,22 +226,20 @@ int terminal_close(){
 }
 
 int terminal_read(int fd, unsigned char* buf, int nbytes){
-    int counter=0;
-    int i=0;
-   while(keyboard_buffer[i]!='\0'){ // \0 vs \n???
-       counter++;
-       i++;
-   }
    int j=0;
-   for(j=0 ; j<i ; j++){
+   while(!TERMINAL_READ_RELEASE){}
+   while(curr_char!='\n'){
        buf[j] = keyboard_buffer[j];
+       j++;
    }
+   int i=0;
+   for(i=0 ; i<j ; i++){
+       keyboard_buffer[i]=NULL;
+       keyboard_buffer[i] = keyboard_buffer[i+1];
+   }
+   return j;
 
-   for(j=0 ; j<i ; j++){
-       keyboard_buffer[j]=NULL;
-       keyboard_buffer[j] = keyboard_buffer[j+1];
-   }
-   return i;
+
 }
 
 int terminal_write(int fd, const unsigned char* buf, int nbytes)
