@@ -149,8 +149,7 @@ void entry(unsigned long magic, unsigned long addr) {
     kb_init(); /* Init the keyboard */
     rtc_init(); /* Init the RTC */
     paging_init(); /* Init the paging */
-    terminal_open();
-    unsigned char sys_buf[128] = {'I', ' ', 'h', 'a', 't', 'e', ' ', 't', 'h', 'i', 's', ' ', 'c', 'l', 'a','s','s', '\n'};
+    
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
 
@@ -159,12 +158,8 @@ void entry(unsigned long magic, unsigned long addr) {
      * IDT correctly otherwise QEMU will triple fault and simple close
      * without showing you any output */
 
-     printf("Enabling Interrupts\n");
-     sti();
-     int i;
-     for (i=0; i<5 ; i++) {
-        terminal_write(0,sys_buf,0);
-    }
+    printf("Enabling Interrupts\n");
+    sti();
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */
@@ -173,8 +168,17 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Execute the first program ("shell") ... */
     //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
 
+    // char *sys_buf = "I hate this class \n";
+    // char *sys_buf2 = "Hello world! This is bozOS. I am attempting to write a really long sentence to see if it scrolls/line breaks correctly or not.\n";
+    
+    unsigned char* sys_buf[128];
+
+    terminal_read(0, sys_buf, 128);
+    terminal_write(0, sys_buf, 128);
+    
+    terminal_read(0, sys_buf, 128);
+    terminal_write(0, sys_buf, 128);
+
     /* Spin (nicely, so we don't chew up cycles) */
-    printf("Hello world! This is bozOS.\n");
-    //make int x = 1/0;
     asm volatile (".1: hlt; jmp .1;");
 }

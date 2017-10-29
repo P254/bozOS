@@ -1,45 +1,53 @@
-
 #include "keyboard.h"
 #include "terminal.h"
 #include "x86_desc.h"
 #include "lib.h"
 
-
-int terminal_open(){
+int32_t terminal_open(const uint8_t* filename) {
     return 0;
 }
 
-int terminal_close(){
+int32_t terminal_close(int32_t fd) {
     return 0;
 }
 
-int terminal_read(int fd, unsigned char* buf, int nbytes){
-   int j=0;
-   while(!kb_read_release());
-   unsigned char* kb_buff = get_kb_buffer();
-   while(kb_buff[j]!='\n'){
-       buf[j] = kb_buff[j];
-       j++;
-   }
-   int i=0;
-   for(i=0 ; i<j ; i++){
-       kb_buff[i]='\0';
-       kb_buff[i] = kb_buff[i+1];
-   }
-   return j;
+int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
+    unsigned char* source = get_kb_buffer();
+    unsigned char* dest = (unsigned char*) buf;
 
-}
+    int32_t i, bytes_copied, count=0;
+    int* enter_flag = kb_read_release();
 
-int terminal_write(int fd, const unsigned char* buf, int nbytes)
-{
-    int i;
-    i=0;
-    while(buf[i]!='\n'){
-        putc(buf[i]);
+    while(!(*enter_flag));
+
+    for (i = 0; i < nbytes; i++) {
+        dest[i] = source[i];
+        if (source[i] == '\n') break;
+        else source[i] = '\0'; // Flush-as-you-go
+    }
+
+    *enter_flag = 0; // Reset the keyboard flag
+    bytes_copied = i;
+    i++;
+
+    // Move the KB buffer 
+    while (source[i]!='\0') {
+        source[count] = source[i];
+        source[i] = '\0';
+        count++;
         i++;
     }
-    putc('\n');
-    putc('_');
 
-    return nbytes;
+    return bytes_copied;
+}
+
+int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
+    int i = 0;
+    unsigned char* dest = (unsigned char*) buf;
+    while (i < nbytes){
+        putc(dest[i]);
+        if (dest[i] == '\n' || dest[i] == '\0') return (i+1);
+        i++;
+    }
+    return i;
 }
