@@ -5,22 +5,23 @@
 dentry_t *dentries ; // is this right?
 inode_t *inodes; // is this right?
 bootBlock_t *boot;
-uint32_t * dataBlocks; // Memory location of the data Block
+data_block_t *dataBlocks;
+// uint32_t * dataBlocks; // Memory location of the data Block
 // datablocks array? what type is this? 4kb Blocks?
 // where do they get read from?
 // can we just look at memory locations and increment by 4kB each time?
 // CP 2: No fopen/read dopen/read
 // ls in system calls will help us understand how directory read will be called
 
-// TODO: Figure out how this shit is written in memory
+// this just makes it a bit eaiser for us to setup variables for the other functions. not really needed
 void fs_init(uint32_t start) // this will take in mod_start
 {
   // which syntax here is right lol
   boot = (void *)start;
   dentries = (void*)start + 64;  /*+ 64B?*/ ; // do we need some sort of cast to a dentry_t ?
   inodes =  (void*)start + 4096; /* + next Block. 4kB */ ;  // do we need some soft of cast to inode_t?
-  uint32_t dataBlockOffset = (start + 4);
   dataBlocks = (void*)start + 4096* (boot->inodes+1) ; // our size will be + 1 because we want to account for the bootBlock
+
   // pointer to head of dentries?
   //  pointer to head of boot block
   // pointer to head of inodes
@@ -108,27 +109,21 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length
   int dataEntries = inodes[inode].length /4 ; //because the length in inodes is defined as B whereas each block is 4B
   int bytesRetured = 0;
 
-  printf("inode: %d" , inode);
+  printf("inode: %d \n" , inode);
   printf("n_blocks %d \n" , n_blocks);
-  uint32_t j;
+  int j;
   unsigned char temp;
-  uint32_t* cur_block;
+  data_block_t* cur_block;
   printf("file length %d \n", inodes[inode].length);
   printf("len of datablocks %d ", boot->datablocks);
-  /*TODO: SEAN
-    right now, for some reason, dataBlocks are not being indexed correctly.
-    My thoughts right now are that dataBlock[x] will be in dataBlock + 4096 *x
-    WHERE dataBlock = boot + 4096 * (N + 1)
-    For some reason when messing with the dataBlocks, my dataBlock [2] contains the data of verylarge...txt
-    however, this shouldnt be happening because if we GDB to dentries of the textfile, we get that the inode = 40
-    This inode will then tell us that the dataBlocks that contain the text file contains 9 and something else (call inodes[40])
-    
-   */
-  for (i =0 ; i < boot->datablocks; i++)
+  for (i =0 ; i < 1; i++)
   {
-      if (*(dataBlocks + (4096 * i)) != 0)
+    //   memcpy(cur_block ,&dataBlocks[inodes[inode].block[i]],4096);
+
+        clear();
+      for (j =0 ; j < inodes[inode].length; j++)
       {
-          printf("%d %d \n" , *(dataBlocks + (4096*i)) ,i  );
+        putc(dataBlocks[inodes[inode].block[i]].contents[j]);
       }
   }
   // for (i = 0; i < n_blocks ; i++)
