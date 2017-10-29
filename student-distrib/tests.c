@@ -2,7 +2,7 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "paging.h"
-
+#include "filesystem.h"
 #define PASS 1
 #define FAIL 0
 
@@ -165,6 +165,20 @@ static inline void assertion_failure(){
     return 1;
 }*/
 
+int dentry_by_index_test()
+{
+    dentry_t test_dentry;
+    printf("running test");
+    read_dentry_by_index(6,&test_dentry);
+    return 1;
+}
+int dentry_by_name_test()
+{
+    dentry_t test_dentry;
+    printf("running by name test");
+    read_dentry_by_name("fish",&test_dentry);
+}
+
 // add more tests here
 
 /* Checkpoint 2 tests */
@@ -180,6 +194,8 @@ static inline void assertion_failure(){
  * Coverage: Launches the tests that we wrote before.
  */
 void launch_tests(){
+    dentry_by_index_test();
+    dentry_by_name_test();
 	// launch your tests here
     //TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("divisionby0_test", div0_test());

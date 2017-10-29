@@ -28,25 +28,26 @@ void fs_init(uint32_t start) // this will take in mod_start
 
 }
 
-/*
+
 int32_t fopen(uint8_t* fname)
 {
+  // what am i initializing?
   return -1;
 }
-int32_t fclose(uint8_t* fname)
+/*int32_t fclose(uint8_t* fname)
 {
   return -1;
 }
 int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
 {
   return -1;
-}
+}*/
 int32_t fwrite(void)
 {
   return -1;
 }
 
-
+/*
 int32_t dopen(uint32_t fname, dentry_t* dentry)
 {
   return -1;
@@ -58,7 +59,7 @@ int32_t dread(uint32_t index, dentry_t* dentry)
 int32_t dclose()
 {
   return -1;
-}
+}*/
 int32_t dwrite(void)
 {
   return -1;
@@ -71,23 +72,27 @@ int32_t read_dentry_by_name(const uint8_t* fname, dentry_t* dentry)
   int i;
   for ( i = 0 ; i < 62; i++) // loop through every directory entry
   {
+    printf(dentries[i].fileName); putc('\n');
     // if fname = directory entries string. then call it a day
-    if (strncmp(fname,dentries[i].fileName,32)) // if they are the same we will fill in the dentry with something?
+
+    if (strncmp(fname,dentries[i].fileName,32) == 0) // if they are the same we will fill in the dentry with something?
     {
-      dentry->fileName = dentries[i]->fileName;
-      dentry->inode = dentries[i]->inode;
+      clear();
+      memcpy(dentry,&dentries[i],64);
       return 0;
     }
   }
+  printf("didnt find shit");
   // nothing
   return -1;
 }
 int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry)
 {
+  int i;
+  clear();
   if (dentries[index].fileName != NULL)
   {
-    dentry->fileName = dentries[index]->fileName;
-    dentry->inode = dentries[index]->inode;
+    memcpy(dentry,&dentries[index],64);
     return 0;
   }
   // cant find.
@@ -102,7 +107,7 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length
   int bytesRetured = 0;
   uint8_t * to,from;
   to = buf;
-  from = inode
+  from = inode;
   for (i = 0; i < dataEntries ; i++)
   {
     to=to;
@@ -119,4 +124,4 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length
   return -1;
 }
 
-*/
+
