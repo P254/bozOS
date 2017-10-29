@@ -22,7 +22,7 @@ typedef struct dentry {
 } dentry_t;
 typedef struct inode {
   uint32_t length;  // 4B
-  uint32_t block[1024]; // 4096 B
+  uint32_t block[1023]; // 4096 B
 } inode_t;
 
 // NEED to have memory locations of Boot Block, Inode Begin AND DataBlocks Begin

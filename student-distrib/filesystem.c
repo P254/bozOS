@@ -107,23 +107,17 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length
   int n_blocks = length % 4096 == 0 ? length/4096 : length/4096 + 1; // number of blocks we need to look at!!
   int dataEntries = inodes[inode].length /4 ; //because the length in inodes is defined as B whereas each block is 4B
   int bytesRetured = 0;
-  uint32_t* cur_block;
+ 
   printf("inode: %d" , inode);
   printf("n_blocks %d \n" , n_blocks);
   uint32_t j;
   unsigned char temp;
-  for (i = 0; i < 62 ; i++)
+  uint32_t* cur_block;
+  printf("blocks length %d \n", inodes[inode].length);
+  for (i = 0; i < n_blocks ; i++)
   {
-    if (inodes[i].length != 0)
-    printf("%d %d \n",i,inodes[i].length);
-     /* for ( j = 0 ; j < 80 ; j++)
-      {
-        cur_block = (uint32_t*) inodes[inode].block[i];
-        // temp = (unsigned char) *(cur_block + j);
-        // if (temp != '\0')
-          printf("%d ", (uint32_t) cur_block);
-      }*/
-        
+      cur_block = dataBlocks + 4096*inodes[inode].block[i];
+      putc(*cur_block);    
     // some sort of valid check? 
     // how to add to buffer with offset?
 
