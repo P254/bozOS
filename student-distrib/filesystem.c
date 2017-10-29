@@ -34,11 +34,11 @@ int32_t fopen(uint8_t* fname)
   // what am i initializing?
   return -1;
 }
-/*int32_t fclose(uint8_t* fname)
+int32_t fclose(uint8_t* fname)
 {
   return -1;
 }
-int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
+/*int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
 {
   return -1;
 }*/
@@ -47,19 +47,20 @@ int32_t fwrite(void)
   return -1;
 }
 
-/*
+
 int32_t dopen(uint32_t fname, dentry_t* dentry)
 {
-  return -1;
+  return read_dentry_by_name(fname,dentry);
+  //return -1;
 }
 int32_t dread(uint32_t index, dentry_t* dentry)
 {
-  return -1;
+  return read_dentry_by_index(index,dentry);
 }
 int32_t dclose()
 {
   return -1;
-}*/
+}
 int32_t dwrite(void)
 {
   return -1;
@@ -77,7 +78,7 @@ int32_t read_dentry_by_name(const uint8_t* fname, dentry_t* dentry)
 
     if (strncmp(fname,dentries[i].fileName,32) == 0) // if they are the same we will fill in the dentry with something?
     {
-      clear();
+     clear();
       memcpy(dentry,&dentries[i],64);
       return 0;
     }
@@ -103,14 +104,26 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry)
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length )
 {
   int i;
+  int n_blocks = length % 4096 == 0 ? length/4096 : length/4096 + 1; // number of blocks we need to look at!!
   int dataEntries = inodes[inode].length /4 ; //because the length in inodes is defined as B whereas each block is 4B
   int bytesRetured = 0;
-  uint8_t * to,from;
-  to = buf;
-  from = inode;
-  for (i = 0; i < dataEntries ; i++)
+  uint32_t* cur_block;
+  printf("inode: %d" , inode);
+  printf("n_blocks %d \n" , n_blocks);
+  uint32_t j;
+  unsigned char temp;
+  for (i = 0; i < 62 ; i++)
   {
-    to=to;
+    if (inodes[i].length != 0)
+    printf("%d %d \n",i,inodes[i].length);
+     /* for ( j = 0 ; j < 80 ; j++)
+      {
+        cur_block = (uint32_t*) inodes[inode].block[i];
+        // temp = (unsigned char) *(cur_block + j);
+        // if (temp != '\0')
+          printf("%d ", (uint32_t) cur_block);
+      }*/
+        
     // some sort of valid check? 
     // how to add to buffer with offset?
 
