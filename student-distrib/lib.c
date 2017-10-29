@@ -23,6 +23,8 @@ void clear(void) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
         *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
     }
+    setScreenY(0);
+    setScreenX(0);
 }
 
 /* Standard printf().
@@ -517,6 +519,33 @@ int getScreenX() {
 int getScreenY() {
     return screen_y;
 }
+
+/*
+ * setScreenX
+ *   DESCRIPTION: sets the value of screen_x. Used by the keyboard driver.
+ *   INPUTS: value of screen_x we want to set
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: none
+ */
+void setScreenX(int x) {
+    screen_x = x;
+    return;
+}
+
+/*
+ * setScreenY
+ *   DESCRIPTION: sets the value of screen_y. Used by the keyboard driver.
+ *   INPUTS: value of screen_y we want to set
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: none
+ */
+void setScreenY(int y) {
+  screen_y = y;
+  return;
+}
+
 
 /*
  * videoScroll

@@ -32,6 +32,8 @@ int8_t* strncpy(int8_t* dest, const int8_t*src, uint32_t n);
 /* Functions added by Sean */
 int getScreenX(); // Used by terminal driver
 int getScreenY(); // Used by terminal driver
+void setScreenX(int x); // Used by terminal driver
+void setScreenY(int y); // Used by terminal driver
 void videoScroll(); // Performs scrolling
 
 /* Userspace address-check functions */
