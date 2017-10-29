@@ -3,6 +3,8 @@
 #include "i8259.h"
 #include "IDT.h"
 
+volatile int count=0;
+
 /*
  * rtc_init
  *   DESCRIPTION: Enables periodic interrupts and changes frequency of RTC. Also writes RTC handler into IDT table.
@@ -27,11 +29,11 @@ void rtc_init(void){
     //TODO: ask the TA if we need a CLI/STI thing
     // unsigned int flags;
     // cli_and_save(flags);
-    outb(NMI_MASK+REG_A, RTC_REG); //remask NMI //
-    previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
-    outb(NMI_MASK+REG_A, RTC_REG);
-    outb((previous & UPPER_MASK) | rate, RTC_REG+1);////write only our rate to A. Rate is the bottom 4 bits.
-    outb(REG_A, RTC_REG);  //enable 80 bit NMI
+//    outb(NMI_MASK+REG_A, RTC_REG); //remask NMI //
+//    previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
+//    outb(NMI_MASK+REG_A, RTC_REG);
+//    outb((previous & UPPER_MASK) | rate, RTC_REG+1);////write only our rate to A. Rate is the bottom 4 bits.
+//    outb(REG_A, RTC_REG);  //enable 80 bit NMI
     // restore_flags(flags);
 }
 
@@ -122,6 +124,10 @@ int ret_count(){
   return count;
 }
 
+void setRetCount(int setter){
+    count = setter;
+    return;
+}
 int32_t open (const int8_t* filename){
     // if(rtc_init_flag==0)
     //     rtc_init();

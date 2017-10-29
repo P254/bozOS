@@ -6,6 +6,7 @@
 #define PASS 1
 #define FAIL 0
 
+extern int count;
 /* format these macros as you see fit */
 #define TEST_HEADER 	\
 	printf("[TEST %s] Running %s at %s:%d\n", __FUNCTION__, __FUNCTION__, __FILE__, __LINE__)
@@ -178,24 +179,30 @@ int rtc_handler_test(){
     int i;
     int result;
 		result = FAIL;
-
-		clear();
 		// open (NULL);
+
+    buf=2;
+    write(NULL, &buf, 0);
+	i=0;
+	while(count!=20);
+    count = 0;
+
+    buf=4;
+	write(NULL, &buf, 0);
+    while(count!=10);
+    count = 0;
 
     buf=8;
     write(NULL, &buf, 0);
-		i=0;
-		while(ret_count()!=20){}
+    while(count!=5);
+    count = 0;
 
-		buf=4;
-		write(NULL, &buf, 0);
-		i=0;
-		while(ret_count()!=20){}
-
-		buf=8;
-		write(NULL, &buf, 0);
-		i=0;
-		while(ret_count()!=20){}
+    // while(ret_count()!=20){}
+    //
+	// buf=8;
+	// write(NULL, &buf, 0);
+	// i=0;
+	// while(ret_count()!=20){}
 
 
     // buf=32;

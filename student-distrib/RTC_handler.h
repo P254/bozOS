@@ -19,7 +19,7 @@ void rtc_init(void);
 void rtc_handler(void);
 
 static volatile int interupt_flag=0;
-static volatile int count=0;
+//static volatile int count=0;
 // static volatile int rtc_init_flag=0;
 
 
@@ -27,5 +27,6 @@ extern int32_t read (int32_t fd, void* buf, int32_t nbytes);
 extern int32_t write (int32_t fd, const void* buf, int32_t nbytes);
 extern int32_t open (const int8_t* filename);
 extern int32_t close(int32_t fd);
-extern int ret_count(); 
+int ret_count();
+extern void setRetCount(int setter);
 #endif
