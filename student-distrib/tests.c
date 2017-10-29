@@ -182,8 +182,14 @@ int read_data_test()
 {
     dentry_t test_dentry;
     read_dentry_by_name("frame0.txt",&test_dentry);
-    uint8_t buf[32];
+    uint8_t buf[4096];
     read_data(test_dentry.inode,0,buf,4096);
+
+    uint32_t j;
+    printf("Copied contents to buf:\n");
+    for (j = 0; j < 4016; j++) {
+        putc(buf[j]);
+    }
 }
 
 // add more tests here
