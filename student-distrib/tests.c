@@ -2,7 +2,7 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "paging.h"
-
+#include "RTC_handler.h"
 #define PASS 1
 #define FAIL 0
 
@@ -168,6 +168,50 @@ static inline void assertion_failure(){
 // add more tests here
 
 /* Checkpoint 2 tests */
+/*
+	As suggested by a TA that a thorough test would be
+	to change the frequency of rtc from slow to fast and
+	call teh read fucntion 10-20 times to see the output on the screen.
+*/
+int rtc_handler_test(){
+    unsigned int buf;
+    int i;
+    int result;
+		result = FAIL;
+
+		clear();
+		open (NULL);
+
+    buf=2;
+    write(NULL, &buf, 0);
+		i=0;
+		while(i<1000){
+			printf("1");
+			i++;
+		}
+    buf=32;
+		printf("\n");
+
+    write(NULL, &buf, 0);
+		i=0;
+		while(i<1000){
+			printf("1");
+			i++;
+		}
+		printf("\n");
+    buf=128;
+    write(NULL, &buf, 0);
+		i=0;
+		while(i<1000){
+			printf("1");
+			i++;
+		}
+
+		close(0);
+
+    result= PASS;
+    return result;
+}
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -190,4 +234,5 @@ void launch_tests(){
     //TEST_OUTPUT("sys_call_test", sys_call_test());
     //TEST_OUTPUT("paging_table_test", paging_table_test());
     //TEST_OUTPUT("test_exceptions", test_exceptions());
+		TEST_OUTPUT("rtc handler test", rtc_handler_test());
 }
