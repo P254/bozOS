@@ -116,15 +116,20 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length
   data_block_t* cur_block;
   printf("file length %d \n", inodes[inode].length);
   printf("len of datablocks %d ", boot->datablocks);
-  for (i =0 ; i < 1; i++)
+  for (i =0 ; i < 1; i++) // need to do some math here to determine how many blocks we want. We also need to implement offset crap. Very easy stuff
   {
     //   memcpy(cur_block ,&dataBlocks[inodes[inode].block[i]],4096);
 
+    // instead of this we need to add to the buffer. that is essentially the same shit.  we can probably do some sort of memcpy?
+    /* TODO: SEAN. change this from printing to the screen to adding to the buffer. I can do this character by character, but I think
+        we can use memcpy
+
+    */
         clear();
       for (j =0 ; j < inodes[inode].length; j++)
       {
         putc(dataBlocks[inodes[inode].block[i]].contents[j]);
-      }
+    }
   }
   // for (i = 0; i < n_blocks ; i++)
   // {
