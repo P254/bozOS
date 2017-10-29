@@ -93,41 +93,37 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry) {
 // something like ece391emulate.c/ece391_read sys call??
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length) {
     int i;
-    int n_blocks = length % 4096 == 0 ? length / 4096 : length / 4096 + 1; // number of blocks we need to look at!!
     int dataEntries = inodes[inode].length / 4;                            //because the length in inodes is defined as B whereas each block is 4B
     int bytesRetured = 0;
+    int j;
+    unsigned char temp;
+    uint32_t mem_location_off;
+    uint32_t blocks_used;
+    blocks_used = inodes[inode].length % 4096 == 0 ? (inodes[inode].length)/4096 : (inodes[inode].length)/4096 + 1;
+    data_block_t *cur_block;
+    if (offset > length)
+        return -1;
+    if (length == 0)
+        return -1;
+    if (length > inodes[inode].length)
+        length = inodes[inode].length;
+
+    mem_location_off = offset + length;
+    
+    int n_blocks = (offset+length) % 4096 == 0 ? (offset+length) / 4096 : (offset+length) / 4096 + 1; // number of blocks we need to look at!!
 
     printf("inode: %d \n", inode);
     printf("n_blocks %d \n", n_blocks);
-    int j;
-    unsigned char temp;
-    data_block_t *cur_block;
     printf("file length %d \n", inodes[inode].length);
     printf("len of datablocks %d \n", boot->datablocks);
     for (i = 0; i < 1; i++) {
-        // need to do some math here to determine how many blocks we want. We also need to implement offset crap. Very easy stuff
-        // memcpy(cur_block ,&dataBlocks[inodes[inode].block[i]],4096);
-
-        // instead of this we need to add to the buffer. that is essentially the same shit.  we can probably do some sort of memcpy?
-
-        /* TODO: SEAN. change this from printing to the screen to adding to the buffer. I can do this character by character, but I think
-        we can use memcpy */
-
         // clear();
-        memcpy(buf, dataBlocks[inodes[inode].block[i]].contents + 80, 4016);
+        memcpy(buf, dataBlocks[inodes[inode].block[i]].contents + offset, length);
         // for (j = 0; j < inodes[inode].length; j++)
         // {
         //     putc(dataBlocks[inodes[inode].block[i]].contents[j]);
         // }
     }
-    // for (i = 0; i < n_blocks ; i++)
-    // {
-    //     cur_block = dataBlocks + (4096*(inodes[inode].block[i])); // start + 4096 + (N+D-1)
-    //     printf("%d ",*cur_block);
-    //   // some sort of valid check?
-    //   // how to add to buffer with offset?
-    //
-    // }
 
     // should do some math to first determine what can be placed into this buffer.
     // this will have to return number of bytes that are entered into this buffer
