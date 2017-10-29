@@ -14,4 +14,4 @@ void kb_init(void);
 char getScanCode(void);
 void get_char(void);
 
-extern void keyboard_handler();
+extern void keyboard_handler_asm();
