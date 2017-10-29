@@ -178,6 +178,13 @@ int dentry_by_name_test()
     printf("running by name test");
     read_dentry_by_name("fish",&test_dentry);
 }
+int read_data_test()
+{
+    dentry_t test_dentry;
+    read_dentry_by_name("frame0.txt",&test_dentry);
+    uint8_t buf[32];
+    read_data(test_dentry.inode,0,buf,4096);
+}
 
 // add more tests here
 
@@ -194,8 +201,9 @@ int dentry_by_name_test()
  * Coverage: Launches the tests that we wrote before.
  */
 void launch_tests(){
-    dentry_by_index_test();
-    dentry_by_name_test();
+    //dentry_by_index_test();
+    //dentry_by_name_test();
+    read_data_test();
 	// launch your tests here
     //TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("divisionby0_test", div0_test());
