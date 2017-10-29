@@ -148,6 +148,8 @@ void entry(unsigned long magic, unsigned long addr) {
     kb_init(); /* Init the keyboard */
     rtc_init(); /* Init the RTC */
     paging_init(); /* Init the paging */
+    module_t* mod = (module_t*)mbi->mods_addr;
+    fs_init((uint32_t)mod->mod_start);
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
@@ -162,12 +164,12 @@ void entry(unsigned long magic, unsigned long addr) {
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */
-     launch_tests();
+    // launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
     //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
 
     /* Spin (nicely, so we don't chew up cycles) */
-    int x = 1/0;
+    //int x = 1/0;
     asm volatile (".1: hlt; jmp .1;");
 }
