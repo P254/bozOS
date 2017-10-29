@@ -149,7 +149,7 @@ void entry(unsigned long magic, unsigned long addr) {
     kb_init(); /* Init the keyboard */
     rtc_init(); /* Init the RTC */
     paging_init(); /* Init the paging */
-    
+
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
 
@@ -170,14 +170,14 @@ void entry(unsigned long magic, unsigned long addr) {
 
     // char *sys_buf = "I hate this class \n";
     // char *sys_buf2 = "Hello world! This is bozOS. I am attempting to write a really long sentence to see if it scrolls/line breaks correctly or not.\n";
-    
-    unsigned char* sys_buf[128];
-
-    terminal_read(0, sys_buf, 128);
-    terminal_write(0, sys_buf, 128);
-    
-    terminal_read(0, sys_buf, 128);
-    terminal_write(0, sys_buf, 128);
+    // 
+    // unsigned char* sys_buf[128];
+    //
+    // terminal_read(0, sys_buf, 128);
+    // terminal_write(0, sys_buf, 128);
+    //
+    // terminal_read(0, sys_buf, 128);
+    // terminal_write(0, sys_buf, 128);
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

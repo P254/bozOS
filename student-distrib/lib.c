@@ -10,8 +10,8 @@
 
 static int screen_x;
 static int screen_y;
-static char* video_mem = (char *)VIDEO;
-static char* video_mem_r1 = (char *) VIDEO_MEM_ROW1;
+volatile char* video_mem = (char *)VIDEO;
+volatile char* video_mem_r1 = (char *) VIDEO_MEM_ROW1;
 
 /* void clear(void);
  * Inputs: void
@@ -556,7 +556,7 @@ void setScreenY(int y) {
  *   SIDE EFFECTS: scrolls the main terminal window by one line
  */
 void videoScroll() {
-    memcpy(video_mem, video_mem_r1, SCROLL_SIZE);
+    memmove(video_mem, video_mem_r1, SCROLL_SIZE);
     // Clear the botttommost line
     uint16_t i, vid_idx;
     for (i = 0; i < NUM_COLS; i++) {

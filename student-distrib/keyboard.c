@@ -9,6 +9,7 @@
 #define TEST_KB_DRIVER 1
 
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
+static unsigned char int_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
 volatile int terminal_read_release;
 volatile int key_status;
 
@@ -194,6 +195,7 @@ void kb_init(void){
 
     // memset(kb_buf, '\0', KB_SIZE);
     kb_buf[0] = '\0';
+    int_buf[0] = '\0';
     terminal_read_release = 0;
     key_status = 0;
 }
@@ -222,7 +224,10 @@ void kb_int_handler() {
     //     kb_buf[0] = '\n';
     //     scroll_flag = 0;
     // }
-
+    else if(scanCodeTable[c] == '\n'){
+      addCharToBuf(scanCodeTable[c]);
+      copy_kb_buff();
+    }
     else if (scanCodeTable[c] != 0) {
         // Adds characters, including the line feed '\n' character
         addCharToBuf(scanCodeTable[c]);
@@ -348,8 +353,13 @@ void addCharToBuf(unsigned char c) {
             scroll_flag = 1;
         }
         // Calculate the index that we should write the character to
-        add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
-        *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+        if(c=='\n') {
+          videoScroll();
+          scroll_flag = 1;
+        }
+        else if(c!='\n'){
+           add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
+          *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];}
         #endif
     }
 }
@@ -407,5 +417,17 @@ int* kb_read_release() {
 }
 
 unsigned char* get_kb_buffer() {
-  return kb_buf;
+  return int_buf;
+}
+
+void copy_kb_buff(){
+      int i = 0;
+      for (i = 0; i < 128; i++) {
+        int_buf[i] = kb_buf[i];
+        if (kb_buf[i] == '\n') {
+          kb_buf[i] = '\0';
+          break;}
+        else kb_buf[i] = '\0'; // Flush-as-you-go
+      }
+  return;
 }

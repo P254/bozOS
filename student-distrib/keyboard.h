@@ -27,3 +27,4 @@ void delCharFrBuf(void);
 int convertToVidIdx(int x, int y, int buf_len);
 int* kb_read_release();
 unsigned char* get_kb_buffer();
+void copy_kb_buff();
