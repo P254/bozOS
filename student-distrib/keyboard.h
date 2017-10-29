@@ -12,6 +12,7 @@
 #define KB_SIZE 128
 #define KB_IRQ 1
 #define KB_IDT_ENTRY (SOFT_INT_START + 1)
+#define ENTER_KEY_IDX 28
 
 #define VIDEO       0xB8000
 #define NUM_COLS    80
@@ -24,5 +25,5 @@ void kb_int_handler(void);
 void addCharToBuf(unsigned char c);
 void delCharFrBuf(void);
 int convertToVidIdx(int x, int y, int buf_len);
-int kb_read_release();
+int* kb_read_release();
 unsigned char* get_kb_buffer();

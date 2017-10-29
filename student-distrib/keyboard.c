@@ -9,9 +9,12 @@
 #define TEST_KB_DRIVER 0
 
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
-//static int scroll_flag; // Scroll flag that is held until we hit 'enter'
 volatile int terminal_read_release;
 volatile int key_status;
+
+#if (TEST_KB_DRIVER == 1)
+static int scroll_flag; // Scroll flag that is held until we hit 'enter'
+#endif
 
 unsigned char scanCodeTable[KB_SIZE*3] =
 {
@@ -143,7 +146,13 @@ unsigned char scanCodeTable[KB_SIZE*3] =
 void kb_init(void){
     enable_irq(KB_IRQ); // the keyboard interrupt
     set_IDT_wrapper(KB_IDT_ENTRY, keyboard_handler_asm);
-    kb_buf[0] = '\n';
+    
+    /****************** Testing code *********************/
+    // unsigned char* teststr = "Hello world!\nThis is ECE 391\n";
+    // strncpy(kb_buf, teststr, strlen((int8_t*) teststr)); 
+
+    // memset(kb_buf, '\0', KB_SIZE);
+    kb_buf[0] = '\0';
     terminal_read_release = 0;
     key_status = 0;
 }
@@ -215,19 +224,18 @@ unsigned int getScanCode() {
         *  you would add 128 to the scancode when you look for it */
         if (scanCode == 0x2A) { key_status = 0x1; }
         if (scanCode == 0x3A) { key_status ^= 0x10; }
-        if (scanCode == 0x1C) { terminal_read_release = 1; }
+        if (scanCode == 0x1C) { 
+            terminal_read_release = 1;
+            position  = (int) scanCode;
+            return position;
+        }
         
         else if (key_status == 0x0) {
             position = (int) (scanCode);
 
             if (position < 90 && 0 <= position) {
                 return position;
-                // putc(position);
-                // if(pos < KB_SIZE-1) { 
-                //     kb_buf[pos] = position; 
-                // }
             }
-
         }
         
         else if (key_status == 0x1) {
@@ -235,10 +243,6 @@ unsigned int getScanCode() {
 
             if (position < 180 && 90 <= position) {
                 return position;
-                // putc(position);
-                // if (pos < KB_SIZE-1) {
-                //     kb_buf[pos] = position;
-                // }
             }
         }
         
@@ -247,10 +251,6 @@ unsigned int getScanCode() {
 
             if(position < 270 && 180 <= position) {
                 return position;
-                // putc(position);
-                // if(pos < KB_SIZE-1) {
-                //     kb_buf[pos] = position;
-                // }
             }
         }
     }
@@ -270,7 +270,7 @@ void addCharToBuf(unsigned char c) {
     uint32_t buf_len = strlen((int8_t*) kb_buf);
     if (buf_len < KB_SIZE-1) {
         kb_buf[buf_len] = c;
-        kb_buf[buf_len+1] = '\n';
+        kb_buf[buf_len+1] = '\0';
 
         /****** TYPING TEST BEGINS HERE *****/
         #if (TEST_KB_DRIVER == 1)
@@ -301,7 +301,7 @@ void addCharToBuf(unsigned char c) {
 void delCharFrBuf() {
     uint32_t buf_len = strlen((int8_t*) kb_buf); 
     if (buf_len > 0) {
-        kb_buf[buf_len-1] = '\n';
+        kb_buf[buf_len-1] = '\0';
 
         /****** TYPING TEST BEGINS HERE *****/
         #if (TEST_KB_DRIVER == 1)
@@ -334,14 +334,15 @@ int convertToVidIdx(int x, int y, int buf_len) {
  *   DESCRIPTION: Returns the value of terminal_read_release. For use by terminal driver.
  *   INPUTS: none
  *   OUTPUTS: none
- *   RETURN VALUE: int -- value of terminal_read_release
+ *   RETURN VALUE: int -- pointer to volatile int terminal_read_release
  *   SIDE EFFECTS: none
  */
-int kb_read_release() {
-    return terminal_read_release;
+int* kb_read_release() {
+    // TODO: Figure out why this warning 'return discards qualifiers from pointer target type'
+    return &terminal_read_release;
 }
 
-unsigned char* get_kb_buffer(){
+unsigned char* get_kb_buffer() {
   return kb_buf;
 }
 
