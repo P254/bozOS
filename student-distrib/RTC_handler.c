@@ -45,6 +45,8 @@ void rtc_init(void){
  */
 void rtc_handler(void) {
   //  test_interrupts(); //we must prove this function is being called.
+  printf("1");
+  count++;
    send_eoi(RTC_IRQ_ADDR); //end 8th IRQ
    outb(REG_C, RTC_REG); // select register C
     inb(RTC_REG+1); // just throw away contents, we must do this otherwise IRQ8 will never be called again.
@@ -114,6 +116,10 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes){
     outb(REG_A, RTC_REG);  //enable 80 bit NMI
     // restore_flags(flags);
     return 0;
+}
+
+int ret_count(){
+  return count;
 }
 
 int32_t open (const int8_t* filename){

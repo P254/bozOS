@@ -180,34 +180,43 @@ int rtc_handler_test(){
 		result = FAIL;
 
 		clear();
-		open (NULL);
+		// open (NULL);
 
-    buf=2;
+    buf=8;
     write(NULL, &buf, 0);
 		i=0;
-		while(i<1000){
-			printf("1");
-			i++;
-		}
-    buf=32;
-		printf("\n");
+		while(ret_count()!=20){}
 
-    write(NULL, &buf, 0);
+		buf=4;
+		write(NULL, &buf, 0);
 		i=0;
-		while(i<1000){
-			printf("1");
-			i++;
-		}
-		printf("\n");
-    buf=128;
-    write(NULL, &buf, 0);
-		i=0;
-		while(i<1000){
-			printf("1");
-			i++;
-		}
+		while(ret_count()!=20){}
 
-		close(0);
+		buf=8;
+		write(NULL, &buf, 0);
+		i=0;
+		while(ret_count()!=20){}
+
+
+    // buf=32;
+		// printf("\n");
+		//
+    // write(NULL, &buf, 0);
+		// i=0;
+		// while(i<1000){
+		// 	printf("1");
+		// 	i++;
+		// }
+		// printf("\n");
+    // buf=128;
+    // write(NULL, &buf, 0);
+		// i=0;
+		// while(i<1000){
+		// 	printf("1");
+		// 	i++;
+		// }
+
+		// close(0);
 
     result= PASS;
     return result;
