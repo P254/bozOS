@@ -8,13 +8,13 @@
 /* set to 1 and to test "live printing functionality" */
 #define TEST_KB_DRIVER 1
 
-static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
-static unsigned char int_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
-volatile int terminal_read_release;
-volatile int key_status;
+static volatile unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
+static volatile unsigned char int_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
+static volatile int terminal_read_release;
+static volatile int key_status;
+static volatile int scroll_flag; // Scroll flag that is held until we hit 'enter'
 
 #if (TEST_KB_DRIVER == 1)
-static int scroll_flag; // Scroll flag that is held until we hit 'enter'
 #endif
 
 unsigned char scanCodeTable[KB_SIZE*4] =
@@ -227,6 +227,8 @@ void kb_int_handler() {
     else if(scanCodeTable[c] == '\n'){
       addCharToBuf(scanCodeTable[c]);
       copy_kb_buff();
+      // scroll_flag = 0;
+
     }
     else if (scanCodeTable[c] != 0) {
         // Adds characters, including the line feed '\n' character
@@ -245,10 +247,9 @@ void kb_int_handler() {
 unsigned int getScanCode() {
     unsigned char scanCode;
     unsigned int position;
-
+    uint32_t buf_len = strlen((int8_t*) kb_buf);
     // unsigned int pos = strlen(kb_buf);
     scanCode = inb(KB_DATA_PORT);
-
     if (scanCode & 0x80) {
         /* check release of shift, alt or ctrl */
         //printf("released");
@@ -323,6 +324,7 @@ unsigned int getScanCode() {
             }
         }
     }
+  
     return 0;
 }
 
@@ -348,17 +350,20 @@ void addCharToBuf(unsigned char c) {
         x = getScreenX();
         y = getScreenY();
 
-        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1 && scroll_flag == 0) {
+        // if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1 && scroll_flag == 0) {
+        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) {
             videoScroll();
-            scroll_flag = 1;
+            // scroll_flag = 1;
         }
-        // Calculate the index that we should write the character to
+        // if new line
         if(c=='\n') {
           videoScroll();
-          scroll_flag = 1;
+          // scroll_flag = 1;
         }
+        // Calculate the index that we should write the character to
         else if(c!='\n'){
-           add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
+          // add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
+           add_idx = convertToVidIdx(x, y, buf_len);
           *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];}
         #endif
     }
@@ -385,7 +390,8 @@ void delCharFrBuf() {
         y = getScreenY();
 
         // Calculate index that we should erase the character from
-        erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
+        erase_idx = convertToVidIdx(x, y, buf_len) - 1;
+        // erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
         *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
         #endif
     }
