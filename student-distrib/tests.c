@@ -2,11 +2,16 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "paging.h"
+
 #include "filesystem.h"
 #include "terminal.h"
+
+#include "RTC_handler.h"
+
 #define PASS 1
 #define FAIL 0
 
+extern int count;
 /* format these macros as you see fit */
 #define TEST_HEADER 	\
 	printf("[TEST %s] Running %s at %s:%d\n", __FUNCTION__, __FUNCTION__, __FILE__, __LINE__)
@@ -292,6 +297,83 @@ int test_terminal_read(){
 
 // add more tests here
 
+/*
+	As suggested by a TA that a thorough test would be
+	to change the frequency of rtc from slow to fast and
+	call teh read fucntion 10-20 times to see the output on the screen.
+*/
+int rtc_handler_test(){
+    unsigned int buf;
+    int result;
+        result = FAIL;
+        // open (NULL);
+        clear();
+    buf=2;
+    write(NULL, &buf, 0);
+        while(count!=10);
+    count = 0;
+
+        clear();
+    buf=4;
+        write(NULL, &buf, 0);
+    while(count!=20);
+    count = 0;
+
+        clear();
+    buf=8;
+    write(NULL, &buf, 0);
+    while(count!=40);
+    count = 0;
+
+        clear();
+        buf=8;
+    write(NULL, &buf, 0);
+        while(count!=80);
+        count = 0;
+
+        clear();
+        buf=16;
+        write(NULL, &buf, 0);
+        while(count!=120);
+        count = 0;
+
+        clear();
+        buf=32;
+        write(NULL, &buf, 0);
+        while(count!=200);
+        count = 0;
+
+        clear();
+        buf=64;
+        write(NULL, &buf, 0);
+        while(count!=300);
+        count = 0;
+
+        clear();
+        buf=128;
+        write(NULL, &buf, 0);
+        while(count!=500);
+        count = 0;
+
+        clear();
+        buf=256;
+        write(NULL, &buf, 0);
+        while(count!=800);
+        count = 0;
+
+        clear();
+        buf=512;
+        write(NULL, &buf, 0);
+        while(count!=1000);
+        count = 0;
+
+        clear();
+
+        cli();
+    result= PASS;
+    return result;
+}
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -305,7 +387,6 @@ int test_terminal_read(){
  */
 void launch_tests(){
     clear();
-    printf("\n");
     //read_data_test("frame0.txt",-1,0,TEXT);
     //read_data_test("frame0.txt",24,0,TEXT);
     //read_data_test("frame0.txt",450,0,TEXT);
@@ -313,7 +394,7 @@ void launch_tests(){
     //read_data_test("fish",10,0,NONTEXT);
     //read_dentry_by_name_test("verylargetextwithverylongname.txt");
     //read_dentry_by_name_test("wtf name");
-    //print_all_directories_test();
+    print_all_directories_test();
     // read_dentry_by_index_test(5);
     // read_dentry_by_index_test(500);
 
@@ -332,6 +413,6 @@ void launch_tests(){
     //TEST_OUTPUT("test_terminal_write_underload", test_terminal_write_underload());
     //TEST_OUTPUT("test_terminal_read", test_terminal_read());
 
-
+    // TEST_OUTPUT("rtc handler test", rtc_handler_test());
 
 }

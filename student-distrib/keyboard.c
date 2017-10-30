@@ -8,11 +8,11 @@
 /* set to 1 and to test "live printing functionality" */
 #define TEST_KB_DRIVER 1
 
-static volatile unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
-static volatile unsigned char int_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
-static volatile int terminal_read_release;
-static volatile int key_status;
-static volatile int scroll_flag; // Scroll flag that is held until we hit 'enter'
+static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
+static unsigned char int_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
+static int terminal_read_release;
+static int key_status;
+static int scroll_flag; // Scroll flag that is held until we hit 'enter'
 
 #if (TEST_KB_DRIVER == 1)
 #endif
@@ -62,11 +62,11 @@ unsigned char scanCodeTable[KB_SIZE*4] =
   '(', ')', '_', '+', '\b', /* Backspace */
   '\t',         /* Tab */
   'Q', 'W', 'E', 'R',   /* 19 */
-  'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\n', /* Enter key */
+  'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n', /* Enter key */
     0,          /* 29   - Control */
-  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', /* 39 */
- '\'', '~',   0,        /* Left shift */
- '\\', 'Z', 'X', 'C', 'V', 'B', 'N',            /* 49 */
+  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', /* 39 */
+ '\"', '~',   0,        /* Left shift */
+ '|', 'Z', 'X', 'C', 'V', 'B', 'N',            /* 49 */
   'M', '<', '>', '?',   0,              /* Right shift */
   '*',
     0,  /* Alt */
@@ -139,12 +139,12 @@ unsigned char scanCodeTable[KB_SIZE*4] =
     '(', ')', '_', '+', '\b',   /* Backspace */
   '\t',         /* Tab */
   'q', 'w', 'e', 'r',   /* 19 */
-  't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', /* Enter key */
+  't', 'y', 'u', 'i', 'o', 'p', '{', '}', '\n', /* Enter key */
     0,          /* 29   - Control */
-  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', /* 39 */
- '\'', '`',   0,        /* Left shift */
- '\\', 'z', 'x', 'c', 'v', 'b', 'n',            /* 49 */
-  'm', ',', '.', '/',   0,              /* Right shift */
+  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ':', /* 39 */
+ '\"', '`',   0,        /* Left shift */
+ '|', 'z', 'x', 'c', 'v', 'b', 'n',            /* 49 */
+  'm', '<', '>', '?',   0,              /* Right shift */
   '*',
     0,  /* Alt */
   ' ',  /* Space bar */
@@ -339,7 +339,7 @@ unsigned int getScanCode() {
 void addCharToBuf(unsigned char c) {
     uint32_t buf_len = strlen((int8_t*) kb_buf);
     if (buf_len < KB_SIZE-1) {
-      kb_buf[buf_len+1] = '\0';
+        kb_buf[buf_len+1] = '\0';
         kb_buf[buf_len] = c;
 
         /****** TYPING TEST BEGINS HERE *****/
@@ -354,16 +354,10 @@ void addCharToBuf(unsigned char c) {
             scroll_flag = 1;
         }
         // if new line
-        if(c=='\n') {
+        else if (c == '\n') { // && scroll_flag != 1) {
           putc('\n');
-          // if(y == NUM_ROWS-1)
-          //     videoScroll();
-          //   else setScreenY(y-1);         }
-          if(buf_len>80){
-            putc('\n');
-            scroll_flag = 0; // set scroll_flag back to 0 since we're at the second line
+          if (buf_len >= NUM_COLS && scroll_flag == 0) putc('\n');
         }
-      }
 
         // Calculate the index that we should write the character to
         else if(c!='\n'){
@@ -372,17 +366,13 @@ void addCharToBuf(unsigned char c) {
         }
         #endif
     }
-    else if (c=='\n'){
-      // putc(c);
-      // putc(c);
-      printf("\n\n");
-      scroll_flag=0; // set buf_len back to 0 whenevr enter is pressed
+    // Deals with the case when the buffer is full
+    else if (c == '\n'){
+      putc(c);
+      scroll_flag = 0; // set buf_len back to 0 whenevr enter is pressed
     }
-    // else {
-    //   int x;
-    //   x=0;
-    // }
 }
+
 
 /*
  * delCharFrBuf
@@ -396,8 +386,7 @@ void delCharFrBuf() {
     uint32_t buf_len = strlen((int8_t*) kb_buf);
     if (buf_len > 0) {
         kb_buf[buf_len-1] = '\0';
-        if (buf_len<80)
-          scroll_flag=0;
+
         /****** TYPING TEST BEGINS HERE *****/
         #if (TEST_KB_DRIVER == 1)
         int erase_idx, x, y;
@@ -407,7 +396,7 @@ void delCharFrBuf() {
 
         // Calculate index that we should erase the character from
         erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
-        *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
+        *(uint8_t *)(video_mem + (erase_idx << 1)) = '_';
         #endif
     }
 }

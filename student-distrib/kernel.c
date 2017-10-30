@@ -166,7 +166,7 @@ void entry(unsigned long magic, unsigned long addr) {
 
 #ifdef RUN_TESTS
     /* Run tests -- comment-out line to disable tests */
-     launch_tests();
+     // launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
     //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
