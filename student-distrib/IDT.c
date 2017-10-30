@@ -28,6 +28,7 @@ void set_IDT_wrapper(uint8_t idt_num, void* handler_function) {
     idt[idt_num].reserved1 = 1;
     idt[idt_num].reserved0 = 0;
     idt[idt_num].present = 1;
+    idt[idt_num].size = 1;
     idt[idt_num].dpl = 0;
     idt[idt_num].seg_selector = KERNEL_CS;
 }
@@ -85,7 +86,7 @@ void init_IDT() {
 void handle_e0() {
     printf("Interrupt 0 - Divide Error Exception (#DE) \n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -99,7 +100,7 @@ void handle_e0() {
 void handle_e1() {
     printf("Interrupt 1 - Debug Exception (#DB) \n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -113,7 +114,7 @@ void handle_e1() {
 void handle_e2() {
     printf("Interrupt 2 - NMI Interrupt\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -127,7 +128,7 @@ void handle_e2() {
 void handle_e3() {
     printf("Interrupt 3 - Breakpoint Exception (#BP)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -141,7 +142,7 @@ void handle_e3() {
 void handle_e4() {
     printf("Interrupt 4 - Overflow Exception (#OF)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -155,7 +156,7 @@ void handle_e4() {
 void handle_e5() {
     printf("Interrupt 5 - BOUND Range Exceeded Exception (#BR)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -169,7 +170,7 @@ void handle_e5() {
 void handle_e6() {
     printf("Interrupt 6 - Invalid Opcode Exception (#UD)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -183,7 +184,7 @@ void handle_e6() {
 void handle_e7() {
     printf("Interrupt 7 - Device Not Available Exception (#NM)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -197,7 +198,7 @@ void handle_e7() {
 void handle_e8() {
     printf("Interrupt 8 - Double Fault Exception (#DF)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -213,7 +214,7 @@ void handle_e9() {
     // Intel reserved; do not use. Recent IA-32 processors do not generate this exception.
     printf("Interrupt 9 - Coprocessor Segment Overrun\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -227,7 +228,7 @@ void handle_e9() {
 void handle_e10() {
     printf("Interrupt 10 - Invalid TSS Exception (#TS)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -241,7 +242,7 @@ void handle_e10() {
 void handle_e11() {
     printf("Interrupt 11 - Segment Not Present (#NP)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -255,7 +256,7 @@ void handle_e11() {
 void handle_e12() {
     printf("Interrupt 12 - Stack Fault Exception (#SS)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -269,7 +270,7 @@ void handle_e12() {
 void handle_e13() {
     printf("Interrupt 13 - General Protection Exception (#GP)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -283,7 +284,7 @@ void handle_e13() {
 void handle_e14() {
     printf("Interrupt 14 - Page-Fault Exception (#PF)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -297,7 +298,7 @@ void handle_e14() {
 void handle_e15() {
     printf("Interrupt 15 - Reserved\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -311,7 +312,7 @@ void handle_e15() {
 void handle_e16() {
     printf("Interrupt 16 - x87 FPU Floating-Point Error (#MF)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -325,7 +326,7 @@ void handle_e16() {
 void handle_e17() {
     printf("Interrupt 17 - Alignment Check Exception (#AC)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -339,7 +340,7 @@ void handle_e17() {
 void handle_e18() {
     printf("Interrupt 18 - Machine-Check Exception (#MC)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -353,7 +354,7 @@ void handle_e18() {
 void handle_e19() {
     printf("Interrupt 19 - SIMD Floating-Point Exception (#XF)\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -367,7 +368,7 @@ void handle_e19() {
 void handle_default() {
     printf("Default interrupt handler called. Nothing specified here.\n");
     cli();
-    asm("hlt");
+    while(1);
 }
 
 /*
@@ -382,5 +383,5 @@ void handle_default() {
 void handle_sys_call() {
     printf("System call.\n");
     cli();
-    asm("hlt");
+    while(1);
 }

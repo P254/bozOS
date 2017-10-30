@@ -12,8 +12,10 @@
 #include "tests.h"
 #include "IDT.h"
 #include "paging.h"
+#include "terminal.h"
+#include "filesystem.h"
 
-#define RUN_TESTS
+#define RUN_TESTS 1
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -147,6 +149,8 @@ void entry(unsigned long magic, unsigned long addr) {
     i8259_init(); /* Init the PIC */
     kb_init(); /* Init the keyboard */
     rtc_init(); /* Init the RTC */
+    module_t* mod = (module_t*)mbi->mods_addr;
+    fs_init((uint32_t)mod->mod_start);
     paging_init(); /* Init the paging */
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
@@ -157,17 +161,15 @@ void entry(unsigned long magic, unsigned long addr) {
      * IDT correctly otherwise QEMU will triple fault and simple close
      * without showing you any output */
 
-     printf("Enabling Interrupts\n");
-     sti();
+    printf("Enabling Interrupts\n");
+    sti();
 
-#ifdef RUN_TESTS
+#if (RUN_TESTS == 1)
     /* Run tests -- comment-out line to disable tests */
-     launch_tests();
+    launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-    //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
 
     /* Spin (nicely, so we don't chew up cycles) */
-    int x = 1/0;
     asm volatile (".1: hlt; jmp .1;");
 }
