@@ -177,15 +177,10 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
  */
 void kb_init(void){
     enable_irq(KB_IRQ); // the keyboard interrupt
-    set_IDT_wrapper(KB_IDT_ENTRY, keyboard_handler_asm);
-
-    /****************** Testing code *********************/
-    // unsigned char* teststr = "Hello world!\nThis is ECE 391\n";
-    // strncpy(kb_buf, teststr, strlen((int8_t*) teststr));
-
-    kb_buf[0] = '\0';
+    set_IDT_wrapper(KB_IDT_ENTRY, keyboard_handler_asm); //add handler to IDT table
+    kb_buf[0] = '\0';//NULL terminate intermediate and keyboard buffer
     int_buf[0] = '\0';
-    terminal_read_release = 0;
+    terminal_read_release = 0; //set flags
     key_status = 0;
 }
 
@@ -198,18 +193,18 @@ void kb_init(void){
  *   SIDE EFFECTS: Prints a character to screen
  */
 void kb_int_handler() {
-    // we have to use this somewhere to print to the screen.
-    send_eoi(KB_IRQ);
-    unsigned int c = get_scan_code();
+    send_eoi(KB_IRQ); //send EOI signal
+    unsigned int c = get_scan_code(); //get ascii code character
     if (scanCodeTable[c] == '\b') {
         // Check for backspace
-        del_char_from_buf();
+        del_char_from_buf(); //if backspace, delete char
     }
     else if(scanCodeTable[c] == '\n'){
-      add_char_to_buf(scanCodeTable[c]);
-      copy_kb_buf();
+        //Chec for new line
+      add_char_to_buf(scanCodeTable[c]); //if new line, add it to buffer
+      copy_kb_buf(); //then clear keybaord buffer and add to intermidate buffer
     }
-    else if (scanCodeTable[c] != 0) {
+    else if (scanCodeTable[c] != 0) { //all other scancodes
         // Adds characters, including the line feed '\n' character
         add_char_to_buf(scanCodeTable[c]);
     }
@@ -226,71 +221,57 @@ void kb_int_handler() {
 unsigned int get_scan_code() {
     unsigned char scanCode;
     unsigned int position;
-    // unsigned int pos = strlen(kb_buf);
-    scanCode = inb(KB_DATA_PORT);
-    if (scanCode & 0x80) {
-        /* check release of shift, alt or ctrl */
-        //printf("released");
-        if (scanCode == 0xAA) { key_status &= 0x110; }
+    scanCode = inb(KB_DATA_PORT); //get data from port when key is pressed/released
+    if (scanCode & RELEASED_KEY_MASK) { //check if any key is released
 
-        else if (scanCode == 0xA6)  { key_status &= 0x011; }
-        //if(scanCode==0xBA) key_status&= 0x01;
+        if (scanCode == SHIFT_RELEASE) {key_status &= CLEAR_SHIFT_FLAG;}
+        //if shift is release, clear shift status
+        else if (scanCode == CTRL_RELEASE)  {key_status &= CLEAR_CTRL_FLAG;}
+        //if control is released, clear control status
     }
-    else {
-        /* Here, a key was just pressed. Please note that if you
-        *  hold a key down, you will get repeated key press
-        *  interrupts. */
-
-        /* Just to show you how this works, we simply translate
-        *  the keyboard scancode into an ASCII value, and then
-        *  display it to the screen. You can get creative and
-        *  use some flags to see if a shift is pressed and use a
-        *  different layout, or you can add another 128 entries
-        *  to the above layout to correspond to 'shift' being
-        *  held. If shift is held using the larger lookup table,
-        *  you would add 128 to the scancode when you look for it */
-        if (scanCode == 0x2A) { key_status += 0x1; }
-
-        else if (scanCode == 0x3A) { key_status ^= 0x10; }
-
-        else if (scanCode == 0x1D) { key_status += 0x100; }
-
-        else if (scanCode == 0x26 && (key_status & 0x100)) {
-            clear();
-            kb_buf[0] = '\0';
+    else { //else if a key is pressed
+        if (scanCode == SHIFT_PRESSED) { key_status += SHIFT_FLAG; }
+        //if shift is pressed, set shift status
+        else if (scanCode == CAPS_PRESSED) { key_status ^= CAPS_FLAG; }
+        //if caps loc is pressed, set OR clear caps status, depending on previous state
+        else if (scanCode == CTRL_PRESSED) { key_status += CTRL_FLAG; }
+        //if ctrl is pressed, set ctrl status
+        else if (scanCode == L_PRESSED && (key_status & CTRL_FLAG)) { //if CTRL+L is pressed
+            clear(); //clear screen
+            kb_buf[0] = '\0'; //reset keyboard buffer
         }
 
-        else if (scanCode == 0x1C) {
-            terminal_read_release = 1;
+        else if (scanCode == ENTER_PRESSED) { //if \n is pressed
+            terminal_read_release = 1; //allow terminal to be read if we are calling that function
             position  = (int) scanCode;
-            return position;
+            return position; //send scan code to handler
         }
 
-        else if (key_status == 0x0) {
+        else if (key_status == 0) { //if no special keys are pressed
             position = (int) (scanCode);
-            if (position < 90 && 0 <= position) {
-                return position;
+            if (position < BASE_KB_SIZE && 0 <= position) {
+                return position; //send basic scan code to handler
             }
         }
 
-        else if (key_status == 0x1) {
-            position = (int) (scanCode) + 90;
-            if (position < 180 && 90 <= position) {
-                return position;
+        else if (key_status == SHIFT_FLAG) { //if shift is pressed
+            position = (int) (scanCode) + BASE_KB_SIZE; //acquire shift table
+            if (position < (SHIFT_EXTEND*BASE_KB_SIZE) && BASE_KB_SIZE <= position) { //check for invalid scan codes
+                return position; //send shift scan code to handler
             }
         }
 
-        else if (key_status == 0x10) {
-            position = (int) (scanCode) + 180;
-            if(position < 270 && 180 <= position) {
-                return position;
+        else if (key_status == CAPS_FLAG) { //if caps lock is pressed
+            position = (int) (scanCode) + (SHIFT_EXTEND*BASE_KB_SIZE); //acquire caps lock table
+            if(position < (CAPS_EXTEND*BASE_KB_SIZE) && BASE_KB_SIZE <= position) { //check for invalid scan codes
+                return position; //send caps lock scan code to handler
             }
         }
 
-        else if (key_status == 0x011) {
-            position = (int) (scanCode) + 270;
-            if(position < 360 && 270 <= position) {
-                return position;
+        else if (key_status == BOTH_FLAG) {//if caps lock AND shift is pressed
+            position = (int) (scanCode) + (CAPS_EXTEND*BASE_KB_SIZE); //acquire shift+caps lock table
+            if(position < (BOTH_EXTEND*BASE_KB_SIZE) && (CAPS_EXTEND*BASE_KB_SIZE) <= position) { //check for invalid scan codes
+                return position; //send combined scan code to handler
             }
         }
     }
@@ -307,38 +288,36 @@ unsigned int get_scan_code() {
  *   SIDE EFFECTS: prints character to the screen and modifies kb_buf accordingly
  */
 void add_char_to_buf(unsigned char c) {
-    uint32_t buf_len = strlen((int8_t*) kb_buf);
-    if (buf_len < KB_SIZE-1) {
-        kb_buf[buf_len+1] = '\0';
-        kb_buf[buf_len] = c;
+    uint32_t buf_len = strlen((int8_t*) kb_buf); //get length of keyboard buffer
+    if (buf_len < KB_SIZE-1) { //only if we have not reached the limit
+        kb_buf[buf_len+1] = '\0'; //null terminate our string
+        kb_buf[buf_len] = c; //add the character we just proccessed to buf
 
         int add_idx, x, y;
-        char* video_mem = (char *) VIDEO;
-        x = get_screen_x();
+        char* video_mem = (char *) VIDEO; //get mem loc
+        x = get_screen_x(); //get screen coordinates
         y = get_screen_y();
 
-        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) {
-            video_scroll();
-            set_screen_y(y-1);
-        }
-        // if new line
-        else if (c == '\n') { 
-            putc('\n');
-            if (buf_len >= NUM_COLS) putc('\n');
+        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) { //if we are at bottom of screen
+            video_scroll(); //scroll down
+            set_screen_y(y-1); //set "cursor" to last line
         }
 
-        // Calculate the index that we should write the character to
-        else if(c != '\n') {
-          add_idx = convert_to_vid_idx(x, y, buf_len);
-          *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+        else if (c == '\n') { // if new line
+            putc('\n'); //print new line
+            if (buf_len >= NUM_COLS) putc('\n'); //if we have an extended logical string, print another new line
+        }
+
+        else if(c != '\n') { //if not new line
+          add_idx = convert_to_vid_idx(x, y, buf_len); // calculate the index that we should write the character to
+          *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len]; //write the character from the buffer to video mem
         }
     }
     // Deals with the case when the buffer is full
-    else if (c == '\n'){
-        printf("\n\n");
+    else if (c == '\n'){ //if new line
+        printf("\n\n"); //print two new lines as we have exceeded buffer limit and terminal line limit.
     }
 }
-
 
 /*
  * del_char_from_buf
@@ -349,18 +328,17 @@ void add_char_to_buf(unsigned char c) {
  *   SIDE EFFECTS: removes character from the screen and modifies kb_buf accordingly
  */
 void del_char_from_buf() {
-    uint32_t buf_len = strlen((int8_t*) kb_buf);
-    if (buf_len > 0) {
-        kb_buf[buf_len-1] = '\0';
+    uint32_t buf_len = strlen((int8_t*) kb_buf); //get length of keyboard buffer
+    if (buf_len > 0) { //if we have a valid buf len
+        kb_buf[buf_len-1] = '\0'; //null terminal our buffer
 
         int erase_idx, x, y;
-        char* video_mem = (char *) VIDEO;
-        x = get_screen_x();
+        char* video_mem = (char *) VIDEO; //get mem loc
+        x = get_screen_x(); //get screen coordinates
         y = get_screen_y();
 
-        // Calculate index that we should erase the character from
-        erase_idx = convert_to_vid_idx(x, y, buf_len) - 1;
-        *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
+        erase_idx = convert_to_vid_idx(x, y, buf_len) - 1; // Calculate index that we should erase the character from
+        *(uint8_t *)(video_mem + (erase_idx << 1)) = ' '; //erase char from video mem loc
     }
 }
 
@@ -402,7 +380,7 @@ unsigned char* get_kb_buffer() {
 
 /*
  * copy_kb_buf
- *   DESCRIPTION: Copies keyboard buffer into intermediate buffer. 
+ *   DESCRIPTION: Copies keyboard buffer into intermediate buffer.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: none
@@ -410,11 +388,11 @@ unsigned char* get_kb_buffer() {
  */
 void copy_kb_buf() {
       int i = 0;
-      for (i = 0; i < 128; i++) {
-        int_buf[i] = kb_buf[i];
+      for (i = 0; i < KB_SIZE; i++) { //max copy length is kb size
+        int_buf[i] = kb_buf[i]; //copy char by char
         if (kb_buf[i] == '\n') {
-            kb_buf[i] = '\0';
-            break;
+            kb_buf[i] = '\0'; //we must also remove the new line from the kb  buffer
+            break; //if we encounter a new line, we stop copying
         }
         else kb_buf[i] = '\0'; // Flush-as-you-go
       }

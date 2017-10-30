@@ -10,10 +10,29 @@
 #define KB_DATA_PORT 0x60
 #define KB_CONTROL_REG 0x64
 #define KB_SIZE 128
-#define EXPANDED_KB_SIZE (KB_SIZE * 4)
+#define KB_OPTIONS 4
+#define SHIFT_EXTEND 2
+#define CAPS_EXTEND 3
+#define BOTH_EXTEND 4
+#define BASE_KB_SIZE 90
+#define SHIFT_FLAG 0x1
+#define CAPS_FLAG 0x10
+#define CTRL_FLAG 0x100
+#define BOTH_FLAG 0x011
+#define CLEAR_CTRL_FLAG 0x011
+#define CLEAR_SHIFT_FLAG 0x110
+#define EXPANDED_KB_SIZE (KB_SIZE * KB_OPTIONS)
 #define KB_IRQ 1
 #define KB_IDT_ENTRY (SOFT_INT_START + 1)
 #define ENTER_KEY_IDX 28
+#define RELEASED_KEY_MASK 0x80
+#define SHIFT_RELEASE 0xAA
+#define CTRL_RELEASE 0x9D
+#define SHIFT_PRESSED 0x2A
+#define CAPS_PRESSED 0x3A
+#define CTRL_PRESSED 0x1D
+#define L_PRESSED 0x26
+#define ENTER_PRESSED 0x1C
 
 #define VIDEO       0xB8000
 #define NUM_COLS    80
