@@ -165,6 +165,15 @@ static inline void assertion_failure(){
     return 1;
 }*/
 
+/* read_dentry_by_index_test
+ * Asserts that our read_dentry_by_index function works 
+ * Inputs: index - dentry index we want to print out
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
+
+/* Checkpoint 2 tests */
 int read_dentry_by_index_test(uint32_t index){
     dentry_t test_dentry;
     printf("running read_dentry_by_index test:\n");
@@ -178,6 +187,13 @@ int read_dentry_by_index_test(uint32_t index){
     
     return 1;
 }
+/* read_dentry_by_name_test
+ * Asserts that our read_dentry_by_index function works 
+ * Inputs: fname - file name of the dentry
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
 int read_dentry_by_name_test(int8_t * fname) {
     dentry_t test_dentry;
     printf("running read_dentry_by_name test:\n");
@@ -191,6 +207,13 @@ int read_dentry_by_name_test(int8_t * fname) {
     return 1;
 }
 
+/* read_data_test
+ * Asserts that our read_data_test function works 
+ * Inputs: index - dentry index we want to print out the data of
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
 
 int read_data_test(int8_t * fname, int32_t size_to_copy, uint32_t offset, int type){
     dentry_t test_dentry;
@@ -215,6 +238,13 @@ int read_data_test(int8_t * fname, int32_t size_to_copy, uint32_t offset, int ty
     return 0;
 }
 
+/* print_all_directories_test()
+ * Prints out all the dentries
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage:
+ */
 int print_all_directories_test()
 {
     int i;
@@ -230,7 +260,6 @@ int print_all_directories_test()
 
 // add more tests here
 
-/* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -249,9 +278,9 @@ void launch_tests(){
     //read_data_test("frame0.txt",24,0,TEXT);
     read_data_test("frame0.txt",450,0,TEXT);
     //read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
-    // read_data_test("fish",10,0,NONTEXT);
+    //read_data_test("fish",10,0,NONTEXT);
     //read_dentry_by_name_test("verylargetextwithverylongname.txt");
-    // read_dentry_by_name_test("wtf name");
+    //read_dentry_by_name_test("wtf name");
     //print_all_directories_test();
     // read_dentry_by_index_test(5);
     // read_dentry_by_index_test(500);

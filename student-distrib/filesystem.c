@@ -1,16 +1,14 @@
 #include "filesystem.h"
 #include "lib.h"
 
-// TODO: GLOBAL VARS
-
-// uint32_t * dataBlocks; // Memory location of the data Block
-// datablocks array? what type is this? 4kb Blocks?
-// where do they get read from?
-// can we just look at memory locations and increment by 4kB each time?
-// CP 2: No fopen/read dopen/read
-// ls in system calls will help us understand how directory read will be called
-
-// this just makes it a bit eaiser for us to setup variables for the other functions. not really needed
+/*
+ * fs_init
+ *   DESCRIPTION: initializes the filesytem
+ *   INPUTS: start - the start location of memory (mod_start)
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: sets up global variables to pointers of different structures 
+ */
 void fs_init(uint32_t start) {// this will take in mod_start
     boot = (void*) start;
     dentries = (void*) start + 64; // First 64B reserved for boot block statistics
@@ -18,34 +16,98 @@ void fs_init(uint32_t start) {// this will take in mod_start
     dataBlocks = (void*) start + BLK_SZ * (boot->inodes + 1); // Our size will be + 1 because we want to account for the bootBlock
 }
 
+/*
+ * fopen
+ *   DESCRIPTION: nothing for now
+ *   INPUTS: fname
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: nothing
+ */
 int32_t fopen(uint8_t *fname) {
-    // what am i initializing?
+
     return -1;
 }
+/*
+ * fclose
+ *   DESCRIPTION: nothing for now
+ *   INPUTS: fname
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: nothing
+ */
 int32_t fclose(uint8_t *fname) {
     return -1;
 }
+/*
+ * fread
+ *   DESCRIPTION: nothing for now
+ *   INPUTS: fname - file name
+ *           offset,buf,length
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: changes the buffer
+ */
 int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
 {
-    dentry_t  temp_dentry;
-    read_dentry_by_name(fname,&temp_dentry);
-
-    return read_data(temp_dentry.inode,offset,buf,length);
+    return 0;
 }
+/*
+ * fwrite
+ *   DESCRIPTION: nothing for now
+ *   INPUTS: fname
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: nothing
+ */
 int32_t fwrite(void) {
     return 0;
 }
+
+/*
+ * dopen
+ *   DESCRIPTION: nothing for now
+ *   INPUTS: fname
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: nothing
+ */
 
 int32_t dopen(uint8_t* fname, dentry_t *dentry) {
     // return read_dentry_by_name(fname, dentry);
     return 0;
 }
+/*
+ * dread
+ *   DESCRIPTION: nothing for now
+ *   INPUTS: index - index of dentry
+ *           dentry - dentry to fill 
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: fills in dentry
+ */
 int32_t dread(uint32_t index, dentry_t *dentry) {
     return read_dentry_by_index(index, dentry);
 }
+/*
+ * dclose
+ *   DESCRIPTION: nothing for now
+ *   INPUTS: fname
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: nothing
+ */
 int32_t dclose() {
     return 0;
 }
+/*
+ * dwrite
+ *   DESCRIPTION: nothing for now
+ *   INPUTS: fname
+ *   OUTPUTS: None
+ *   RETURN VALUE:
+ *   SIDE EFFECTS: nothing
+ */
 int32_t dwrite(void) {
     return 0;
 }
