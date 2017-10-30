@@ -15,7 +15,7 @@
 #include "terminal.h"
 #include "filesystem.h"
 
-#define RUN_TESTS
+#define RUN_TESTS 1
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -164,25 +164,12 @@ void entry(unsigned long magic, unsigned long addr) {
     printf("Enabling Interrupts\n");
     sti();
 
-#ifdef RUN_TESTS
+#if (RUN_TESTS == 1)
     /* Run tests -- comment-out line to disable tests */
-     // launch_tests();
+    launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-    //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
-
-    // char *sys_buf = "I hate this class \n";
-    // char *sys_buf2 = "Hello world! This is bozOS. I am attempting to write a really long sentence to see if it scrolls/line breaks correctly or not.\n";
-    // 
-    // unsigned char* sys_buf[128];
-    //
-    // terminal_read(0, sys_buf, 128);
-    // terminal_write(0, sys_buf, 128);
-    //
-    // terminal_read(0, sys_buf, 128);
-    // terminal_write(0, sys_buf, 128);
 
     /* Spin (nicely, so we don't chew up cycles) */
-    //int x = 1/0;
     asm volatile (".1: hlt; jmp .1;");
 }

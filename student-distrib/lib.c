@@ -528,9 +528,9 @@ int get_screen_y() {
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
-void set_screen_x(int x) {
-    if (x >= 0 && x < NUM_COLS) {
-        screen_x = x;
+void set_screen_x(int val) {
+    if (val >= 0 && val < NUM_COLS) {
+        screen_x = val;
     }
     return;
 }
@@ -543,9 +543,9 @@ void set_screen_x(int x) {
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
-void set_screen_y(int y) {
-    if (y >= 0 && y < NUM_ROWS) {
-        screen_y = y;
+void set_screen_y(int val) {
+    if (val >= 0 && val < NUM_ROWS) {
+        screen_y = val;
     }
     return;
 }
