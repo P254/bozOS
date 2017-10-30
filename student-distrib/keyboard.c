@@ -14,9 +14,6 @@ static int terminal_read_release;
 static int key_status;
 static int scroll_flag; // Scroll flag that is held until we hit 'enter'
 
-#if (TEST_KB_DRIVER == 1)
-#endif
-
 unsigned char scanCodeTable[KB_SIZE*4] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
@@ -193,7 +190,6 @@ void kb_init(void){
     // unsigned char* teststr = "Hello world!\nThis is ECE 391\n";
     // strncpy(kb_buf, teststr, strlen((int8_t*) teststr));
 
-    // memset(kb_buf, '\0', KB_SIZE);
     kb_buf[0] = '\0';
     int_buf[0] = '\0';
     terminal_read_release = 0;
@@ -349,18 +345,18 @@ void addCharToBuf(unsigned char c) {
         x = getScreenX();
         y = getScreenY();
 
-        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1 && scroll_flag == 0) {
+        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) {
             videoScroll();
-            scroll_flag = 1;
+            setScreenY(y-1);
         }
         // if new line
-        else if (c == '\n') { // && scroll_flag != 1) {
-          putc('\n');
-          if (buf_len >= NUM_COLS && scroll_flag == 0) putc('\n');
+        else if (c == '\n') { 
+            putc('\n');
+            if (buf_len >= NUM_COLS) putc('\n');
         }
 
         // Calculate the index that we should write the character to
-        else if(c!='\n'){
+        else if(c != '\n') {
           add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
           *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
         }
@@ -368,8 +364,7 @@ void addCharToBuf(unsigned char c) {
     }
     // Deals with the case when the buffer is full
     else if (c == '\n'){
-      putc(c);
-      scroll_flag = 0; // set buf_len back to 0 whenevr enter is pressed
+        printf("\n\n");
     }
 }
 
@@ -430,13 +425,14 @@ unsigned char* get_kb_buffer() {
   return (unsigned char*) int_buf;
 }
 
-void copy_kb_buff(){
+void copy_kb_buff() {
       int i = 0;
       for (i = 0; i < 128; i++) {
         int_buf[i] = kb_buf[i];
         if (kb_buf[i] == '\n') {
-          kb_buf[i] = '\0';
-          break;}
+            kb_buf[i] = '\0';
+            break;
+        }
         else kb_buf[i] = '\0'; // Flush-as-you-go
       }
   return;

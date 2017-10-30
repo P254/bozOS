@@ -529,7 +529,9 @@ int getScreenY() {
  *   SIDE EFFECTS: none
  */
 void setScreenX(int x) {
-    screen_x = x;
+    if (x >= 0 && x < NUM_COLS) {
+        screen_x = x;
+    }
     return;
 }
 
@@ -542,8 +544,10 @@ void setScreenX(int x) {
  *   SIDE EFFECTS: none
  */
 void setScreenY(int y) {
-  screen_y = y;
-  return;
+    if (y >= 0 && y < NUM_ROWS) {
+        screen_y = y;
+    }
+    return;
 }
 
 
