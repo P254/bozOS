@@ -7,6 +7,7 @@
 #define MAX_D_ENTRIES 62
 #define FILE_NAME_LEN 32
 #define BLK_SZ 4096
+#define BOOT_BLOCK_SIZE 64
 
 /* Create three structures:
  * bootblock
@@ -36,8 +37,8 @@ typedef struct dataBlock {
     uint8_t contents[4096];
 } data_block_t;
 
-dentry_t *dentries; 
-inode_t *inodes;    
+dentry_t *dentries;
+inode_t *inodes;
 bootBlock_t *boot;
 data_block_t *dataBlocks;
 
@@ -48,15 +49,15 @@ int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry);
 int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry);
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length);
 
-int32_t fopen(uint8_t *fname); 
+int32_t fopen(uint8_t *fname);
 int32_t fclose(uint8_t *fname);
 int32_t fread(uint8_t *fname, uint32_t offset, uint8_t *buf, uint32_t length);
-int32_t fwrite(void); 
+int32_t fwrite(void);
 
-int32_t dopen(uint8_t* fname, dentry_t *dentry); 
+int32_t dopen(uint8_t* fname, dentry_t *dentry);
 int32_t dread(uint32_t index, dentry_t *dentry);
 
-int32_t dclose(); 
-int32_t dwrite(void); 
+int32_t dclose();
+int32_t dwrite(void);
 
 #endif
