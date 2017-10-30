@@ -396,35 +396,53 @@ int rtc_handler_test() {
  * Side Effects: None
  * Coverage: Launches the tests that we wrote before.
  */
-void launch_tests(){
+void launch_tests() {
     clear();
-    //read_data_test("frame0.txt",-1,0,TEXT);
-    //read_data_test("frame0.txt",24,0,TEXT);
-    //read_data_test("frame0.txt",450,0,TEXT);
-    //read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
-    //read_data_test("fish",10,0,NONTEXT);
-    //read_dentry_by_name_test("verylargetextwithverylongname.txt");
-    //read_dentry_by_name_test("wtf name");
+    /************ Checkpoint 1 Tests **********************/
+    // TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("divisionby0_test", div0_test());
+    // TEST_OUTPUT("paging_kernel_test", paging_kernel_test());
+    // TEST_OUTPUT("paging_video_test", paging_video_test());
+	// TEST_OUTPUT("pagefault_test", pagefault_test());
+    // TEST_OUTPUT("segment_test", segment_test());
+    // TEST_OUTPUT("sys_call_test", sys_call_test());
+    // TEST_OUTPUT("paging_table_test", paging_table_test());
+    // TEST_OUTPUT("test_exceptions", test_exceptions());
+
+    /************ Checkpoint 2 Tests **********************/
+    
+    #if (READ_DATA_TEST_ENABLE == 1)
+    read_data_test("frame0.txt",-1,0,TEXT);
+    read_data_test("frame0.txt",24,0,TEXT);
+    read_data_test("frame0.txt",450,0,TEXT);
+    read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
+    read_data_test("fish",10,0,NONTEXT);
+    #endif 
+
+    #if (READ_DENTRY_NAME_TEST_ENABLE == 1)
+    read_dentry_by_name_test("verylargetextwithverylongname.txt");
+    read_dentry_by_name_test("wtf name");
+    #endif
+
+    #if (PRINT_ALL_DIR_TEST_ENABLE == 1)
     print_all_directories_test();
-    // read_dentry_by_index_test(5);
-    // read_dentry_by_index_test(500);
+    #endif 
 
-	// launch your tests here
-    //TEST_OUTPUT("idt_test", idt_test());
-	//TEST_OUTPUT("divisionby0_test", div0_test());
-    //TEST_OUTPUT("paging_kernel_test", paging_kernel_test());
-    //TEST_OUTPUT("paging_video_test", paging_video_test());
-	//TEST_OUTPUT("pagefault_test", pagefault_test());
-    //TEST_OUTPUT("segment_test", segment_test());
-    //TEST_OUTPUT("sys_call_test", sys_call_test());
-    //TEST_OUTPUT("paging_table_test", paging_table_test());
-    //TEST_OUTPUT("test_exceptions", test_exceptions());
+    #if (READ_DENTRY_IDX_TEST_ENABLE == 1)
+    read_dentry_by_index_test(5);
+    read_dentry_by_index_test(500);
+    #endif
 
-    //TEST_OUTPUT("test_terminal_write_overload", test_terminal_write_overload());
-    //TEST_OUTPUT("test_terminal_write_underload", test_terminal_write_underload());
-    //TEST_OUTPUT("test_terminal_read", test_terminal_read());
+    #if (TEMRINAL_WRITE_TEST_ENABLE == 1)
+    TEST_OUTPUT("test_terminal_write_overload", test_terminal_write_overload());
+    TEST_OUTPUT("test_terminal_write_underload", test_terminal_write_underload());
+    #endif 
+
+    #if (TEMRINAL_READ_TEST_ENABLE == 1)
+    TEST_OUTPUT("test_terminal_read", test_terminal_read());
+    #endif
+    
     #if (RTC_TEST_ENABLE == 1)
     TEST_OUTPUT("rtc handler test", rtc_handler_test());
     #endif 
-
 }
