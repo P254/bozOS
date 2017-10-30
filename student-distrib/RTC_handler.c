@@ -46,6 +46,14 @@ void rtc_handler(void) {
     inb(RTC_REG + 1);       // just throw away contents, we must do this otherwise IRQ8 will never be called again.
 }
 
+/*
+ * rtc_read
+ *   DESCRIPTION: Blocks RTC interuppts until next one arrives
+ *   INPUTS: file descriptor, buffer, bytes to write
+ *   OUTPUTS: none
+ *   RETURN VALUE: 0
+ *   SIDE EFFECTS: none
+ */
 int32_t rtc_read (int32_t fd, void* buf, int32_t nbytes){
     while(interrupt_flag != 0) {
       // means interrupt_flag = 1 so do nothing until it changes
@@ -54,6 +62,14 @@ int32_t rtc_read (int32_t fd, void* buf, int32_t nbytes){
     return 0;
 }
 
+/*
+ * rtc_write
+ *   DESCRIPTION: converts rate to HZ and writes it to RTC device
+ *   INPUTS: file descriptor, buffer containing rate, bytes to write
+ *   OUTPUTS: changed rate of RTC
+ *   RETURN VALUE: 0 or -1 if invalid rate
+ *   SIDE EFFECTS: none
+ */
 int32_t rtc_write (int32_t fd, const void* buf, int32_t nbytes) {
     char previous;
     unsigned int rate, input_rate;
@@ -101,6 +117,14 @@ int32_t rtc_write (int32_t fd, const void* buf, int32_t nbytes) {
     return 0;
 }
 
+/*
+ * rtc_open
+ *   DESCRIPTION: opens RTC device, sets RTC to intial rate.
+ *   INPUTS: file descriptor
+ *   OUTPUTS: 0
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: none
+ */
 int32_t rtc_open (const int8_t* filename){
     unsigned int rate;
     rate = INIT_RATE;
@@ -108,6 +132,14 @@ int32_t rtc_open (const int8_t* filename){
     return 0; //success
 }
 
+/*
+ * rtc_close
+ *   DESCRIPTION: closes RTC device
+ *   INPUTS: file descriptor
+ *   OUTPUTS: 0
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: none
+ */
 int32_t rtc_close (int32_t fd){
     return 0;
 }

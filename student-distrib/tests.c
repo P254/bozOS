@@ -337,7 +337,7 @@ int rtc_handler_test() {
     unsigned int buf;
     int result;
     result = FAIL;
-    open (NULL);
+    rtc_open(NULL);
 
     clear();
     buf=2;
