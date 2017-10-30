@@ -2,7 +2,7 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "paging.h"
-
+#include "filesystem.h"
 #define PASS 1
 #define FAIL 0
 
@@ -165,9 +165,101 @@ static inline void assertion_failure(){
     return 1;
 }*/
 
-// add more tests here
+/* read_dentry_by_index_test
+ * Asserts that our read_dentry_by_index function works 
+ * Inputs: index - dentry index we want to print out
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
 
 /* Checkpoint 2 tests */
+int read_dentry_by_index_test(uint32_t index){
+    dentry_t test_dentry;
+    printf("running read_dentry_by_index test:\n");
+    int status = read_dentry_by_index(index, &test_dentry);
+
+    if (status == 0){
+    printf("File name: %s\n", test_dentry.fileName);
+    } else {
+        printf("Invalid index \n");
+    }
+    
+    return 1;
+}
+/* read_dentry_by_name_test
+ * Asserts that our read_dentry_by_index function works 
+ * Inputs: fname - file name of the dentry
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
+int read_dentry_by_name_test(int8_t * fname) {
+    dentry_t test_dentry;
+    printf("running read_dentry_by_name test:\n");
+    int status = read_dentry_by_name((uint8_t*)fname, &test_dentry);
+
+    if (status == 0) {
+        printf("Found file %s\n", fname);
+    } else {
+        printf("File not found\n");
+    }
+    return 1;
+}
+
+/* read_data_test
+ * Asserts that our read_data_test function works 
+ * Inputs: index - dentry index we want to print out the data of
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
+
+int read_data_test(int8_t * fname, int32_t size_to_copy, uint32_t offset, int type){
+    dentry_t test_dentry;
+    if (read_dentry_by_name((uint8_t*)fname, &test_dentry) == -1) {
+        printf("File not found\n");
+    }
+
+    uint32_t buf_length = inodes[test_dentry.inode].length;
+    size_to_copy = (size_to_copy < 0) ? buf_length : size_to_copy;
+    uint8_t copy_buf[size_to_copy];
+    
+    int status;
+    status = read_data(test_dentry.inode, offset, copy_buf, size_to_copy);
+    printf("Copy status: %d\n", status);
+
+    int i;
+    printf("Copied contents to buf:\n");
+    for (i = 0; i < status; i++) {
+        if (type == TEXT) putc(copy_buf[i]);
+        else if (type == NONTEXT) printf("%#x \n", copy_buf[i] );
+    }
+    return 0;
+}
+
+/* print_all_directories_test()
+ * Prints out all the dentries
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage:
+ */
+int print_all_directories_test()
+{
+    int i;
+    int num_directories = boot->dirEntries;
+    dentry_t temp_dentry;
+    for ( i = 0 ; i < num_directories ; i++)
+    {
+        dread(i,&temp_dentry);
+        printf("dentryIndex: %d fileName: %s size: %d \n", i , temp_dentry.fileName, inodes[temp_dentry.inode].length );
+    }
+    return 0;
+}
+
+// add more tests here
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -180,6 +272,19 @@ static inline void assertion_failure(){
  * Coverage: Launches the tests that we wrote before.
  */
 void launch_tests(){
+    clear();
+    printf("\n");
+    //read_data_test("frame0.txt",-1,0,TEXT);
+    //read_data_test("frame0.txt",24,0,TEXT);
+    read_data_test("frame0.txt",450,0,TEXT);
+    //read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
+    //read_data_test("fish",10,0,NONTEXT);
+    //read_dentry_by_name_test("verylargetextwithverylongname.txt");
+    //read_dentry_by_name_test("wtf name");
+    //print_all_directories_test();
+    // read_dentry_by_index_test(5);
+    // read_dentry_by_index_test(500);
+
 	// launch your tests here
     //TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("divisionby0_test", div0_test());
