@@ -61,7 +61,7 @@ int32_t fwrite(void); //doesn't matter for now
 *
  */
 //uses read_dentry_by_name
-int32_t dopen(uint32_t fname, dentry_t *dentry); // open directory file. So does this mean we need to take in a file instead of an entry
+int32_t dopen(uint8_t* fname, dentry_t *dentry); // open directory file. So does this mean we need to take in a file instead of an entry
 //read_dentry_by_index of inodes?
 int32_t dread(uint32_t index, dentry_t *dentry);
 

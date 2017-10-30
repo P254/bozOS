@@ -165,45 +165,65 @@ static inline void assertion_failure(){
     return 1;
 }*/
 
-int dentry_by_index_test(){
+int read_dentry_by_index_test(uint32_t index){
     dentry_t test_dentry;
-    clear();
     printf("running read_dentry_by_index test:\n");
-    uint8_t i;
-    for (i = 0; i < 62; i++) {
-        if (read_dentry_by_index(i, &test_dentry) == 0) {
-            printf("File name: %s\n", test_dentry.fileName);
-        }
+    int status = read_dentry_by_index(index, &test_dentry);
+
+    if (status == 0){
+    printf("File name: %s\n", test_dentry.fileName);
+    } else {
+        printf("Invalid index \n");
     }
     
     return 1;
 }
-int dentry_by_name_test() {
+int read_dentry_by_name_test(int8_t * fname) {
     dentry_t test_dentry;
-    int8_t* fname = "fish";
     printf("running read_dentry_by_name test:\n");
-    if (read_dentry_by_name((uint8_t*)fname, &test_dentry) == 0) {
+    int status = read_dentry_by_name((uint8_t*)fname, &test_dentry);
+
+    if (status == 0) {
         printf("Found file %s\n", fname);
-    }
-    return 1;
-}
-int read_data_test(){
-    dentry_t test_dentry;
-    if (read_dentry_by_name((uint8_t*)"frame0.txt", &test_dentry) == -1) {
+    } else {
         printf("File not found\n");
     }
-    
+    return 1;
+}
+
+
+int read_data_test(int8_t * fname, int32_t size_to_copy, uint32_t offset, int type){
+    dentry_t test_dentry;
+    if (read_dentry_by_name((uint8_t*)fname, &test_dentry) == -1) {
+        printf("File not found\n");
+    }
+
     uint32_t buf_length = inodes[test_dentry.inode].length;
-    uint8_t copy_buf[buf_length];
+    size_to_copy = (size_to_copy < 0) ? buf_length : size_to_copy;
+    uint8_t copy_buf[size_to_copy];
     
     int status;
-    status = read_data(test_dentry.inode, 0, copy_buf, buf_length);
+    status = read_data(test_dentry.inode, offset, copy_buf, size_to_copy);
     printf("Copy status: %d\n", status);
 
     int i;
     printf("Copied contents to buf:\n");
-    for (i = 0; i < buf_length; i++) {
-        putc(copy_buf[i]);
+    for (i = 0; i < status; i++) {
+        if (type == TEXT) putc(copy_buf[i]);
+        else if (type == NONTEXT) printf("%#x \n", copy_buf[i] );
+    }
+    return 0;
+}
+
+int print_all_directories_test()
+{
+    int i;
+    int num_directories = boot->dirEntries;
+    dentry_t temp_dentry;
+    for ( i = 0 ; i < num_directories ; i++)
+    {
+        dread(i,&temp_dentry);
+        printf("dentryIndex: %d fileName: %s size: %d \n", i , temp_dentry.fileName, inodes[temp_dentry.inode].length );
     }
     return 0;
 }
@@ -223,9 +243,19 @@ int read_data_test(){
  * Coverage: Launches the tests that we wrote before.
  */
 void launch_tests(){
-    // dentry_by_index_test();
-    // dentry_by_name_test();
-    read_data_test();
+    clear();
+    printf("\n");
+    //read_data_test("frame0.txt",-1,0,TEXT);
+    //read_data_test("frame0.txt",24,0,TEXT);
+    read_data_test("frame0.txt",450,0,TEXT);
+    //read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
+    // read_data_test("fish",10,0,NONTEXT);
+    //read_dentry_by_name_test("verylargetextwithverylongname.txt");
+    // read_dentry_by_name_test("wtf name");
+    //print_all_directories_test();
+    // read_dentry_by_index_test(5);
+    // read_dentry_by_index_test(500);
+
 	// launch your tests here
     //TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("divisionby0_test", div0_test());
