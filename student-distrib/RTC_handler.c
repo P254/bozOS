@@ -17,9 +17,6 @@ volatile int interrupt_flag = 0;
  */
 void rtc_init(void){
     char previous;
-    unsigned int rate;
-    rate = INIT_RATE; //set rate to 15 or 1HZ. 32768 >> (rate-1);
-
     outb(NMI_MASK+REG_B, RTC_REG); //select status register B and disable interuppts using x80.
     previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
     outb(NMI_MASK+REG_B, RTC_REG);

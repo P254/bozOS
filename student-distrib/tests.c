@@ -19,7 +19,7 @@
 #define VID_MEM_LOC 0xB8000
 #define KERN_MEM 0x400000
 #define FILLED_LOC 2
-#define TEXT 0 
+#define TEXT 0
 #define NONTEXT 1
 
 extern int rtc_count;
@@ -183,7 +183,7 @@ static inline void assertion_failure(){
 }*/
 
 /* read_dentry_by_index_test
- * Asserts that our read_dentry_by_index function works 
+ * Asserts that our read_dentry_by_index function works
  * Inputs: index - dentry index we want to print out
  * Outputs: 1
  * Side Effects: None
@@ -201,11 +201,11 @@ int read_dentry_by_index_test(uint32_t index){
     } else {
         printf("Invalid index \n");
     }
-    
+
     return 1;
 }
 /* read_dentry_by_name_test
- * Asserts that our read_dentry_by_index function works 
+ * Asserts that our read_dentry_by_index function works
  * Inputs: fname - file name of the dentry
  * Outputs: 1
  * Side Effects: None
@@ -225,7 +225,7 @@ int read_dentry_by_name_test(int8_t * fname) {
 }
 
 /* read_data_test
- * Asserts that our read_data_test function works 
+ * Asserts that our read_data_test function works
  * Inputs: index - dentry index we want to print out the data of
  * Outputs: 1
  * Side Effects: None
@@ -241,7 +241,7 @@ int read_data_test(int8_t * fname, int32_t size_to_copy, uint32_t offset, int ty
     uint32_t buf_length = inodes[test_dentry.inode].length;
     size_to_copy = (size_to_copy < 0) ? buf_length : size_to_copy;
     uint8_t copy_buf[size_to_copy];
-    
+
     int status;
     status = read_data(test_dentry.inode, offset, copy_buf, size_to_copy);
     printf("Copy status: %d\n", status);
@@ -275,6 +275,13 @@ int print_all_directories_test()
     return 0;
 }
 
+/*test_terminal_write_overload()
+ *Checks if terminal_write stops writing at buffer max length instead of overflowing
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: terminal_write upper bound
+ */
 int test_terminal_write_overload(){
     unsigned char test_string_overload[500];
     int i;
@@ -287,18 +294,32 @@ int test_terminal_write_overload(){
     return 1;
 }
 
+/* test_terminal_write_underload()
+ * Checks if terminal_write stops writing at given length instead of overflowing to 128
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: terminal_write lower bound
+ */
 int test_terminal_write_underload(){
-    unsigned char test_string_overload[5];
+    unsigned char test_string_underload[5];
     int i;
     for (i = 0 ; i<4 ; i++){
-      test_string_overload[i] = 'a';
-    }   
-    test_string_overload[4] = '\n';
-    terminal_write(0,test_string_overload,128);
+      test_string_underload[i] = 'a';
+    }
+    test_string_underload[4] = '\n';
+    terminal_write(0,test_string_underload,128);
     putc('\n');
     return 1;
 }
 
+/* test_terminal_read()
+ * Takes user input into keyboard buffer and sees if terminal_read copies to system buffer properly
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: terminal_read
+ */
 int test_terminal_read(){
     unsigned char sys_buf[128];
     terminal_read(0,sys_buf,128);
@@ -316,8 +337,8 @@ int rtc_handler_test() {
     unsigned int buf;
     int result;
     result = FAIL;
-    // open (NULL);
-    
+    open (NULL);
+
     clear();
     buf=2;
     rtc_write(NULL, &buf, 0);
@@ -380,7 +401,7 @@ int rtc_handler_test() {
 
     clear();
     cli();
-    
+
     result = PASS;
     return result;
 }
@@ -410,14 +431,14 @@ void launch_tests() {
     // TEST_OUTPUT("test_exceptions", test_exceptions());
 
     /************ Checkpoint 2 Tests **********************/
-    
+
     #if (READ_DATA_TEST_ENABLE == 1)
     read_data_test("frame0.txt",-1,0,TEXT);
     read_data_test("frame0.txt",24,0,TEXT);
     read_data_test("frame0.txt",450,0,TEXT);
-    read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
+    read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT);
     read_data_test("fish",10,0,NONTEXT);
-    #endif 
+    #endif
 
     #if (READ_DENTRY_NAME_TEST_ENABLE == 1)
     read_dentry_by_name_test("verylargetextwithverylongname.txt");
@@ -426,7 +447,7 @@ void launch_tests() {
 
     #if (PRINT_ALL_DIR_TEST_ENABLE == 1)
     print_all_directories_test();
-    #endif 
+    #endif
 
     #if (READ_DENTRY_IDX_TEST_ENABLE == 1)
     read_dentry_by_index_test(5);
@@ -436,13 +457,13 @@ void launch_tests() {
     #if (TEMRINAL_WRITE_TEST_ENABLE == 1)
     TEST_OUTPUT("test_terminal_write_overload", test_terminal_write_overload());
     TEST_OUTPUT("test_terminal_write_underload", test_terminal_write_underload());
-    #endif 
+    #endif
 
     #if (TEMRINAL_READ_TEST_ENABLE == 1)
     TEST_OUTPUT("test_terminal_read", test_terminal_read());
     #endif
-    
+
     #if (RTC_TEST_ENABLE == 1)
     TEST_OUTPUT("rtc handler test", rtc_handler_test());
-    #endif 
+    #endif
 }
