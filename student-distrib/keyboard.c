@@ -5,16 +5,12 @@
 #include "i8259.h"
 #include "x86_desc.h"
 
-/* set to 1 and to test "live printing functionality" */
-#define TEST_KB_DRIVER 1
-
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
-static unsigned char int_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
+static unsigned char int_buf[KB_SIZE]; // Intermediate buffer for copying to terminal buffer
 static int terminal_read_release;
 static int key_status;
-static int scroll_flag; // Scroll flag that is held until we hit 'enter'
 
-unsigned char scanCodeTable[KB_SIZE*4] =
+unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
   '9', '0', '-', '=', '\b', /* Backspace */
@@ -168,9 +164,6 @@ unsigned char scanCodeTable[KB_SIZE*4] =
     0,  /* F11 Key */
     0,  /* F12 Key */
     0,  /* All other keys are undefined */
-
-
-
 };
 
 
@@ -207,40 +200,30 @@ void kb_init(void){
 void kb_int_handler() {
     // we have to use this somewhere to print to the screen.
     send_eoi(KB_IRQ);
-    unsigned int c = getScanCode();
+    unsigned int c = get_scan_code();
     if (scanCodeTable[c] == '\b') {
         // Check for backspace
-        delCharFrBuf();
+        del_char_from_buf();
     }
-    // else if (scanCodeTable[c] == '\n') {
-    //     // Newline character: clear text buffer and reset scroll flag
-    //     // TODO Sean: Fix this
-    //     printf((int8_t*) kb_buf);
-    //     putc('\n');
-    //     kb_buf[0] = '\n';
-    //     scroll_flag = 0;
-    // }
     else if(scanCodeTable[c] == '\n'){
-      addCharToBuf(scanCodeTable[c]);
-      copy_kb_buff();
-      scroll_flag = 0;
-
+      add_char_to_buf(scanCodeTable[c]);
+      copy_kb_buf();
     }
     else if (scanCodeTable[c] != 0) {
         // Adds characters, including the line feed '\n' character
-        addCharToBuf(scanCodeTable[c]);
+        add_char_to_buf(scanCodeTable[c]);
     }
 }
 
 /*
- * getScanCode
+ * get_scan_code
  *   DESCRIPTION: Grabs the scancode from the keyboard and updates the keyboard buffer.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: unsigned int -- index into the scancode table
  *   SIDE EFFECTS: updates the keyboard buffer
  */
-unsigned int getScanCode() {
+unsigned int get_scan_code() {
     unsigned char scanCode;
     unsigned int position;
     // unsigned int pos = strlen(kb_buf);
@@ -272,14 +255,10 @@ unsigned int getScanCode() {
 
         else if (scanCode == 0x1D) { key_status += 0x100; }
 
-        else if (scanCode == 0x26 && (key_status&0x100)) {
-          clear();
-          kb_buf[0] = '\0';
+        else if (scanCode == 0x26 && (key_status & 0x100)) {
+            clear();
+            kb_buf[0] = '\0';
         }
-
-
-        //if (scanCode == 0x3A) { key_status ^= 0x10; }
-
 
         else if (scanCode == 0x1C) {
             terminal_read_release = 1;
@@ -289,7 +268,6 @@ unsigned int getScanCode() {
 
         else if (key_status == 0x0) {
             position = (int) (scanCode);
-
             if (position < 90 && 0 <= position) {
                 return position;
             }
@@ -297,7 +275,6 @@ unsigned int getScanCode() {
 
         else if (key_status == 0x1) {
             position = (int) (scanCode) + 90;
-
             if (position < 180 && 90 <= position) {
                 return position;
             }
@@ -305,7 +282,6 @@ unsigned int getScanCode() {
 
         else if (key_status == 0x10) {
             position = (int) (scanCode) + 180;
-
             if(position < 270 && 180 <= position) {
                 return position;
             }
@@ -313,41 +289,37 @@ unsigned int getScanCode() {
 
         else if (key_status == 0x011) {
             position = (int) (scanCode) + 270;
-
             if(position < 360 && 270 <= position) {
                 return position;
             }
         }
     }
-
     return 0;
 }
 
 
 /*
- * addCharToBuf
+ * add_char_to_buf
  *   DESCRIPTION: Adds a character to the keyboard buffer
  *   INPUTS: c -- input character we want to print
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: prints character to the screen and modifies kb_buf accordingly
  */
-void addCharToBuf(unsigned char c) {
+void add_char_to_buf(unsigned char c) {
     uint32_t buf_len = strlen((int8_t*) kb_buf);
     if (buf_len < KB_SIZE-1) {
         kb_buf[buf_len+1] = '\0';
         kb_buf[buf_len] = c;
 
-        /****** TYPING TEST BEGINS HERE *****/
-        #if (TEST_KB_DRIVER == 1)
         int add_idx, x, y;
         char* video_mem = (char *) VIDEO;
-        x = getScreenX();
-        y = getScreenY();
+        x = get_screen_x();
+        y = get_screen_y();
 
         if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) {
-            videoScroll();
-            setScreenY(y-1);
+            video_scroll();
+            set_screen_y(y-1);
         }
         // if new line
         else if (c == '\n') { 
@@ -357,10 +329,9 @@ void addCharToBuf(unsigned char c) {
 
         // Calculate the index that we should write the character to
         else if(c != '\n') {
-          add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
+          add_idx = convert_to_vid_idx(x, y, buf_len);
           *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
         }
-        #endif
     }
     // Deals with the case when the buffer is full
     else if (c == '\n'){
@@ -370,62 +341,74 @@ void addCharToBuf(unsigned char c) {
 
 
 /*
- * delCharFrBuf
+ * del_char_from_buf
  *   DESCRIPTION: Deletes a character from the buffer when 'backspace' key is pressed
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: removes character from the screen and modifies kb_buf accordingly
  */
-void delCharFrBuf() {
+void del_char_from_buf() {
     uint32_t buf_len = strlen((int8_t*) kb_buf);
     if (buf_len > 0) {
         kb_buf[buf_len-1] = '\0';
 
-        /****** TYPING TEST BEGINS HERE *****/
-        #if (TEST_KB_DRIVER == 1)
         int erase_idx, x, y;
         char* video_mem = (char *) VIDEO;
-        x = getScreenX();
-        y = getScreenY();
+        x = get_screen_x();
+        y = get_screen_y();
 
         // Calculate index that we should erase the character from
-        erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
-        *(uint8_t *)(video_mem + (erase_idx << 1)) = '_';
-        #endif
+        erase_idx = convert_to_vid_idx(x, y, buf_len) - 1;
+        *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
     }
 }
 
 /*
- * convertToVidIdx
+ * convert_to_vid_idx
  *   DESCRIPTION: Converts a set of coordinates to the index to video memory
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int -- the video memory index we are interested in
  *   SIDE EFFECTS: none
  */
-int convertToVidIdx(int x, int y, int buf_len) {
+int convert_to_vid_idx(int x, int y, int buf_len) {
     return ((NUM_COLS * y) + x + buf_len);
 }
 
 /*
  * kb_read_release
- *   DESCRIPTION: Returns the value of terminal_read_release. For use by terminal driver.
+ *   DESCRIPTION: Returns the pointer to terminal_read_release. For use by terminal driver.
  *   INPUTS: none
  *   OUTPUTS: none
- *   RETURN VALUE: int -- pointer to volatile int terminal_read_release
+ *   RETURN VALUE: int -- pointer to terminal_read_release
  *   SIDE EFFECTS: none
  */
 int* kb_read_release() {
-    // TODO: Figure out why this warning 'return discards qualifiers from pointer target type'
     return (int*) &terminal_read_release;
 }
 
+/*
+ * get_kb_buffer
+ *   DESCRIPTION: Returns the pointer of terminal_read_release. For use by terminal driver.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: unsigned char -- pointer to intermediate buffer
+ *   SIDE EFFECTS: none
+ */
 unsigned char* get_kb_buffer() {
   return (unsigned char*) int_buf;
 }
 
-void copy_kb_buff() {
+/*
+ * copy_kb_buf
+ *   DESCRIPTION: Copies keyboard buffer into intermediate buffer. 
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: modifies int_buf
+ */
+void copy_kb_buf() {
       int i = 0;
       for (i = 0; i < 128; i++) {
         int_buf[i] = kb_buf[i];
