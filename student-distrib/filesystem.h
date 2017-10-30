@@ -3,6 +3,9 @@
 #ifndef _FILE_SYSTEM_H
 #define _FILE_SYSTEM_H
 
+
+
+
 /* Create three structures:
  * bootblock
  * entry
@@ -31,6 +34,10 @@ typedef struct dataBlock {
     uint8_t contents[4096];
 } data_block_t;
 
+dentry_t *dentries; // is this right?
+inode_t *inodes;    // is this right?
+bootBlock_t *boot;
+data_block_t *dataBlocks;
 // NEED to have memory locations of Boot Block, Inode Begin AND DataBlocks Begin
 // N = ?
 // D = ?

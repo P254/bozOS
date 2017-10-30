@@ -2,10 +2,7 @@
 #include "lib.h"
 
 // TODO: GLOBAL VARS
-dentry_t *dentries; // is this right?
-inode_t *inodes;    // is this right?
-bootBlock_t *boot;
-data_block_t *dataBlocks;
+
 // uint32_t * dataBlocks; // Memory location of the data Block
 // datablocks array? what type is this? 4kb Blocks?
 // where do they get read from?
@@ -101,28 +98,47 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length
     uint32_t blocks_used;
     blocks_used = inodes[inode].length % 4096 == 0 ? (inodes[inode].length)/4096 : (inodes[inode].length)/4096 + 1;
     data_block_t *cur_block;
-    if (offset > length)
+    int bytes_to_copy = length; 
+    int file_length = inodes[inode].length;
+    if (offset > file_length)
         return -1;
     if (length == 0)
         return -1;
     if (length > inodes[inode].length)
-        length = inodes[inode].length;
+        bytes_to_copy = inodes[inode].length;
 
     mem_location_off = offset + length;
+    if (mem_location_off > blocks_used * 4096)
+        bytes_to_copy -= offset;
     
-    int n_blocks = (offset+length) % 4096 == 0 ? (offset+length) / 4096 : (offset+length) / 4096 + 1; // number of blocks we need to look at!!
+    int start_block = offset % 4096 == 0 ? offset / 4096 : offset/4096 +1;
+    int end_block = blocks_used;
 
     printf("inode: %d \n", inode);
-    printf("n_blocks %d \n", n_blocks);
+    printf("n_blocks %d \n", end_block);
     printf("file length %d \n", inodes[inode].length);
     printf("len of datablocks %d \n", boot->datablocks);
-    for (i = 0; i < 1; i++) {
-        // clear();
-        memcpy(buf, dataBlocks[inodes[inode].block[i]].contents + offset, length);
-        // for (j = 0; j < inodes[inode].length; j++)
-        // {
-        //     putc(dataBlocks[inodes[inode].block[i]].contents[j]);
-        // }
+    printf("copying: %d to the buffer\n", bytes_to_copy);
+    printf("start block %d \n ", start_block);
+    printf("memory address of start position  %d", &dataBlocks[inodes[inode].block[0]].contents);
+    uint32_t start_mem = &dataBlocks[inodes[inode].block[0]].contents;
+    
+    
+    int byte_offset = offset % 4096;
+    int bytes_copied = 0;
+    int initial_offset, copy_len;
+
+    for (i = start_block-1; i < end_block; i++) {
+        initial_offset = (i == start_block-1) ? byte_offset : 0;
+        copy_len = (bytes_to_copy >= 4096) ? 4096 : bytes_to_copy;
+        copy_len = ((4096-initial_offset) < copy_len) ? (4096-initial_offset) : copy_len;
+        printf("\n printing %d in block %d with initial offset %d \n" ,copy_len,i,initial_offset) ;
+        memcpy(buf + bytes_copied /*TODO check this*/, dataBlocks[inodes[inode].block[i]].contents + initial_offset, copy_len);
+        bytes_copied += copy_len;
+        bytes_to_copy -= copy_len;
+        if (bytes_to_copy <= 0) {
+            break;
+        }
     }
 
     // should do some math to first determine what can be placed into this buffer.
@@ -130,5 +146,5 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length
     // we will find the inodes[]. Then we will loop through the blocks and put the block[i] into buf[i]
     // we have data blocks of size 4kB as well. How do we access these data blocks? must have some sort of global variable
 
-    return -1;
+    return bytes_copied;
 }

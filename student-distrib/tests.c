@@ -165,29 +165,31 @@ static inline void assertion_failure(){
     return 1;
 }*/
 
-int dentry_by_index_test()
-{
+int dentry_by_index_test(){
     dentry_t test_dentry;
     printf("running test");
     read_dentry_by_index(6,&test_dentry);
     return 1;
 }
-int dentry_by_name_test()
-{
+int dentry_by_name_test(){
     dentry_t test_dentry;
     printf("running by name test");
     read_dentry_by_name("fish",&test_dentry);
 }
-int read_data_test()
-{
+int read_data_test(){
     dentry_t test_dentry;
-    read_dentry_by_name("frame0.txt",&test_dentry);
-    uint8_t buf[4096];
-    read_data(test_dentry.inode,0,buf,4096);
+    read_dentry_by_name("verylargetextwithverylongname.tx",&test_dentry);
+    int buf_length;
+    buf_length = inodes[test_dentry.inode].length;
+    uint8_t buf[buf_length];
+    int i;
+    for (i = 0 ; i < buf_length; i++)
+        buf[i] = '\0';
+    read_data(test_dentry.inode,4095,buf,3);
 
     uint32_t j;
     printf("Copied contents to buf:\n");
-    for (j = 0; j < 4016; j++) {
+    for (j = 0; j < 3; j++) {
         putc(buf[j]);
     }
 }
