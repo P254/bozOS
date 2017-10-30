@@ -3,8 +3,10 @@
 #ifndef _FILE_SYSTEM_H
 #define _FILE_SYSTEM_H
 
-
-
+/* Magic numbers */
+#define MAX_D_ENTRIES 62
+#define FILE_NAME_LEN 32
+#define BLK_SZ 4096
 
 /* Create three structures:
  * bootblock
@@ -34,23 +36,19 @@ typedef struct dataBlock {
     uint8_t contents[4096];
 } data_block_t;
 
-dentry_t *dentries; // is this right?
-inode_t *inodes;    // is this right?
+dentry_t *dentries; 
+inode_t *inodes;    
 bootBlock_t *boot;
 data_block_t *dataBlocks;
-// NEED to have memory locations of Boot Block, Inode Begin AND DataBlocks Begin
-// N = ?
-// D = ?
 
-//file system init functions. gonna be similar to RTC and Keyboard and others.
-
+// File system init functions. Similar to RTC, keyboard and others.
 void fs_init(uint32_t start);
 
 int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry);
 int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry);
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length);
 
-//uses read_dentry_by_name so we need to read in ATLEAST the same arguments
+// Uses read_dentry_by_name so we need to read in ATLEAST the same arguments
 int32_t fopen(uint8_t *fname); // need to create a file structure? or is the uint8_t enough as a File do we need this to take in anything else?
 int32_t fclose(uint8_t *fname);
 int32_t fread(uint8_t *fname, uint32_t offset, uint8_t *buf, uint32_t length);

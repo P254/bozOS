@@ -167,31 +167,45 @@ static inline void assertion_failure(){
 
 int dentry_by_index_test(){
     dentry_t test_dentry;
-    printf("running test");
-    read_dentry_by_index(6,&test_dentry);
+    clear();
+    printf("running read_dentry_by_index test:\n");
+    uint8_t i;
+    for (i = 0; i < 62; i++) {
+        if (read_dentry_by_index(i, &test_dentry) == 0) {
+            printf("File name: %s\n", test_dentry.fileName);
+        }
+    }
+    
     return 1;
 }
-int dentry_by_name_test(){
+int dentry_by_name_test() {
     dentry_t test_dentry;
-    printf("running by name test");
-    read_dentry_by_name("fish",&test_dentry);
+    int8_t* fname = "fish";
+    printf("running read_dentry_by_name test:\n");
+    if (read_dentry_by_name((uint8_t*)fname, &test_dentry) == 0) {
+        printf("Found file %s\n", fname);
+    }
+    return 1;
 }
 int read_data_test(){
     dentry_t test_dentry;
-    read_dentry_by_name("verylargetextwithverylongname.tx",&test_dentry);
-    int buf_length;
-    buf_length = inodes[test_dentry.inode].length;
-    uint8_t buf[buf_length];
-    int i;
-    for (i = 0 ; i < buf_length; i++)
-        buf[i] = '\0';
-    read_data(test_dentry.inode,4095,buf,3);
-
-    uint32_t j;
-    printf("Copied contents to buf:\n");
-    for (j = 0; j < 3; j++) {
-        putc(buf[j]);
+    if (read_dentry_by_name((uint8_t*)"frame0.txt", &test_dentry) == -1) {
+        printf("File not found\n");
     }
+    
+    uint32_t buf_length = inodes[test_dentry.inode].length;
+    uint8_t copy_buf[buf_length];
+    
+    int status;
+    status = read_data(test_dentry.inode, 0, copy_buf, buf_length);
+    printf("Copy status: %d\n", status);
+
+    int i;
+    printf("Copied contents to buf:\n");
+    for (i = 0; i < buf_length; i++) {
+        putc(copy_buf[i]);
+    }
+    return 0;
 }
 
 // add more tests here
@@ -209,8 +223,8 @@ int read_data_test(){
  * Coverage: Launches the tests that we wrote before.
  */
 void launch_tests(){
-    //dentry_by_index_test();
-    //dentry_by_name_test();
+    // dentry_by_index_test();
+    // dentry_by_name_test();
     read_data_test();
 	// launch your tests here
     //TEST_OUTPUT("idt_test", idt_test());
