@@ -338,13 +338,13 @@ unsigned int getScanCode() {
  */
 void addCharToBuf(unsigned char c) {
     uint32_t buf_len = strlen((int8_t*) kb_buf);
+    int add_idx, x, y;
     if (buf_len < KB_SIZE-1) {
       kb_buf[buf_len+1] = '\0';
         kb_buf[buf_len] = c;
 
         /****** TYPING TEST BEGINS HERE *****/
         #if (TEST_KB_DRIVER == 1)
-        int add_idx, x, y;
         char* video_mem = (char *) VIDEO;
         x = getScreenX();
         y = getScreenY();
@@ -367,8 +367,12 @@ void addCharToBuf(unsigned char c) {
 
         // Calculate the index that we should write the character to
         else if(c!='\n'){
-          add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
-          *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+          if (buf_len<KB_SIZE) {
+            x = getScreenX();
+            y = getScreenY();
+            add_idx = convertToVidIdx(x, y-scroll_flag, buf_len); //NOTE: this is what I uncommented
+            *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+          }
         }
         #endif
     }
@@ -406,8 +410,12 @@ void delCharFrBuf() {
         y = getScreenY();
 
         // Calculate index that we should erase the character from
-        erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
-        *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
+        if (buf_len<KB_SIZE) {
+          x = getScreenX();
+          y = getScreenY();
+          erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
+          *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
+        }
         #endif
     }
 }
