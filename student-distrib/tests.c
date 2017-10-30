@@ -3,6 +3,7 @@
 #include "lib.h"
 #include "paging.h"
 #include "filesystem.h"
+#include "terminal.h"
 #define PASS 1
 #define FAIL 0
 
@@ -258,6 +259,37 @@ int print_all_directories_test()
     return 0;
 }
 
+int test_terminal_write_overload(){
+    unsigned char test_string_overload[500];
+    int i;
+    for (i = 0 ; i<498 ; i++){
+        test_string_overload[i] = 'a';
+    }
+    test_string_overload[499] = '\n';
+    terminal_write(0,test_string_overload,128);
+    putc('\n');
+    return 1;
+}
+
+int test_terminal_write_underload(){
+    unsigned char test_string_overload[5];
+    int i;
+    for (i = 0 ; i<4 ; i++){
+      test_string_overload[i] = 'a';
+    }   
+    test_string_overload[4] = '\n';
+    terminal_write(0,test_string_overload,128);
+    putc('\n');
+    return 1;
+}
+
+int test_terminal_read(){
+    unsigned char sys_buf[128];
+    terminal_read(0,sys_buf,128);
+    printf("%s\n", sys_buf);
+    return 1;
+}
+
 // add more tests here
 
 /* Checkpoint 3 tests */
@@ -276,7 +308,7 @@ void launch_tests(){
     printf("\n");
     //read_data_test("frame0.txt",-1,0,TEXT);
     //read_data_test("frame0.txt",24,0,TEXT);
-    read_data_test("frame0.txt",450,0,TEXT);
+    //read_data_test("frame0.txt",450,0,TEXT);
     //read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
     //read_data_test("fish",10,0,NONTEXT);
     //read_dentry_by_name_test("verylargetextwithverylongname.txt");
@@ -295,4 +327,11 @@ void launch_tests(){
     //TEST_OUTPUT("sys_call_test", sys_call_test());
     //TEST_OUTPUT("paging_table_test", paging_table_test());
     //TEST_OUTPUT("test_exceptions", test_exceptions());
+
+    //TEST_OUTPUT("test_terminal_write_overload", test_terminal_write_overload());
+    //TEST_OUTPUT("test_terminal_write_underload", test_terminal_write_underload());
+    //TEST_OUTPUT("test_terminal_read", test_terminal_read());
+
+
+
 }
