@@ -556,7 +556,7 @@ void setScreenY(int y) {
  *   SIDE EFFECTS: scrolls the main terminal window by one line
  */
 void videoScroll() {
-    memmove(video_mem, video_mem_r1, SCROLL_SIZE);
+    memcpy((void*) video_mem, (void*) video_mem_r1, SCROLL_SIZE);
     // Clear the botttommost line
     uint16_t i, vid_idx;
     for (i = 0; i < NUM_COLS; i++) {

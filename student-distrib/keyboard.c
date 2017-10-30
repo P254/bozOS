@@ -227,7 +227,7 @@ void kb_int_handler() {
     else if(scanCodeTable[c] == '\n'){
       addCharToBuf(scanCodeTable[c]);
       copy_kb_buff();
-      // scroll_flag = 0;
+      scroll_flag = 0;
 
     }
     else if (scanCodeTable[c] != 0) {
@@ -247,7 +247,6 @@ void kb_int_handler() {
 unsigned int getScanCode() {
     unsigned char scanCode;
     unsigned int position;
-    uint32_t buf_len = strlen((int8_t*) kb_buf);
     // unsigned int pos = strlen(kb_buf);
     scanCode = inb(KB_DATA_PORT);
     if (scanCode & 0x80) {
@@ -324,7 +323,7 @@ unsigned int getScanCode() {
             }
         }
     }
-  
+
     return 0;
 }
 
@@ -340,8 +339,8 @@ unsigned int getScanCode() {
 void addCharToBuf(unsigned char c) {
     uint32_t buf_len = strlen((int8_t*) kb_buf);
     if (buf_len < KB_SIZE-1) {
+      kb_buf[buf_len+1] = '\0';
         kb_buf[buf_len] = c;
-        kb_buf[buf_len+1] = '\0';
 
         /****** TYPING TEST BEGINS HERE *****/
         #if (TEST_KB_DRIVER == 1)
@@ -350,23 +349,39 @@ void addCharToBuf(unsigned char c) {
         x = getScreenX();
         y = getScreenY();
 
-        // if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1 && scroll_flag == 0) {
-        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) {
+        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1 && scroll_flag == 0) {
             videoScroll();
-            // scroll_flag = 1;
+            scroll_flag = 1;
         }
         // if new line
         if(c=='\n') {
-          videoScroll();
-          // scroll_flag = 1;
+          putc('\n');
+          // if(y == NUM_ROWS-1)
+          //     videoScroll();
+          //   else setScreenY(y-1);         }
+          if(buf_len>80){
+            putc('\n');
+            scroll_flag = 0; // set scroll_flag back to 0 since we're at the second line
         }
+      }
+
         // Calculate the index that we should write the character to
         else if(c!='\n'){
-          // add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
-           add_idx = convertToVidIdx(x, y, buf_len);
-          *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];}
+          add_idx = convertToVidIdx(x, y-scroll_flag, buf_len);
+          *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+        }
         #endif
     }
+    else if (c=='\n'){
+      // putc(c);
+      // putc(c);
+      printf("\n\n");
+      scroll_flag=0; // set buf_len back to 0 whenevr enter is pressed
+    }
+    // else {
+    //   int x;
+    //   x=0;
+    // }
 }
 
 /*
@@ -381,7 +396,8 @@ void delCharFrBuf() {
     uint32_t buf_len = strlen((int8_t*) kb_buf);
     if (buf_len > 0) {
         kb_buf[buf_len-1] = '\0';
-
+        if (buf_len<80)
+          scroll_flag=0;
         /****** TYPING TEST BEGINS HERE *****/
         #if (TEST_KB_DRIVER == 1)
         int erase_idx, x, y;
@@ -390,8 +406,7 @@ void delCharFrBuf() {
         y = getScreenY();
 
         // Calculate index that we should erase the character from
-        erase_idx = convertToVidIdx(x, y, buf_len) - 1;
-        // erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
+        erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
         *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
         #endif
     }
@@ -419,11 +434,11 @@ int convertToVidIdx(int x, int y, int buf_len) {
  */
 int* kb_read_release() {
     // TODO: Figure out why this warning 'return discards qualifiers from pointer target type'
-    return &terminal_read_release;
+    return (int*) &terminal_read_release;
 }
 
 unsigned char* get_kb_buffer() {
-  return int_buf;
+  return (unsigned char*) int_buf;
 }
 
 void copy_kb_buff(){
