@@ -41,7 +41,6 @@
 /* Forward Declarations */
 void kb_init(void);
 unsigned int get_scan_code(void);
-void keyboard_handler_asm(void);
 void kb_int_handler(void);
 void add_char_to_buf(unsigned char c);
 void del_char_from_buf(void);

@@ -322,8 +322,15 @@ int test_terminal_write_underload(){
  */
 int test_terminal_read(){
     unsigned char sys_buf[128];
+    memset(sys_buf, '\0', 128);
     terminal_read(0,sys_buf,128);
-    printf("%s\n", sys_buf);
+    
+    int i;
+    for (i = 0; i < 128; i++) {
+        putc(sys_buf[i]);
+        if (sys_buf[i] == '\0' || sys_buf[i] == '\n') break;
+    }
+
     return 1;
 }
 
@@ -418,7 +425,10 @@ int rtc_handler_test() {
  * Coverage: Launches the tests that we wrote before.
  */
 void launch_tests() {
+    #if (CLEAR_SCREEN_FOR_TEST == 1)
     clear();
+    #endif
+
     /************ Checkpoint 1 Tests **********************/
     // TEST_OUTPUT("idt_test", idt_test());
 	// TEST_OUTPUT("divisionby0_test", div0_test());
@@ -430,8 +440,8 @@ void launch_tests() {
     // TEST_OUTPUT("paging_table_test", paging_table_test());
     // TEST_OUTPUT("test_exceptions", test_exceptions());
 
-    /************ Checkpoint 2 Tests **********************/
 
+    /************ Checkpoint 2 Tests **********************/
     #if (READ_DATA_TEST_ENABLE == 1)
     read_data_test("frame0.txt",-1,0,TEXT);
     read_data_test("frame0.txt",24,0,TEXT);

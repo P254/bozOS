@@ -55,7 +55,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
         if (source[i] == '\n') break;
         else source[i] = '\0'; // Flush-as-you-go
     }
-
+    dest[bytes_to_copy-1] = '\n'; // We want to terminate our intermediate buffer with '\n' instead of '\0'
     *enter_flag = 0; // Reset the keyboard flag
     bytes_copied = i;
     i++;
