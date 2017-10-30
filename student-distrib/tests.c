@@ -11,7 +11,18 @@
 #define PASS 1
 #define FAIL 0
 
-extern int count;
+#define VID_MEM 0xB8000
+#define KERN_MEM 0x400000
+#define SIZE_TABLE 1024
+#define SIZE_TABLE 1024
+#define IDT_SIZE 256
+#define VID_MEM_LOC 0xB8000
+#define KERN_MEM 0x400000
+#define FILLED_LOC 2
+#define TEXT 0 
+#define NONTEXT 1
+
+extern int rtc_count;
 /* format these macros as you see fit */
 #define TEST_HEADER 	\
 	printf("[TEST %s] Running %s at %s:%d\n", __FUNCTION__, __FUNCTION__, __FILE__, __LINE__)
@@ -297,80 +308,80 @@ int test_terminal_read(){
 
 // add more tests here
 
-/*
-	As suggested by a TA that a thorough test would be
-	to change the frequency of rtc from slow to fast and
-	call teh read fucntion 10-20 times to see the output on the screen.
-*/
-int rtc_handler_test(){
+/* As suggested by a TA that a thorough test would be
+ * to change the frequency of rtc from slow to fast and
+ * call the read fucntion 10-20 times to see the output on the screen.
+ */
+int rtc_handler_test() {
     unsigned int buf;
     int result;
-        result = FAIL;
-        // open (NULL);
-        clear();
+    result = FAIL;
+    // open (NULL);
+    
+    clear();
     buf=2;
-    write(NULL, &buf, 0);
-        while(count!=10);
-    count = 0;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=10);
+    rtc_count = 0;
 
-        clear();
+    clear();
     buf=4;
-        write(NULL, &buf, 0);
-    while(count!=20);
-    count = 0;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=20);
+    rtc_count = 0;
 
-        clear();
+    clear();
     buf=8;
-    write(NULL, &buf, 0);
-    while(count!=40);
-    count = 0;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=40);
+    rtc_count = 0;
 
-        clear();
-        buf=8;
-    write(NULL, &buf, 0);
-        while(count!=80);
-        count = 0;
+    clear();
+    buf=8;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=80);
+    rtc_count = 0;
 
-        clear();
-        buf=16;
-        write(NULL, &buf, 0);
-        while(count!=120);
-        count = 0;
+    clear();
+    buf=16;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=120);
+    rtc_count = 0;
 
-        clear();
-        buf=32;
-        write(NULL, &buf, 0);
-        while(count!=200);
-        count = 0;
+    clear();
+    buf=32;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=200);
+    rtc_count = 0;
 
-        clear();
-        buf=64;
-        write(NULL, &buf, 0);
-        while(count!=300);
-        count = 0;
+    clear();
+    buf=64;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=300);
+    rtc_count = 0;
 
-        clear();
-        buf=128;
-        write(NULL, &buf, 0);
-        while(count!=500);
-        count = 0;
+    clear();
+    buf=128;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=500);
+    rtc_count = 0;
 
-        clear();
-        buf=256;
-        write(NULL, &buf, 0);
-        while(count!=800);
-        count = 0;
+    clear();
+    buf=256;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=800);
+    rtc_count = 0;
 
-        clear();
-        buf=512;
-        write(NULL, &buf, 0);
-        while(count!=1000);
-        count = 0;
+    clear();
+    buf=512;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=1000);
+    rtc_count = 0;
 
-        clear();
-
-        cli();
-    result= PASS;
+    clear();
+    cli();
+    
+    result = PASS;
     return result;
 }
 
@@ -385,34 +396,53 @@ int rtc_handler_test(){
  * Side Effects: None
  * Coverage: Launches the tests that we wrote before.
  */
-void launch_tests(){
+void launch_tests() {
     clear();
-    //read_data_test("frame0.txt",-1,0,TEXT);
-    //read_data_test("frame0.txt",24,0,TEXT);
-    //read_data_test("frame0.txt",450,0,TEXT);
-    //read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
-    //read_data_test("fish",10,0,NONTEXT);
-    //read_dentry_by_name_test("verylargetextwithverylongname.txt");
-    //read_dentry_by_name_test("wtf name");
+    /************ Checkpoint 1 Tests **********************/
+    // TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("divisionby0_test", div0_test());
+    // TEST_OUTPUT("paging_kernel_test", paging_kernel_test());
+    // TEST_OUTPUT("paging_video_test", paging_video_test());
+	// TEST_OUTPUT("pagefault_test", pagefault_test());
+    // TEST_OUTPUT("segment_test", segment_test());
+    // TEST_OUTPUT("sys_call_test", sys_call_test());
+    // TEST_OUTPUT("paging_table_test", paging_table_test());
+    // TEST_OUTPUT("test_exceptions", test_exceptions());
+
+    /************ Checkpoint 2 Tests **********************/
+    
+    #if (READ_DATA_TEST_ENABLE == 1)
+    read_data_test("frame0.txt",-1,0,TEXT);
+    read_data_test("frame0.txt",24,0,TEXT);
+    read_data_test("frame0.txt",450,0,TEXT);
+    read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT); 
+    read_data_test("fish",10,0,NONTEXT);
+    #endif 
+
+    #if (READ_DENTRY_NAME_TEST_ENABLE == 1)
+    read_dentry_by_name_test("verylargetextwithverylongname.txt");
+    read_dentry_by_name_test("wtf name");
+    #endif
+
+    #if (PRINT_ALL_DIR_TEST_ENABLE == 1)
     print_all_directories_test();
-    // read_dentry_by_index_test(5);
-    // read_dentry_by_index_test(500);
+    #endif 
 
-	// launch your tests here
-    //TEST_OUTPUT("idt_test", idt_test());
-	//TEST_OUTPUT("divisionby0_test", div0_test());
-    //TEST_OUTPUT("paging_kernel_test", paging_kernel_test());
-    //TEST_OUTPUT("paging_video_test", paging_video_test());
-	//TEST_OUTPUT("pagefault_test", pagefault_test());
-    //TEST_OUTPUT("segment_test", segment_test());
-    //TEST_OUTPUT("sys_call_test", sys_call_test());
-    //TEST_OUTPUT("paging_table_test", paging_table_test());
-    //TEST_OUTPUT("test_exceptions", test_exceptions());
+    #if (READ_DENTRY_IDX_TEST_ENABLE == 1)
+    read_dentry_by_index_test(5);
+    read_dentry_by_index_test(500);
+    #endif
 
-    //TEST_OUTPUT("test_terminal_write_overload", test_terminal_write_overload());
-    //TEST_OUTPUT("test_terminal_write_underload", test_terminal_write_underload());
-    //TEST_OUTPUT("test_terminal_read", test_terminal_read());
+    #if (TEMRINAL_WRITE_TEST_ENABLE == 1)
+    TEST_OUTPUT("test_terminal_write_overload", test_terminal_write_overload());
+    TEST_OUTPUT("test_terminal_write_underload", test_terminal_write_underload());
+    #endif 
 
-    // TEST_OUTPUT("rtc handler test", rtc_handler_test());
-
+    #if (TEMRINAL_READ_TEST_ENABLE == 1)
+    TEST_OUTPUT("test_terminal_read", test_terminal_read());
+    #endif
+    
+    #if (RTC_TEST_ENABLE == 1)
+    TEST_OUTPUT("rtc handler test", rtc_handler_test());
+    #endif 
 }
