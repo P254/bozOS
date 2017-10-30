@@ -39,19 +39,19 @@ int32_t terminal_close(int32_t fd) {
  */
 int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
     // Check for bad inputs
-    if (buf == NULL || nbytes < 0) return -1;
+    if (buf == NULL || nbytes < 0) return -1; //check invalid input
 
-    unsigned char* source = get_kb_buffer();
-    unsigned char* dest = (unsigned char*) buf;
+    unsigned char* source = get_kb_buffer(); //get intermidate buffer
+    unsigned char* dest = (unsigned char*) buf; //set system buffer as dest
 
     int32_t i, bytes_copied, bytes_to_copy, c = 0;
-    bytes_to_copy = (nbytes < KB_BUF_SIZE) ? nbytes : KB_BUF_SIZE;
-    
+    bytes_to_copy = (nbytes < KB_BUF_SIZE) ? nbytes : KB_BUF_SIZE; //check how much we need to copy
+
     int* enter_flag = kb_read_release();
-    while(!(*enter_flag));
+    while(!(*enter_flag)); //spin until \n is pressed
 
     for (i = 0; i < bytes_to_copy; i++) {
-        dest[i] = source[i];
+        dest[i] = source[i]; //copy over into system buffer
         if (source[i] == '\n') break;
         else source[i] = '\0'; // Flush-as-you-go
     }
@@ -60,7 +60,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
     bytes_copied = i;
     i++;
 
-    // Move the KB buffer 
+    // shift the KB buffer
     while (source[i]!='\0') {
         source[c] = source[i];
         source[i] = '\0';
@@ -82,16 +82,16 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
  */
 int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
     // Check for bad inputs
-    if (buf == NULL || nbytes < 0) return -1;
-    
+    if (buf == NULL || nbytes < 0) return -1; //check invalid input
+
     uint32_t i, bytes_to_write;
     i = 0;
-    bytes_to_write = (nbytes < KB_BUF_SIZE) ? nbytes : KB_BUF_SIZE;
-    unsigned char* dest = (unsigned char*) buf;
+    bytes_to_write = (nbytes < KB_BUF_SIZE) ? nbytes : KB_BUF_SIZE; //check how much we need to copy
+    unsigned char* dest = (unsigned char*) buf; //set system buffer as dest
 
     while (i < bytes_to_write){
-        putc(dest[i]);
-        if (dest[i] == '\n' || dest[i] == '\0') return (i+1);
+        putc(dest[i]); //write buffer to terminal
+        if (dest[i] == '\n' || dest[i] == '\0') return (i+1); //stop if we encounter null or new line
         i++;
     }
     return i;
