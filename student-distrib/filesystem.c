@@ -174,7 +174,6 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length
     int32_t i, mem_location_off, file_length, blocks_used,
             start_block, end_block, bytes_to_copy, bytes_copied, initial_offset, copy_len;
     
-    // TODO: Check for invalid inputs
     if (inode > boot->inodes || inode < 0 || buf == NULL  ) return -1;
     // Set the file length
     file_length = inodes[inode].length;
