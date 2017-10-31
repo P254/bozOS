@@ -54,13 +54,9 @@ rtc_handler_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e0_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e0 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e0 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e1_asm
@@ -70,13 +66,9 @@ handle_e0_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e1_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e1 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e1 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e2_asm
@@ -86,13 +78,9 @@ handle_e1_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e2_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e2 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e2 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e3_asm
@@ -102,13 +90,9 @@ handle_e2_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e3_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e3 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e3 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e4_asm
@@ -118,13 +102,9 @@ handle_e3_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e4_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e4 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e4 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e5_asm
@@ -134,13 +114,9 @@ handle_e4_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e5_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e5 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e5 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e6_asm
@@ -150,13 +126,9 @@ handle_e5_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e6_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e6 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e6 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e7_asm
@@ -166,13 +138,9 @@ handle_e6_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e7_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e7 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e7 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e8_asm
@@ -182,13 +150,9 @@ handle_e7_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e8_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e8 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e8 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e9_asm
@@ -198,13 +162,9 @@ handle_e8_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e9_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e9 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e9 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e10_asm
@@ -214,13 +174,9 @@ handle_e9_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e10_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e10 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e10 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e11_asm
@@ -230,13 +186,9 @@ handle_e10_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e11_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e11 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e11 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e12_asm
@@ -246,13 +198,9 @@ handle_e11_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e12_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e12 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e12 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e13_asm
@@ -262,13 +210,9 @@ handle_e12_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e13_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e13 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e13 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e14_asm
@@ -278,13 +222,9 @@ handle_e13_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e14_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e14 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e14 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e15_asm
@@ -294,13 +234,9 @@ handle_e14_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e15_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e15 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e15 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e16_asm
@@ -310,13 +246,9 @@ handle_e15_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e16_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e16 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e16 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e17_asm
@@ -326,13 +258,9 @@ handle_e16_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e17_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e17 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e17 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e18_asm
@@ -342,13 +270,9 @@ handle_e17_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e18_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e18 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e18 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
 
 # handle_e19_asm
@@ -358,11 +282,8 @@ handle_e18_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e19_asm:
-	 pushl %eax # Callee-save
-	 pushl %ecx
-	 pushl %edx
-	 call handle_e19 # Calling interrup handler defined in C
-	 popl %edx # Callee-restore
-	 popl %ecx
-	 popl %eax
+	 pushal
+	 call handle_e19 # Calling interrupt handler defined in C
+	 popal
 	 iret # Return control to interrupted program
+
