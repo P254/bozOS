@@ -1,0 +1,10 @@
+
+build:
+  stage: build
+  script: 
+    - cd student-distrib
+    - chmod +x debug.sh
+    - make clean
+    - make dep
+    - sudo make
+
