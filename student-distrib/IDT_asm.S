@@ -36,6 +36,7 @@
 .globl handle_e17_asm, handle_e17
 .globl handle_e18_asm, handle_e18
 .globl handle_e19_asm, handle_e19
+.globl handle_default_asm, handle_default
 
 # keyboard_handler_asm
 #    DESCRIPTION : Warpper for keyboard-generated interrupt
@@ -301,3 +302,14 @@ handle_e19_asm:
     popal
     iret # Return control to interrupted program
 
+# handle_default_asm
+#    DESCRIPTION : Wrapper for exception #19
+#    INPUTS : none
+#    OUTPUT : none
+#    RETURN : none
+#    SIDE EFFECTS : none
+handle_default_asm:
+    pushal
+    call handle_default # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program

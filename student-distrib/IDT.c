@@ -52,7 +52,7 @@ void init_IDT() {
         }
         else {
             // Indices 20-31 are reserved for some other purpose (according to the spec), so we write a default handler
-            set_IDT_wrapper(i, handle_default);
+            set_IDT_wrapper(i, handle_default_asm);
         }
     }
 
@@ -68,9 +68,9 @@ void init_IDT() {
 
         if (i == SYS_CALL) {
             // System call 'execute'
-            set_IDT_wrapper(i, handle_sys_call);
-            // idt[i].dpl = 3;
-            // idt[i].seg_selector = USER_CS;
+            set_IDT_wrapper(i, handle_sys_call); // TODO: Change the function to use assembly linkage 
+            idt[i].dpl = 3; // System call should have its DPL set to 3 so that it is accessible from user space via the 'int' instruction
+            idt[i].seg_selector = USER_CS; // TODO Sean: Figure out this needs to be here or not
         }
     }
 }
@@ -82,7 +82,7 @@ void init_IDT() {
  *   INPUTS: code -- error code 
  *   OUTPUTS: none
  *   RETURN VALUE: void
- *   SIDE EFFECTS: masks interrupts, halts system
+ *   SIDE EFFECTS: prints error code to the screen
  */
 void print_error_code(uint32_t code) {
     printf("Error code (hex): %x\n", code);
@@ -303,7 +303,7 @@ void handle_e14() {
         : "=r" (addr)
         : /* no inputs */
     );
-    printf("Interrupt 14 - Page-Fault Exception (#PF) at %x\n", addr);
+    printf("Interrupt 14 - Page-Fault Exception (#PF) at address %x\n", addr);
     cli();
     while(1);
 }
