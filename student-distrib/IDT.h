@@ -35,6 +35,7 @@ void handle_e18();
 void handle_e19();
 void handle_sys_call(); // TODO Sean: This will need to be placed into assembly linkage
 void handle_default();  // TODO Sean: This will need to be placed into assembly linkage
+void print_error_code();
 
 /* Exception handler prototype in ASM */
 extern void handle_e0_asm();

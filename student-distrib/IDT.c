@@ -75,6 +75,20 @@ void init_IDT() {
     }
 }
 
+/* 
+ * print_error_code
+ *   DESCRIPTION: Prints the error code to the screen. 
+ *                Used only by exceptions  #8, #11, #12, #13, #14, #17, #30
+ *   INPUTS: code -- error code 
+ *   OUTPUTS: none
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: masks interrupts, halts system
+ */
+void print_error_code(uint32_t code) {
+    printf("Error code (hex): %x\n", code);
+}
+
+
 /*
  * handle_e0
  *   DESCRIPTION: Handler for exception #0
@@ -282,7 +296,14 @@ void handle_e13() {
  *   SIDE EFFECTS: masks interrupts, halts system
  */
 void handle_e14() {
-    printf("Interrupt 14 - Page-Fault Exception (#PF)\n");
+    // Grab CR2 register (tells us the page fault linear address)
+    uint32_t addr;
+    asm volatile( 
+        "movl %%cr2, %0"
+        : "=r" (addr)
+        : /* no inputs */
+    );
+    printf("Interrupt 14 - Page-Fault Exception (#PF) at %x\n", addr);
     cli();
     while(1);
 }

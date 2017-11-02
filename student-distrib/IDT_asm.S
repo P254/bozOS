@@ -1,3 +1,18 @@
+.data
+    ONE_LEVEL      = 4
+    ERROR_CODE_LOC = 44
+
+.globl print_error_code
+# Exceptions that give error codes are #8, #11, #12, #13, #14, #17, #30
+# For error code interpretation, see:
+# 1. http://wiki.osdev.org/Exceptions
+# 2. https://stackoverflow.com/questions/10360888/identifying-faulting-address-on-general-protection-fault-x86
+
+# ASM code for printing error code:
+    # pushl ERROR_CODE_LOC(%esp)
+    # call print_error_code
+    # addl ONE_LEVEL, %esp
+
 .globl keyboard_handler_asm, kb_int_handler
 .globl rtc_handler_asm, rtc_handler
 
@@ -21,7 +36,6 @@
 .globl handle_e17_asm, handle_e17
 .globl handle_e18_asm, handle_e18
 .globl handle_e19_asm, handle_e19
-
 
 # keyboard_handler_asm
 #    DESCRIPTION : Warpper for keyboard-generated interrupt
@@ -54,10 +68,10 @@ rtc_handler_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e0_asm:
-	 pushal
-	 call handle_e0 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e0 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e1_asm
 #	 DESCRIPTION : Wrapper for exception #1
@@ -66,10 +80,10 @@ handle_e0_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e1_asm:
-	 pushal
-	 call handle_e1 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e1 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e2_asm
 #	 DESCRIPTION : Wrapper for exception #2
@@ -78,10 +92,10 @@ handle_e1_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e2_asm:
-	 pushal
-	 call handle_e2 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e2 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e3_asm
 #	 DESCRIPTION : Wrapper for exception #3
@@ -90,10 +104,10 @@ handle_e2_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e3_asm:
-	 pushal
-	 call handle_e3 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e3 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e4_asm
 #	 DESCRIPTION : Wrapper for exception #4
@@ -102,10 +116,10 @@ handle_e3_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e4_asm:
-	 pushal
-	 call handle_e4 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e4 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e5_asm
 #	 DESCRIPTION : Wrapper for exception #5
@@ -114,10 +128,10 @@ handle_e4_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e5_asm:
-	 pushal
-	 call handle_e5 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e5 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e6_asm
 #	 DESCRIPTION : Wrapper for exception #6
@@ -126,10 +140,10 @@ handle_e5_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e6_asm:
-	 pushal
-	 call handle_e6 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e6 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e7_asm
 #	 DESCRIPTION : Wrapper for exception #7
@@ -138,10 +152,10 @@ handle_e6_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e7_asm:
-	 pushal
-	 call handle_e7 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e7 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e8_asm
 #	 DESCRIPTION : Wrapper for exception #8
@@ -150,10 +164,10 @@ handle_e7_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e8_asm:
-	 pushal
-	 call handle_e8 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e8 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e9_asm
 #	 DESCRIPTION : Wrapper for exception #9
@@ -162,10 +176,10 @@ handle_e8_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e9_asm:
-	 pushal
-	 call handle_e9 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e9 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e10_asm
 #	 DESCRIPTION : Wrapper for exception #10
@@ -174,10 +188,10 @@ handle_e9_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e10_asm:
-	 pushal
-	 call handle_e10 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e10 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e11_asm
 #	 DESCRIPTION : Wrapper for exception #11
@@ -186,10 +200,10 @@ handle_e10_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e11_asm:
-	 pushal
-	 call handle_e11 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e11 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e12_asm
 #	 DESCRIPTION : Wrapper for exception #12
@@ -198,10 +212,10 @@ handle_e11_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e12_asm:
-	 pushal
-	 call handle_e12 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e12 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e13_asm
 #	 DESCRIPTION : Wrapper for exception #13
@@ -210,10 +224,10 @@ handle_e12_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e13_asm:
-	 pushal
-	 call handle_e13 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e13 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e14_asm
 #	 DESCRIPTION : Wrapper for exception #14
@@ -222,10 +236,10 @@ handle_e13_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e14_asm:
-	 pushal
-	 call handle_e14 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+	call handle_e14 # Calling interrupt handler defined in C
+	popal
+	iret # Return control to interrupted program
 
 # handle_e15_asm
 #	 DESCRIPTION : Wrapper for exception #15
@@ -234,10 +248,10 @@ handle_e14_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e15_asm:
-	 pushal
-	 call handle_e15 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e15 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e16_asm
 #	 DESCRIPTION : Wrapper for exception #16
@@ -246,10 +260,10 @@ handle_e15_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e16_asm:
-	 pushal
-	 call handle_e16 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e16 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e17_asm
 #	 DESCRIPTION : Wrapper for exception #17
@@ -258,10 +272,10 @@ handle_e16_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e17_asm:
-	 pushal
-	 call handle_e17 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e17 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e18_asm
 #	 DESCRIPTION : Wrapper for exception #18
@@ -270,10 +284,10 @@ handle_e17_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e18_asm:
-	 pushal
-	 call handle_e18 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e18 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # handle_e19_asm
 #	 DESCRIPTION : Wrapper for exception #19
@@ -282,8 +296,8 @@ handle_e18_asm:
 #	 RETURN : none
 #	 SIDE EFFECTS : none
 handle_e19_asm:
-	 pushal
-	 call handle_e19 # Calling interrupt handler defined in C
-	 popal
-	 iret # Return control to interrupted program
+    pushal
+    call handle_e19 # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
