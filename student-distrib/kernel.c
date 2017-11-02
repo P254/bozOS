@@ -145,12 +145,12 @@ void entry(unsigned long magic, unsigned long addr) {
         ltr(KERNEL_TSS);
     }
 
+    module_t* mod = (module_t*)mbi->mods_addr;
+    fs_init((uint32_t)mod->mod_start); /* Init filesystem */
 
     i8259_init(); /* Init the PIC */
     kb_init(); /* Init the keyboard */
     rtc_init(); /* Init the RTC */
-    module_t* mod = (module_t*)mbi->mods_addr;
-    fs_init((uint32_t)mod->mod_start);
     paging_init(); /* Init the paging */
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
