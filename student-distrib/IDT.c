@@ -66,9 +66,9 @@ void init_IDT() {
         set_IDT_wrapper(i, handle_default);
         idt[i].present = 0; // Mark as 'not present' unless otherwise stated
 
-        if (i == SYS_CALL) {
-            // System call 'execute'
-            set_IDT_wrapper(i, handle_sys_call); // TODO: Change the function to use assembly linkage 
+        if (i == SYS_CALL_ADDR) {
+            // System call
+            set_IDT_wrapper(i, handle_syscall_asm); 
             idt[i].dpl = 3; // System call should have its DPL set to 3 so that it is accessible from user space via the 'int' instruction
             idt[i].seg_selector = USER_CS; // TODO Sean: Figure out this needs to be here or not
         }
@@ -392,17 +392,3 @@ void handle_default() {
     while(1);
 }
 
-/*
- * handle_sys_call
- *   DESCRIPTION: Handler for system calls.
- *                Placeholder for now, will be filled in as part of future checkpoints.
- *   INPUTS: none
- *   OUTPUTS: none
- *   RETURN VALUE: void
- *   SIDE EFFECTS: masks interrupts, halts system
- */
-void handle_sys_call() {
-    printf("System call.\n");
-    cli();
-    while(1);
-}

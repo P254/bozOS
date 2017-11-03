@@ -37,9 +37,22 @@
 .globl handle_e18_asm, handle_e18
 .globl handle_e19_asm, handle_e19
 .globl handle_default_asm, handle_default
+.globl handle_syscall_asm, handle_syscall
+
+# handle_syscall_asm
+#    DESCRIPTION : Assembly linkage for keyboard-generated interrupt
+#    INPUTS : none
+#    OUTPUT : none
+#    RETURN : none
+#    SIDE EFFECTS : none
+handle_syscall_asm:
+    pushal
+    call handle_syscall
+    popal
+    iret
 
 # keyboard_handler_asm
-#    DESCRIPTION : Warpper for keyboard-generated interrupt
+#    DESCRIPTION : Assembly linkage for keyboard-generated interrupt
 #    INPUTS : none
 #    OUTPUT : none
 #    RETURN : none
@@ -51,7 +64,7 @@ keyboard_handler_asm:
     iret # Return control to interrupted program
 
 # rtc_handler_asm
-#    DESCRIPTION : Warpper for RTC-generated interrupt
+#    DESCRIPTION : Assembly linkage for RTC-generated interrupt
 #    INPUTS : none
 #    OUTPUT : none
 #    RETURN : none
@@ -63,7 +76,7 @@ rtc_handler_asm:
     iret # Return control to interrupted program
 
 # handle_e0_asm
-#	 DESCRIPTION : Wrapper for exception #0
+#	 DESCRIPTION : Assembly linkage for exception #0
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -75,7 +88,7 @@ handle_e0_asm:
     iret # Return control to interrupted program
 
 # handle_e1_asm
-#	 DESCRIPTION : Wrapper for exception #1
+#	 DESCRIPTION : Assembly linkage for exception #1
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -87,7 +100,7 @@ handle_e1_asm:
     iret # Return control to interrupted program
 
 # handle_e2_asm
-#	 DESCRIPTION : Wrapper for exception #2
+#	 DESCRIPTION : Assembly linkage for exception #2
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -99,7 +112,7 @@ handle_e2_asm:
     iret # Return control to interrupted program
 
 # handle_e3_asm
-#	 DESCRIPTION : Wrapper for exception #3
+#	 DESCRIPTION : Assembly linkage for exception #3
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -111,7 +124,7 @@ handle_e3_asm:
     iret # Return control to interrupted program
 
 # handle_e4_asm
-#	 DESCRIPTION : Wrapper for exception #4
+#	 DESCRIPTION : Assembly linkage for exception #4
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -123,7 +136,7 @@ handle_e4_asm:
     iret # Return control to interrupted program
 
 # handle_e5_asm
-#	 DESCRIPTION : Wrapper for exception #5
+#	 DESCRIPTION : Assembly linkage for exception #5
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -135,7 +148,7 @@ handle_e5_asm:
     iret # Return control to interrupted program
 
 # handle_e6_asm
-#	 DESCRIPTION : Wrapper for exception #6
+#	 DESCRIPTION : Assembly linkage for exception #6
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -147,7 +160,7 @@ handle_e6_asm:
     iret # Return control to interrupted program
 
 # handle_e7_asm
-#	 DESCRIPTION : Wrapper for exception #7
+#	 DESCRIPTION : Assembly linkage for exception #7
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -159,7 +172,7 @@ handle_e7_asm:
     iret # Return control to interrupted program
 
 # handle_e8_asm
-#	 DESCRIPTION : Wrapper for exception #8
+#	 DESCRIPTION : Assembly linkage for exception #8
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -171,7 +184,7 @@ handle_e8_asm:
     iret # Return control to interrupted program
 
 # handle_e9_asm
-#	 DESCRIPTION : Wrapper for exception #9
+#	 DESCRIPTION : Assembly linkage for exception #9
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -183,7 +196,7 @@ handle_e9_asm:
     iret # Return control to interrupted program
 
 # handle_e10_asm
-#	 DESCRIPTION : Wrapper for exception #10
+#	 DESCRIPTION : Assembly linkage for exception #10
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -195,7 +208,7 @@ handle_e10_asm:
     iret # Return control to interrupted program
 
 # handle_e11_asm
-#	 DESCRIPTION : Wrapper for exception #11
+#	 DESCRIPTION : Assembly linkage for exception #11
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -207,7 +220,7 @@ handle_e11_asm:
     iret # Return control to interrupted program
 
 # handle_e12_asm
-#	 DESCRIPTION : Wrapper for exception #12
+#	 DESCRIPTION : Assembly linkage for exception #12
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -219,7 +232,7 @@ handle_e12_asm:
     iret # Return control to interrupted program
 
 # handle_e13_asm
-#	 DESCRIPTION : Wrapper for exception #13
+#	 DESCRIPTION : Assembly linkage for exception #13
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -231,7 +244,7 @@ handle_e13_asm:
     iret # Return control to interrupted program
 
 # handle_e14_asm
-#	 DESCRIPTION : Wrapper for exception #14
+#	 DESCRIPTION : Assembly linkage for exception #14
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -243,7 +256,7 @@ handle_e14_asm:
 	iret # Return control to interrupted program
 
 # handle_e15_asm
-#	 DESCRIPTION : Wrapper for exception #15
+#	 DESCRIPTION : Assembly linkage for exception #15
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -255,7 +268,7 @@ handle_e15_asm:
     iret # Return control to interrupted program
 
 # handle_e16_asm
-#	 DESCRIPTION : Wrapper for exception #16
+#	 DESCRIPTION : Assembly linkage for exception #16
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -267,7 +280,7 @@ handle_e16_asm:
     iret # Return control to interrupted program
 
 # handle_e17_asm
-#	 DESCRIPTION : Wrapper for exception #17
+#	 DESCRIPTION : Assembly linkage for exception #17
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -279,7 +292,7 @@ handle_e17_asm:
     iret # Return control to interrupted program
 
 # handle_e18_asm
-#	 DESCRIPTION : Wrapper for exception #18
+#	 DESCRIPTION : Assembly linkage for exception #18
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -291,7 +304,7 @@ handle_e18_asm:
     iret # Return control to interrupted program
 
 # handle_e19_asm
-#	 DESCRIPTION : Wrapper for exception #19
+#	 DESCRIPTION : Assembly linkage for exception #19
 #	 INPUTS : none
 #	 OUTPUT : none
 #	 RETURN : none
@@ -303,7 +316,7 @@ handle_e19_asm:
     iret # Return control to interrupted program
 
 # handle_default_asm
-#    DESCRIPTION : Wrapper for exception #19
+#    DESCRIPTION : Assembly linkage for any other exception
 #    INPUTS : none
 #    OUTPUT : none
 #    RETURN : none

@@ -7,7 +7,7 @@
 #define ALIGN_4KB 12
 #define PAGE_SIZE 1024
 
-#define PROG_MEM_SIZE 16
+#define PROG_MEM_SIZE 4 // We haev 4 such 4 MiB blocks that makes 16 MiB
 #define ALIGN_1MB 20
 #define ALIGN_1KB 10
 

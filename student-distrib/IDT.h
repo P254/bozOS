@@ -6,7 +6,7 @@
 #define N_EXCEPTIONS 20
 #define N_EXCEPTIONS_RESERVED 32
 #define USER_INT_START 32
-#define SYS_CALL 0x80
+#define SYS_CALL_ADDR 0x80
 
 /*Forward Declerations*/
 void set_IDT_wrapper(uint8_t idt_num, void* handler_function);
@@ -33,7 +33,7 @@ void handle_e16();
 void handle_e17();
 void handle_e18();
 void handle_e19();
-void handle_sys_call(); // TODO Sean: This will need to be placed into assembly linkage
+
 void handle_default();  // TODO Sean: This will need to be placed into assembly linkage
 void print_error_code();
 
@@ -63,5 +63,6 @@ extern void handle_default_asm();
 /* Interrupt linkage prototype */
 extern void rtc_handler_asm();
 extern void keyboard_handler_asm();
+extern void handle_syscall_asm();
 
 #endif /* IDT_H */
