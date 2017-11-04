@@ -91,14 +91,6 @@ void paging_init() {
     // We want to allocate a 4KiB page for VIDEO MEMORY
     page_table[(VIDEO_MEM >> ALIGN_4KB)] = VIDEO_MEM | 0x3; // give page r/w access, mark as present
 
-    // Set up memory for user-level programs
-    // We want at least 16 MiB of memory allocated, starting at physical address 128 MiB
-    uint32_t mem_addr;
-    for (i = 0; i < PROG_MEM_SIZE; i++) {
-        mem_addr = USER_MEM + (i * (1 << ALIGN_4MB));
-        page_directory[(mem_addr >> ALIGN_4MB)] = mem_addr | 0x87; // 4 MiB page, user & supervisor access, r/w access, present
-    }
-
     // Last step: See http://wiki.osdev.org/Setting_Up_Paging#Enable_Paging
     load_page_directory();
     enable_paging();

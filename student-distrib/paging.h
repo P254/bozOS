@@ -17,8 +17,6 @@ uint32_t page_table[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB))); // page
 #define VIDEO_MEM 0xB8000 // Taken from lib.c
 #define KERNEL_MEM 0x400000 // Corresponds to 4 MiB = 0x400000
 
-#define USER_MEM (128 << ALIGN_1MB)
-
 void paging_init();
 
 #endif /*PAGING_H*/
