@@ -15,11 +15,13 @@
 #include "terminal.h"
 #include "filesystem.h"
 
-#define RUN_TESTS 1
+#define RUN_TESTS       0
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
 #define CHECK_FLAG(flags, bit)   ((flags) & (1 << (bit)))
+
+extern void load_user_space_asm();
 
 /* Check if MAGIC is valid and print the Multiboot information structure
    pointed by ADDR. */
@@ -170,6 +172,21 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     
+    // Sean: Jump to user mode. This will probably fail
+    // Questions: What about the PCB? What about paging? 
+    syscall_execute("shell");
+    // Everything below can be done within syscall_execute
+    // Alternative we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
+
+    // These lines should be inside syscall_execute
+    // TODO: Check SS0 and ESP0 again
+    tss.ss0 = USER_DS;
+    tss.esp0 = 0x08048000; // User stack. have the address slightly lower so give space when we copy the program over (128 + 8) MiB address 
+    // Reload new paging table into CR3
+    // Copy program image into correct place
+    // Then setup the PCB 
+
+    load_user_space_asm();
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

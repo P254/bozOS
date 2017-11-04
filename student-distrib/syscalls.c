@@ -7,6 +7,10 @@
  * http://jamesmolloy.co.uk/tutorial_html/10.-User%20Mode.html
  * http://x86.renejeschke.de/html/file_module_x86_id_145.html
  * http://www.felixcloutier.com/x86/IRET:IRETD.html
+ * http://wiki.osdev.org/Getting_to_Ring_3
+ * http://wiki.osdev.org/System_Calls
+ * http://wiki.osdev.org/Task_State_Segment
+ * http://wiki.osdev.org/Context_Switching
  */
 
 /* Function pointer array for system calls */
