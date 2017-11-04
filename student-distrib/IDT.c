@@ -70,7 +70,7 @@ void init_IDT() {
             // System call
             set_IDT_wrapper(i, handle_syscall_asm); 
             idt[i].dpl = 3; // System call should have its DPL set to 3 so that it is accessible from user space via the 'int' instruction
-            idt[i].seg_selector = USER_CS; // TODO Sean: Figure out this needs to be here or not
+            idt[i].seg_selector = USER_CS; 
         }
     }
 }
@@ -303,7 +303,7 @@ void handle_e14() {
         : "=r" (addr)
         : /* no inputs */
     );
-    printf("Interrupt 14 - Page-Fault Exception (#PF) at address %x\n", addr);
+    printf("Interrupt 14 - Page-Fault Exception (#PF) at address 0x%x\n", addr);
     cli();
     while(1);
 }
