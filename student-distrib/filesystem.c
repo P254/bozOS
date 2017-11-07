@@ -61,7 +61,7 @@ int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
  *   SIDE EFFECTS: nothing
  */
 int32_t fwrite(void) {
-    return 0;
+    return -1;
 }
 
 /*
