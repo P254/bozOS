@@ -46,6 +46,7 @@
 #    RETURN : none
 #    SIDE EFFECTS : none
 handle_syscall_asm:
+    # TODO: Write the argument-checking here and jump to a function pointer specified jump table 
     pushal
     call handle_syscall
     popal

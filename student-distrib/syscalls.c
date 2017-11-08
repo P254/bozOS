@@ -32,11 +32,11 @@ int32_t handle_syscall() {
     int32_t call_num, arg1, arg2, arg3;
 
     // Get the call number
-    asm volatile("         \n\
-        movl %%eax, %0     \n\
-        movl %%ebx, %1     \n\
-        movl %%ecx, %2     \n\
-        movl %%edx, %3"
+    asm volatile(
+        "movl %%eax, %0"
+        "movl %%ebx, %1"
+        "movl %%ecx, %2"
+        "movl %%edx, %3"
         : "=r" (call_num), "=r" (arg1), "=r" (arg2), "=r" (arg3)
         : /* no inputs */
     );
@@ -44,8 +44,9 @@ int32_t handle_syscall() {
     if (call_num < SYS_HALT || call_num > SYS_SIGRETURN) return -1;
     printf("Executing system call #%d.\n", call_num);
 
-    cli();
-    while(1);
+    // TODO: Call 1 of 10 system call functions here. Should I be using asm_volatile?
+    // TODO: Rewrite this function in assembly, using jump table 
+
     return 0;
 }
 
@@ -59,6 +60,10 @@ int32_t handle_syscall() {
  */
 int32_t ece391_halt(uint8_t status) {
     printf("System call HALT.\n");
+
+    // Store ESP and EBP of the parent process, we can call a normal ret 
+    // Then we can resume at the parent program where we left off 
+    // Also check the diagram for the other things that need to be done (e.g. change paging)
 
     cli();
     while(1);
@@ -75,6 +80,7 @@ int32_t ece391_halt(uint8_t status) {
  */
 int32_t ece391_execute(const uint8_t* command) {
     printf("System call EXECUTE.\n");
+    uint8_t i;
 
     /*********** Step 1: Parse arguments ***********/
     // TODO: Need to perform appropriate checking of command string
@@ -97,13 +103,18 @@ int32_t ece391_execute(const uint8_t* command) {
     if (exe_buf[3] != EXE_BYTE3) return -1;
     
     // Get the entry point from bytes 24-27 of the executable 
-    uint32_t entry_point_addr;
-    if (read_data(cmd_dentry.inode, ENTRY_PT_OFFSET, entry_point_addr, BYTES_4) == -1) return -1;
-
+    uint8_t entry_pt_buf[BYTES_4];
+    if (read_data(cmd_dentry.inode, ENTRY_PT_OFFSET, entry_pt_buf, BYTES_4) == -1) return -1;
+    
+    // Sanity check: The entry point address should be somewhere near 0x08048000 (I believe)
+    uint32_t entry_pt_addr = 0;
+    for (i = 0; i < BYTES_4; i++) {
+        entry_pt_addr = (entry_pt_addr << SHIFT_8) | entry_pt_buf[i];
+    }
     
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
-    // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P 8 MiB
+    // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = USER_MEM_P | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
     
     // We don't need to reload page_directory into CR3 
@@ -129,7 +140,7 @@ int32_t ece391_execute(const uint8_t* command) {
 
     // TODO: Check SS0 and ESP0 again
     tss.ss0 = KERNEL_DS; // Segment selector
-    tss.esp0 = ??; // New kernel stack. Check the slides on PCB address.  
+    tss.esp0 = ??; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1, etc...
 
     /* The IRET instruction expects, when executed, the stack to have the following contents 
      * (starting from the stack pointer - lowermost address upwards):
@@ -154,7 +165,7 @@ int32_t ece391_execute(const uint8_t* command) {
      */
     // Push IRET context to stack
     asm volatile(
-        "cli"                   /* Clear interrupts */
+        "cli"                   /* Context-switch is critical, so we suppress interrupts */
         
         "movw $USER_DS, %%cx"
         "movw %%cx, %%ss"       /* Code-segment */
@@ -164,7 +175,7 @@ int32_t ece391_execute(const uint8_t* command) {
         "movw %%cx, %%gs"       /* Additional data-segment register */
 
         "pushl $USER_DS"
-        "pushl $(132Mib - 4) ??"        /*TODO: Figure out what to set the ESP-on-stack*/
+        "pushl $USER_STACK"     /* TODO: Figure out why we set the virutal ESP-on-stack memory to only be 4 MiB */
 
         "pushf"                 /* Push EFLAGS onto the stack */
         "popl %%eax"            /* Get EFLAGS back into EAX. The only way to read EFLAGS is to pushf then pop */
@@ -172,10 +183,10 @@ int32_t ece391_execute(const uint8_t* command) {
         "pushl %%eax"           /* Push the new EFLAGS value back onto the stack */
 
         "pushl $USER_CS"
-        "pushl %0"              /* Function entry point */
+        "pushl %0"              /* User program/function entry point */
         "iret"
         : /*no outputs*/ 
-        : "r" (entry_point_addr)
+        : "r" (entry_pt_addr)
     );
     
     return 0;
