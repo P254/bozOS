@@ -1,6 +1,10 @@
 .data
-    ONE_LEVEL      = 4
-    ERROR_CODE_LOC = 44
+    ONE_LEVEL       = 4
+    ERROR_CODE_LOC  = 44
+    
+    SYSCALL_NUM_MIN = 1
+    SYSCALL_NUM_MAX = 10
+    RETVAL_ERR      = -1
 
 .globl print_error_code
 # Exceptions that give error codes are #8, #11, #12, #13, #14, #17, #30
@@ -37,19 +41,52 @@
 .globl handle_e18_asm, handle_e18
 .globl handle_e19_asm, handle_e19
 .globl handle_default_asm, handle_default
-.globl handle_syscall_asm, handle_syscall
+.globl handle_syscall_asm
+
+.globl ece391_halt, ece391_execute, ece391_read, ece391_write, ece391_open, ece391_close, ece391_getargs, ece391_vidmap, ece391_set_handler, ece391_sigreturn
+
+syscall_jump_table:
+    .long ece391_halt, ece391_execute, ece391_read, ece391_write, ece391_open, ece391_close, ece391_getargs, ece391_vidmap, ece391_set_handler, ece391_sigreturn
 
 # handle_syscall_asm
-#    DESCRIPTION : Assembly linkage for keyboard-generated interrupt
+#    DESCRIPTION : Assembly linkage for system calls (0x80)
 #    INPUTS : none
 #    OUTPUT : none
 #    RETURN : none
-#    SIDE EFFECTS : none
+#    SIDE EFFECTS : Calls the appropriate system call function with number specified by EAX
 handle_syscall_asm:
-    # TODO: Write the argument-checking here and jump to a function pointer specified jump table 
-    pushal
-    call handle_syscall
-    popal
+    # Checking argument in EAX
+    cmpl $SYSCALL_NUM_MIN, %eax
+    jl syscall_negative_ret 
+    cmpl $SYSCALL_NUM_MAX, %eax
+    jg syscall_negative_ret
+    
+    # We don't want to clobber the return value of the system call function (EAX) here,
+    # so I write out the entire 'pushal' / 'popal routine instead
+    # Push (original) ESP, EBP, ESI, EDI, EDX, ECX, EBX
+    pushl %esp
+    pushl %ebp
+    pushl %esi
+    pushl %edi
+    # Push the arguments
+    pushl %edx
+    pushl %ecx
+    pushl %ebx
+    
+    subl %eax # We want EAX to have value in the range [0,9]
+    call *syscall_jump_table(, %eax, ONE_LEVEL)
+
+    popl %ebx
+    popl %ecx
+    popl %edx
+    popl %edi
+    popl %esi
+    popl %ebp
+    popl %esp
+    iret
+
+syscall_negative_ret:
+    movl $RETVAL_ERR, %eax
     iret
 
 # keyboard_handler_asm

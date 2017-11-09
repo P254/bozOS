@@ -47,7 +47,6 @@ typedef struct pcb {
 } pcb_t;
 
 /* Forward declarations */
-int32_t handle_syscall(); 
 int32_t ece391_halt(uint8_t status);
 int32_t ece391_execute (const uint8_t* command);
 int32_t ece391_read (int32_t fd, void* buf, int32_t nbytes);
