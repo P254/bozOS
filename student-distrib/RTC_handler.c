@@ -2,8 +2,10 @@
 #include "RTC_handler.h"
 #include "i8259.h"
 #include "IDT.h"
+#include "tests.h"
 
-volatile int count=0;
+volatile int rtc_count = 0;
+volatile int interrupt_flag = 0;
 
 /*
  * rtc_init
@@ -15,26 +17,13 @@ volatile int count=0;
  */
 void rtc_init(void){
     char previous;
-    unsigned int rate;
-    rate = INIT_RATE; //set rate to 15 or 1HZ. 32768 >> (rate-1);
-
     outb(NMI_MASK+REG_B, RTC_REG); //select status register B and disable interuppts using x80.
     previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
     outb(NMI_MASK+REG_B, RTC_REG);
     outb(previous | BIT_6_SWITCH, RTC_REG+1);  // write the previous value ORed with 0x40. This turns on bit 6 of register B
     enable_irq(RTC_IRQ_ADDR); //enable 8th IRQ
-    set_IDT_wrapper(SOFT_INT_START + RTC_IRQ_ADDR, rtc_handler);
+    set_IDT_wrapper(SOFT_INT_START + RTC_IRQ_ADDR, rtc_handler_asm);
     outb(REG_B, RTC_REG);  //enable 8 bit NMI
-
-    //TODO: ask the TA if we need a CLI/STI thing
-    // unsigned int flags;
-    // cli_and_save(flags);
-//    outb(NMI_MASK+REG_A, RTC_REG); //remask NMI //
-//    previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
-//    outb(NMI_MASK+REG_A, RTC_REG);
-//    outb((previous & UPPER_MASK) | rate, RTC_REG+1);////write only our rate to A. Rate is the bottom 4 bits.
-//    outb(REG_A, RTC_REG);  //enable 80 bit NMI
-    // restore_flags(flags);
 }
 
 /*
@@ -46,105 +35,111 @@ void rtc_init(void){
  *   SIDE EFFECTS: none
  */
 void rtc_handler(void) {
-  //  test_interrupts(); //we must prove this function is being called.
-  printf("1");
-  count++;
-   send_eoi(RTC_IRQ_ADDR); //end 8th IRQ
-   outb(REG_C, RTC_REG); // select register C
-    inb(RTC_REG+1); // just throw away contents, we must do this otherwise IRQ8 will never be called again.
-    // while(1);
+    //  test_interrupts(); // we must prove this function is being called.
+    #if (RTC_TEST_ENABLE == 1)
+    printf("1");
+    rtc_count++;
+    #endif
+
+    send_eoi(RTC_IRQ_ADDR); //end 8th IRQ
+    outb(REG_C, RTC_REG);   // select register C
+    inb(RTC_REG + 1);       // just throw away contents, we must do this otherwise IRQ8 will never be called again.
 }
 
-int32_t read (int32_t fd, void* buf, int32_t nbytes){
-    while(interupt_flag!=0){
-      //means interuppt_flag==1 so do nothing until it changes
+/*
+ * rtc_read
+ *   DESCRIPTION: Blocks RTC interuppts until next one arrives
+ *   INPUTS: file descriptor, buffer, bytes to write
+ *   OUTPUTS: none
+ *   RETURN VALUE: 0
+ *   SIDE EFFECTS: none
+ */
+int32_t rtc_read (int32_t fd, void* buf, int32_t nbytes){
+    while(interrupt_flag != 0) {
+      // means interrupt_flag = 1 so do nothing until it changes
     }
-    interupt_flag=0;
+    interrupt_flag = 0;
     return 0;
 }
 
-int32_t write (int32_t fd, const void* buf, int32_t nbytes){
-
+/*
+ * rtc_write
+ *   DESCRIPTION: converts rate to HZ and writes it to RTC device
+ *   INPUTS: file descriptor, buffer containing rate, bytes to write
+ *   OUTPUTS: changed rate of RTC
+ *   RETURN VALUE: 0 or -1 if invalid rate
+ *   SIDE EFFECTS: none
+ */
+int32_t rtc_write (int32_t fd, const void* buf, int32_t nbytes) {
     char previous;
-    unsigned int rate;
-    unsigned int input_rate;
+    unsigned int rate, input_rate;
 
-    if(buf==NULL)
-        return -1;  // make sure input buffer is valid
+    if(buf == NULL) return -1;  // make sure input buffer is valid
 
     input_rate= (int)(*(int*)buf);
 
-    switch(input_rate) {
-      case 2:
-        rate= 0x0F; break;
-      case 4:
-        rate= 0x0E; break;
-      case 8:
-        rate= 0x0D; break;
-      case 16:
-        rate= 0x0C; break;
-      case 32:
-        rate= 0x0B; break;
-      case 64:
-        rate= 0x0A; break;
-      case 128:
-        rate= 0x09; break;
-      case 256:
-        rate= 0x08; break;
-      case 512:
-        rate= 0x07; break;
-      default:
-        return -1;
+    switch (input_rate) {
+        case IN_RATE_2:
+            rate = OUT_RATE_2;
+            break;
+        case IN_RATE_4:
+            rate = OUT_RATE_4;
+            break;
+        case IN_RATE_8:
+            rate = OUT_RATE_8;
+            break;
+        case IN_RATE_16:
+            rate = OUT_RATE_16;
+            break;
+        case IN_RATE_32:
+            rate = OUT_RATE_32;
+            break;
+        case IN_RATE_64:
+            rate = OUT_RATE_64;
+            break;
+        case IN_RATE_128:
+            rate = OUT_RATE_128;
+            break;
+        case IN_RATE_256:
+            rate = OUT_RATE_256;
+            break;
+        case IN_RATE_512:
+            rate = OUT_RATE_512;
+            break;
+        default:
+            return -1;
     }
-    // if(input_rate==2)
-    // else if(input_rate==4)
-    // else if(input_rate==8)
-    // else if(input_rate==16)
-    // else if(input_rate==32)
-    // else if(input_rate==64)
-    // else if(input_rate==128)
-    // else if(input_rate==256)
-    // else if(input_rate==512)
-    // else if(input_rate==1024)
-    // else if(input_rate>1024 || input_rate<2)
-
-    //TODO: ask the TA if we need a CLI/STI thing
-    // unsigned int flags;
-    // cli_and_save(flags);
-    outb(NMI_MASK+REG_A, RTC_REG); //remask NMI
-    previous = inb(RTC_REG+1); //read immediately after or the RTC may be left in an unknown state.
+    outb(NMI_MASK+REG_A, RTC_REG); // remask NMI
+    previous = inb(RTC_REG+1); // read immediately after or the RTC may be left in an unknown state.
     outb(NMI_MASK+REG_A, RTC_REG);
-    outb((previous & UPPER_MASK) | rate, RTC_REG+1);////write only our rate to A. Rate is the bottom 4 bits.
-    outb(REG_A, RTC_REG);  //enable 80 bit NMI
-    // restore_flags(flags);
+    outb((previous & UPPER_MASK) | rate, RTC_REG+1);// write only our rate to A. Rate is the bottom 4 bits.
+    outb(REG_A, RTC_REG);  // enable 80 bit NMI
     return 0;
 }
 
-int ret_count(){
-  return count;
-}
-
-void setRetCount(int setter){
-    count = setter;
-    return;
-}
-int32_t open (const int8_t* filename){
-    // if(rtc_init_flag==0)
-    //     rtc_init();
-    // else
-    //     return -1;
-    // rtc_init_flag=1;
+/*
+ * rtc_open
+ *   DESCRIPTION: opens RTC device, sets RTC to intial rate.
+ *   INPUTS: file descriptor
+ *   OUTPUTS: 0
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: none
+ */
+int32_t rtc_open (const int8_t* filename){
     unsigned int rate;
-    rate= INIT_RATE;
-    write(NULL, &rate, 4);
+    rate = INIT_RATE;
+    rtc_write(NULL, &rate, 0);
     return 0; //success
 }
 
-int32_t close (int32_t fd){
-    // if(!rtc_init_flag){
-    //     return -1;
-    // }
-    // rtc_init_flag= 0;
-    // disable_irq(RTC_IRQ_ADDR); // TODO: disables RTC_IRQ_ADDR
+/*
+ * rtc_close
+ *   DESCRIPTION: closes RTC device
+ *   INPUTS: file descriptor
+ *   OUTPUTS: 0
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: none
+ */
+int32_t rtc_close (int32_t fd){
     return 0;
 }
