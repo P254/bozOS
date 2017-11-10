@@ -13,8 +13,10 @@
 #include "IDT.h"
 #include "paging.h"
 #include "terminal.h"
+#include "filesystem.h"
+#include "syscalls.h"
 
-#define RUN_TESTS
+#define RUN_TESTS       0
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -144,6 +146,8 @@ void entry(unsigned long magic, unsigned long addr) {
         ltr(KERNEL_TSS);
     }
 
+    module_t* mod = (module_t*)mbi->mods_addr;
+    fs_init((uint32_t)mod->mod_start); /* Init filesystem */
 
     i8259_init(); /* Init the PIC */
     kb_init(); /* Init the keyboard */
@@ -161,23 +165,13 @@ void entry(unsigned long magic, unsigned long addr) {
     printf("Enabling Interrupts\n");
     sti();
 
-#ifdef RUN_TESTS
+#if (RUN_TESTS == 1)
     /* Run tests -- comment-out line to disable tests */
-    //  launch_tests();
+    launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-    //asm("int $0x9"); // --> Calling an interrupt at memory location 0x80
-
-    // char *sys_buf = "I hate this class \n";
-    // char *sys_buf2 = "Hello world! This is bozOS. I am attempting to write a really long sentence to see if it scrolls/line breaks correctly or not.\n";
-    // 
-    // unsigned char* sys_buf[128];
-    //
-    // terminal_read(0, sys_buf, 128);
-    // terminal_write(0, sys_buf, 128);
-    //
-    // terminal_read(0, sys_buf, 128);
-    // terminal_write(0, sys_buf, 128);
+    // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
+    ece391_execute("shell");
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

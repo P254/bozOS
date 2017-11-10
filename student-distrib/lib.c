@@ -23,8 +23,8 @@ void clear(void) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
         *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
     }
-    setScreenY(0);
-    setScreenX(0);
+    set_screen_y(0);
+    set_screen_x(0);
 }
 
 /* Standard printf().
@@ -173,7 +173,7 @@ int32_t puts(int8_t* s) {
 void putc(uint8_t c) {
     if(c == '\n' || c == '\r') {
         if (screen_y == NUM_ROWS-1) {
-            videoScroll();
+            video_scroll();
             screen_x = 0;
         }
         else {
@@ -186,7 +186,7 @@ void putc(uint8_t c) {
 
         // Sean: Check if we have reached the bottom-right corner of the screen out-of-bounds, if yes, perform scrolling
         if (screen_y == NUM_ROWS-1 && screen_x == NUM_COLS-1) {
-            videoScroll();
+            video_scroll();
             screen_x = 0;
             screen_y = NUM_ROWS-1;
         }
@@ -497,65 +497,69 @@ void test_interrupts(void) {
 /*********** Functions added by Sean begin here ***********/
 
 /*
- * getScreenX
+ * get_screen_x
  *   DESCRIPTION: Returns the value of screen_x. Used by the keyboard driver.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int -- value of screen_x
  *   SIDE EFFECTS: none
  */
-int getScreenX() {
+int get_screen_x() {
     return screen_x;
 }
 
 /*
- * getScreenY
+ * get_screen_y
  *   DESCRIPTION: Returns the value of screen_y. Used by the keyboard driver.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int -- value of screen_y
  *   SIDE EFFECTS: none
  */
-int getScreenY() {
+int get_screen_y() {
     return screen_y;
 }
 
 /*
- * setScreenX
+ * set_screen_x
  *   DESCRIPTION: sets the value of screen_x. Used by the keyboard driver.
  *   INPUTS: value of screen_x we want to set
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
-void setScreenX(int x) {
-    screen_x = x;
+void set_screen_x(int val) {
+    if (val >= 0 && val < NUM_COLS) {
+        screen_x = val;
+    }
     return;
 }
 
 /*
- * setScreenY
+ * set_screen_y
  *   DESCRIPTION: sets the value of screen_y. Used by the keyboard driver.
  *   INPUTS: value of screen_y we want to set
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
-void setScreenY(int y) {
-  screen_y = y;
-  return;
+void set_screen_y(int val) {
+    if (val >= 0 && val < NUM_ROWS) {
+        screen_y = val;
+    }
+    return;
 }
 
 
 /*
- * videoScroll
+ * video_scroll
  *   DESCRIPTION: Performs scrolling of the window
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: vooid
  *   SIDE EFFECTS: scrolls the main terminal window by one line
  */
-void videoScroll() {
+void video_scroll() {
     memcpy((void*) video_mem, (void*) video_mem_r1, SCROLL_SIZE);
     // Clear the botttommost line
     uint16_t i, vid_idx;

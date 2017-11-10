@@ -3,9 +3,26 @@
 #include "lib.h"
 #include "paging.h"
 
+#include "filesystem.h"
+#include "terminal.h"
+
+#include "RTC_handler.h"
+
 #define PASS 1
 #define FAIL 0
 
+#define VID_MEM 0xB8000
+#define KERN_MEM 0x400000
+#define SIZE_TABLE 1024
+#define SIZE_TABLE 1024
+#define IDT_SIZE 256
+#define VID_MEM_LOC 0xB8000
+#define KERN_MEM 0x400000
+#define FILLED_LOC 2
+#define TEXT 0
+#define NONTEXT 1
+
+extern int rtc_count;
 /* format these macros as you see fit */
 #define TEST_HEADER 	\
 	printf("[TEST %s] Running %s at %s:%d\n", __FUNCTION__, __FUNCTION__, __FILE__, __LINE__)
@@ -165,9 +182,237 @@ static inline void assertion_failure(){
     return 1;
 }*/
 
-// add more tests here
+/* read_dentry_by_index_test
+ * Asserts that our read_dentry_by_index function works
+ * Inputs: index - dentry index we want to print out
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
 
 /* Checkpoint 2 tests */
+int read_dentry_by_index_test(uint32_t index){
+    dentry_t test_dentry;
+    printf("running read_dentry_by_index test:\n");
+    int status = read_dentry_by_index(index, &test_dentry);
+
+    if (status == 0){
+    printf("File name: %s\n", test_dentry.fileName);
+    } else {
+        printf("Invalid index \n");
+    }
+
+    return 1;
+}
+/* read_dentry_by_name_test
+ * Asserts that our read_dentry_by_index function works
+ * Inputs: fname - file name of the dentry
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
+int read_dentry_by_name_test(int8_t * fname) {
+    dentry_t test_dentry;
+    printf("running read_dentry_by_name test:\n");
+    int status = read_dentry_by_name((uint8_t*)fname, &test_dentry);
+
+    if (status == 0) {
+        printf("Found file %s\n", fname);
+    } else {
+        printf("File not found\n");
+    }
+    return 1;
+}
+
+/* read_data_test
+ * Asserts that our read_data_test function works
+ * Inputs: index - dentry index we want to print out the data of
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: All currently defined IDT values.
+ */
+
+int read_data_test(int8_t * fname, int32_t size_to_copy, uint32_t offset, int type){
+    dentry_t test_dentry;
+    if (read_dentry_by_name((uint8_t*)fname, &test_dentry) == -1) {
+        printf("File not found\n");
+    }
+
+    uint32_t buf_length = inodes[test_dentry.inode].length;
+    size_to_copy = (size_to_copy < 0) ? buf_length : size_to_copy;
+    uint8_t copy_buf[size_to_copy];
+
+    int status;
+    status = read_data(test_dentry.inode, offset, copy_buf, size_to_copy);
+    printf("Copy status: %d\n", status);
+
+    int i;
+    printf("Copied contents to buf:\n");
+    for (i = 0; i < status; i++) {
+        if (type == TEXT) putc(copy_buf[i]);
+        else if (type == NONTEXT) printf("%#x \n", copy_buf[i] );
+    }
+    return 0;
+}
+
+/* print_all_directories_test()
+ * Prints out all the dentries
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage:
+ */
+int print_all_directories_test()
+{
+    int i;
+    int num_directories = boot->dirEntries;
+    dentry_t temp_dentry;
+    for ( i = 0 ; i < num_directories ; i++)
+    {
+        dread(i,&temp_dentry);
+        printf("dentryIndex: %d fileName: %s size: %d \n", i , temp_dentry.fileName, inodes[temp_dentry.inode].length );
+    }
+    return 0;
+}
+
+/*test_terminal_write_overload()
+ *Checks if terminal_write stops writing at buffer max length instead of overflowing
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: terminal_write upper bound
+ */
+int test_terminal_write_overload(){
+    unsigned char test_string_overload[500];
+    int i;
+    for (i = 0 ; i<498 ; i++){
+        test_string_overload[i] = 'a';
+    }
+    test_string_overload[499] = '\n';
+    terminal_write(0,test_string_overload,128);
+    putc('\n');
+    return 1;
+}
+
+/* test_terminal_write_underload()
+ * Checks if terminal_write stops writing at given length instead of overflowing to 128
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: terminal_write lower bound
+ */
+int test_terminal_write_underload(){
+    unsigned char test_string_underload[5];
+    int i;
+    for (i = 0 ; i<4 ; i++){
+      test_string_underload[i] = 'a';
+    }
+    test_string_underload[4] = '\n';
+    terminal_write(0,test_string_underload,128);
+    putc('\n');
+    return 1;
+}
+
+/* test_terminal_read()
+ * Takes user input into keyboard buffer and sees if terminal_read copies to system buffer properly
+ * Inputs: None
+ * Outputs: 1
+ * Side Effects: None
+ * Coverage: terminal_read
+ */
+int test_terminal_read(){
+    unsigned char sys_buf[128];
+    memset(sys_buf, '\0', 128);
+    terminal_read(0,sys_buf,128);
+    
+    int i;
+    for (i = 0; i < 128; i++) {
+        putc(sys_buf[i]);
+        if (sys_buf[i] == '\0' || sys_buf[i] == '\n') break;
+    }
+
+    return 1;
+}
+
+// add more tests here
+
+/* As suggested by a TA that a thorough test would be
+ * to change the frequency of rtc from slow to fast and
+ * call the read fucntion 10-20 times to see the output on the screen.
+ */
+int rtc_handler_test() {
+    unsigned int buf;
+    int result;
+    result = FAIL;
+    rtc_open(NULL);
+
+    clear();
+    buf=2;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=10);
+    rtc_count = 0;
+
+    clear();
+    buf=4;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=20);
+    rtc_count = 0;
+
+    clear();
+    buf=8;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=40);
+    rtc_count = 0;
+
+    clear();
+    buf=8;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=80);
+    rtc_count = 0;
+
+    clear();
+    buf=16;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=120);
+    rtc_count = 0;
+
+    clear();
+    buf=32;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=200);
+    rtc_count = 0;
+
+    clear();
+    buf=64;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=300);
+    rtc_count = 0;
+
+    clear();
+    buf=128;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=500);
+    rtc_count = 0;
+
+    clear();
+    buf=256;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=800);
+    rtc_count = 0;
+
+    clear();
+    buf=512;
+    rtc_write(NULL, &buf, 0);
+    while(rtc_count!=1000);
+    rtc_count = 0;
+
+    clear();
+    cli();
+
+    result = PASS;
+    return result;
+}
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -179,15 +424,67 @@ static inline void assertion_failure(){
  * Side Effects: None
  * Coverage: Launches the tests that we wrote before.
  */
-void launch_tests(){
-	// launch your tests here
-    //TEST_OUTPUT("idt_test", idt_test());
-	//TEST_OUTPUT("divisionby0_test", div0_test());
-    //TEST_OUTPUT("paging_kernel_test", paging_kernel_test());
-    //TEST_OUTPUT("paging_video_test", paging_video_test());
-	//TEST_OUTPUT("pagefault_test", pagefault_test());
-    //TEST_OUTPUT("segment_test", segment_test());
-    //TEST_OUTPUT("sys_call_test", sys_call_test());
-    //TEST_OUTPUT("paging_table_test", paging_table_test());
-    //TEST_OUTPUT("test_exceptions", test_exceptions());
+void launch_tests() {
+    #if (CLEAR_SCREEN_FOR_TEST == 1)
+    clear();
+    #endif
+
+    /************ Checkpoint 1 Tests **********************/
+    // TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("divisionby0_test", div0_test());
+    // TEST_OUTPUT("paging_kernel_test", paging_kernel_test());
+    // TEST_OUTPUT("paging_video_test", paging_video_test());
+	// TEST_OUTPUT("pagefault_test", pagefault_test());
+    // TEST_OUTPUT("segment_test", segment_test());
+    // TEST_OUTPUT("sys_call_test", sys_call_test());
+    // TEST_OUTPUT("paging_table_test", paging_table_test());
+    // TEST_OUTPUT("test_exceptions", test_exceptions());
+
+    /************ Checkpoint 2 Tests **********************/
+    #if (READ_DATA_TEST_ENABLE == 1)
+    read_data_test("frame0.txt",-1,0,TEXT);
+    read_data_test("frame0.txt",24,0,TEXT);
+    read_data_test("frame0.txt",450,0,TEXT);
+    read_data_test("verylargetextwithverylongname.txt",3,4095,TEXT);
+    read_data_test("fish",10,0,NONTEXT);
+    #endif
+
+    #if (READ_DENTRY_NAME_TEST_ENABLE == 1)
+    read_dentry_by_name_test("verylargetextwithverylongname.txt");
+    read_dentry_by_name_test("wtf name");
+    #endif
+
+    #if (PRINT_ALL_DIR_TEST_ENABLE == 1)
+    print_all_directories_test();
+    #endif
+
+    #if (READ_DENTRY_IDX_TEST_ENABLE == 1)
+    read_dentry_by_index_test(5);
+    read_dentry_by_index_test(500);
+    #endif
+
+    #if (TEMRINAL_WRITE_TEST_ENABLE == 1)
+    TEST_OUTPUT("test_terminal_write_overload", test_terminal_write_overload());
+    TEST_OUTPUT("test_terminal_write_underload", test_terminal_write_underload());
+    #endif
+
+    #if (TEMRINAL_READ_TEST_ENABLE == 1)
+    TEST_OUTPUT("test_terminal_read", test_terminal_read());
+    #endif
+
+    #if (RTC_TEST_ENABLE == 1)
+    TEST_OUTPUT("rtc handler test", rtc_handler_test());
+    #endif
+
+    /******************** Checkpoint 3 Tests ***************************/
+    // Check that we set up user space paging correctly
+    #if (PAGING_TEST_ENABLE == 1)
+    int i, addr;
+    int* mem_ptr;
+    for (i = 0; i < 5; i++) {
+        mem_ptr = (int*) ((128 + i*4) << 20);
+        printf("Deferencing address %x\n", (int) mem_ptr);
+        addr = *mem_ptr;
+    }
+    #endif
 }
