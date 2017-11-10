@@ -52,7 +52,7 @@ void init_IDT() {
         }
         else {
             // Indices 20-31 are reserved for some other purpose (according to the spec), so we write a default handler
-            set_IDT_wrapper(i, handle_default);
+            set_IDT_wrapper(i, handle_default_asm);
         }
     }
 
@@ -66,14 +66,28 @@ void init_IDT() {
         set_IDT_wrapper(i, handle_default);
         idt[i].present = 0; // Mark as 'not present' unless otherwise stated
 
-        if (i == SYS_CALL) {
-            // System call 'execute'
-            set_IDT_wrapper(i, handle_sys_call);
-            // idt[i].dpl = 3;
-            // idt[i].seg_selector = USER_CS;
+        if (i == SYS_CALL_ADDR) {
+            // System call
+            set_IDT_wrapper(i, handle_syscall_asm); 
+            idt[i].dpl = 3; // System call should have its DPL set to 3 so that it is accessible from user space via the 'int' instruction
+            idt[i].seg_selector = USER_CS; 
         }
     }
 }
+
+/* 
+ * print_error_code
+ *   DESCRIPTION: Prints the error code to the screen. 
+ *                Used only by exceptions  #8, #11, #12, #13, #14, #17, #30
+ *   INPUTS: code -- error code 
+ *   OUTPUTS: none
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: prints error code to the screen
+ */
+void print_error_code(uint32_t code) {
+    printf("Error code (hex): %x\n", code);
+}
+
 
 /*
  * handle_e0
@@ -282,7 +296,14 @@ void handle_e13() {
  *   SIDE EFFECTS: masks interrupts, halts system
  */
 void handle_e14() {
-    printf("Interrupt 14 - Page-Fault Exception (#PF)\n");
+    // Grab CR2 register (tells us the page fault linear address)
+    uint32_t addr;
+    asm volatile( 
+        "movl %%cr2, %0"
+        : "=r" (addr)
+        : /* no inputs */
+    );
+    printf("Interrupt 14 - Page-Fault Exception (#PF) at address 0x%x\n", addr);
     cli();
     while(1);
 }
@@ -371,17 +392,3 @@ void handle_default() {
     while(1);
 }
 
-/*
- * handle_sys_call
- *   DESCRIPTION: Handler for system calls.
- *                Placeholder for now, will be filled in as part of future checkpoints.
- *   INPUTS: none
- *   OUTPUTS: none
- *   RETURN VALUE: void
- *   SIDE EFFECTS: masks interrupts, halts system
- */
-void handle_sys_call() {
-    printf("System call.\n");
-    cli();
-    while(1);
-}

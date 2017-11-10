@@ -440,7 +440,6 @@ void launch_tests() {
     // TEST_OUTPUT("paging_table_test", paging_table_test());
     // TEST_OUTPUT("test_exceptions", test_exceptions());
 
-
     /************ Checkpoint 2 Tests **********************/
     #if (READ_DATA_TEST_ENABLE == 1)
     read_data_test("frame0.txt",-1,0,TEXT);
@@ -475,5 +474,17 @@ void launch_tests() {
 
     #if (RTC_TEST_ENABLE == 1)
     TEST_OUTPUT("rtc handler test", rtc_handler_test());
+    #endif
+
+    /******************** Checkpoint 3 Tests ***************************/
+    // Check that we set up user space paging correctly
+    #if (PAGING_TEST_ENABLE == 1)
+    int i, addr;
+    int* mem_ptr;
+    for (i = 0; i < 5; i++) {
+        mem_ptr = (int*) ((128 + i*4) << 20);
+        printf("Deferencing address %x\n", (int) mem_ptr);
+        addr = *mem_ptr;
+    }
     #endif
 }

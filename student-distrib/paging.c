@@ -6,8 +6,8 @@
 
 /* The PDE look like this:
  *
- *             31:12               11:9    8   7   6   5   4   3   2   1   0
- * [ Page table 4KB aligned addr | Avail | G | S | 0 | A | D | W | U | R | P ]
+ *             31:12              11:9    8   7   6   5   4   3   2   1   0
+ * [ Page table 4K-aligned addr | Avail | G | S | 0 | A | D | W | U | R | P ]
  *
  * Avail: Used by the OS to store accounting information
  * 8 - G: Global page (ignored)
@@ -79,7 +79,7 @@ void paging_init() {
     }
 
     // The kernel starts at 4MB, so we want to the corresponding entry in the PDE as present
-    page_directory[1] = KERNEL_MEM | 0x83; // 4 MiB page, supervisor-only, r/w access, present
+    page_directory[(KERNEL_MEM >> ALIGN_4MB)] = KERNEL_MEM | 0x83; // 4 MiB page, supervisor-only, r/w access, present
 
     // Step 2: Page table for the video memory
     // Holds the physical address where we want to start mapping these pages to.
@@ -89,7 +89,7 @@ void paging_init() {
         page_table[i] = 0x2; // 4 KiB page, supervisor-only, r/w access, not present
     }
     // We want to allocate a 4KiB page for VIDEO MEMORY
-    page_table[(VIDEO_MEM >> ALIGN_4KB_SHIFT)] = VIDEO_MEM | 0x3; // give page r/w access, mark as present
+    page_table[(VIDEO_MEM >> ALIGN_4KB)] = VIDEO_MEM | 0x3; // give page r/w access, mark as present
 
     // Last step: See http://wiki.osdev.org/Setting_Up_Paging#Enable_Paging
     load_page_directory();
