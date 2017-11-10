@@ -287,16 +287,18 @@ unsigned int get_scan_code() {
  *   RETURN VALUE: void
  *   SIDE EFFECTS: prints character to the screen and modifies kb_buf accordingly
  */
-void add_char_to_buf(unsigned char c) {
-    uint32_t buf_len = strlen((int8_t*) kb_buf); //get length of keyboard buffer
-    if (buf_len < KB_SIZE-1) { //only if we have not reached the limit
-        kb_buf[buf_len+1] = '\0'; //null terminate our string
-        kb_buf[buf_len] = c; //add the character we just proccessed to buf
+void addCharToBuf(unsigned char c) {
+    uint32_t buf_len = strlen((int8_t*) kb_buf);
+    int add_idx, x, y;
+    if (buf_len < KB_SIZE-1) {
+      kb_buf[buf_len+1] = '\0';
+        kb_buf[buf_len] = c;
 
-        int add_idx, x, y;
-        char* video_mem = (char *) VIDEO; //get mem loc
-        x = get_screen_x(); //get screen coordinates
-        y = get_screen_y();
+        /****** TYPING TEST BEGINS HERE *****/
+        #if (TEST_KB_DRIVER == 1)
+        char* video_mem = (char *) VIDEO;
+        x = getScreenX();
+        y = getScreenY();
 
         if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) { //if we are at bottom of screen
             video_scroll(); //scroll down
@@ -308,9 +310,14 @@ void add_char_to_buf(unsigned char c) {
             if (buf_len >= NUM_COLS) putc('\n'); //if we have an extended logical string, print another new line
         }
 
-        else if(c != '\n') { //if not new line
-          add_idx = convert_to_vid_idx(x, y, buf_len); // calculate the index that we should write the character to
-          *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len]; //write the character from the buffer to video mem
+        // Calculate the index that we should write the character to
+        else if(c!='\n'){
+          if (buf_len<KB_SIZE) {
+            x = getScreenX();
+            y = getScreenY();
+            add_idx = convertToVidIdx(x, y-scroll_flag, buf_len); //NOTE: this is what I uncommented
+            *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+          }
         }
     }
     // Deals with the case when the buffer is full
@@ -333,12 +340,18 @@ void del_char_from_buf() {
         kb_buf[buf_len-1] = '\0'; //null terminal our buffer
 
         int erase_idx, x, y;
-        char* video_mem = (char *) VIDEO; //get mem loc
-        x = get_screen_x(); //get screen coordinates
-        y = get_screen_y();
+        char* video_mem = (char *) VIDEO;
+        x = getScreenX();
+        y = getScreenY();
 
-        erase_idx = convert_to_vid_idx(x, y, buf_len) - 1; // Calculate index that we should erase the character from
-        *(uint8_t *)(video_mem + (erase_idx << 1)) = ' '; //erase char from video mem loc
+        // Calculate index that we should erase the character from
+        if (buf_len<KB_SIZE) {
+          x = getScreenX();
+          y = getScreenY();
+          erase_idx = convertToVidIdx(x, y-scroll_flag, buf_len) - 1;
+          *(uint8_t *)(video_mem + (erase_idx << 1)) = ' ';
+        }
+        #endif
     }
 }
 
