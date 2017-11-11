@@ -23,6 +23,8 @@
 #define USER_MEM_P (8 << ALIGN_1MB)
 #define USER_STACK ((132 << ALIGN_1MB) - 4)
 
+#define TASK_RUNNING 1s
+
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
 #define SYS_EXECUTE     2
@@ -38,11 +40,10 @@
 typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
-    uint32_t* pcb_loc;      // PCB location in the 8 KB block within the kernel 
-    uint32_t* user_loc;     // Location of program in physical memory 
+  //  uint32_t* pcb_loc;      // PCB location in the 8 KB block within the kernel
+    uint32_t* user_loc;     // Location of program in physical memory
     uint32_t* fd_arr;       // File descriptor array -- TODO: Figure out what to do with this
     uint32_t* parent;       // Pointer to parent task
-
     /* TODO: Also store parent's kernel stack and user stack and return address */
 } pcb_t;
 
