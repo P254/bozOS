@@ -43,10 +43,10 @@
 .globl handle_default_asm, handle_default
 .globl handle_syscall_asm
 
-.globl ece391_halt, ece391_execute, ece391_read, ece391_write, ece391_open, ece391_close, ece391_getargs, ece391_vidmap, ece391_set_handler, ece391_sigreturn
+.globl halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
 
 syscall_jump_table:
-    .long ece391_halt, ece391_execute, ece391_read, ece391_write, ece391_open, ece391_close, ece391_getargs, ece391_vidmap, ece391_set_handler, ece391_sigreturn
+    .long halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
 
 # handle_syscall_asm
 #    DESCRIPTION : Assembly linkage for system calls (0x80)
@@ -73,7 +73,7 @@ handle_syscall_asm:
     pushl %ecx
     pushl %ebx
     
-    subl %eax # We want EAX to have value in the range [0,9]
+    decl %eax # We want EAX to have value in the range [0,9]
     call *syscall_jump_table(, %eax, ONE_LEVEL)
 
     popl %ebx

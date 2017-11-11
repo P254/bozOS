@@ -20,12 +20,13 @@
 #define FILE_NOT_IN_USE 0
 #define MAX_FILES 8
 // User memory paging
-#define USER_PROG 0x08048000
+#define USER_PROG_LOC 0x08048000
+#define USER_PROG_SIZE (4 << ALIGN_1MB)
 #define USER_MEM_V (128 << ALIGN_1MB)
 #define USER_MEM_P (8 << ALIGN_1MB)
 #define USER_STACK ((132 << ALIGN_1MB) - 4)
 
-#define TASK_RUNNING 1s
+#define TASK_RUNNING 1
 
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
@@ -39,16 +40,18 @@
 #define SYS_SET_HANDLER 9
 #define SYS_SIGRETURN   10
 
-#define FOTP_OPEN       0
-#define FOTP_CLOSE      1
-#define FOTP_READ       2
-#define FOTP_WRITE      3
+typedef struct fd {
+    uint8_t* fotp; //file operations table Pointer
+    uint8_t inode_number; //inode, only for text files
+    uint8_t file_position; //FP
+    uint8_t in_use_flag;
+} fd_t;
 
 typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
     uint32_t* user_loc;     // Location of program in physical memory
-    uint32_t* fd_arr;       // File descriptor array -- TODO: Figure out what to do with this
+    fd_t* fd_arr;       // File descriptor array -- TODO: Figure out what to do with this
     uint32_t* parent;       // Pointer to parent task
     /* TODO: Also store parent's kernel stack and user stack and return address */
     unint8_t buf_args[128];
@@ -62,15 +65,15 @@ typdef struct fd {
 } fd_t;
 
 /* Forward declarations */
-int32_t ece391_halt(uint8_t status);
-int32_t ece391_execute (const uint8_t* command);
-int32_t ece391_read (int32_t fd, void* buf, int32_t nbytes);
-int32_t ece391_write (int32_t fd, const void* buf, int32_t nbytes);
-int32_t ece391_open (const uint8_t* filename);
-int32_t ece391_close (int32_t fd);
-int32_t ece391_getargs (uint8_t* buf, int32_t nbytes);
-int32_t ece391_vidmap (uint8_t** screen_start);
-int32_t ece391_set_handler (int32_t signum, void* handler);
-int32_t ece391_sigreturn (void);
+int32_t halt(uint8_t status);
+int32_t execute (const uint8_t* command);
+int32_t read (int32_t fd, void* buf, int32_t nbytes);
+int32_t write (int32_t fd, const void* buf, int32_t nbytes);
+int32_t open (const uint8_t* filename);
+int32_t close (int32_t fd);
+int32_t getargs (uint8_t* buf, int32_t nbytes);
+int32_t vidmap (uint8_t** screen_start);
+int32_t set_handler (int32_t signum, void* handler);
+int32_t sigreturn (void);
 
 #endif /* SYS_CALL_H */
