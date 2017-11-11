@@ -16,7 +16,9 @@
 #define BYTES_4 4
 #define SHIFT_8 8
 #define ENTRY_PT_OFFSET 24
-
+#define FILE_IN_USE 1
+#define FILE_NOT_IN_USE 0
+#define MAX_FILES 8
 // User memory paging
 #define USER_PROG 0x08048000
 #define USER_MEM_V (128 << ALIGN_1MB)
@@ -37,6 +39,11 @@
 #define SYS_SET_HANDLER 9
 #define SYS_SIGRETURN   10
 
+#define FOTP_OPEN       0
+#define FOTP_CLOSE      1
+#define FOTP_READ       2
+#define FOTP_WRITE      3
+
 typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
@@ -44,6 +51,7 @@ typedef struct pcb {
     uint32_t* fd_arr;       // File descriptor array -- TODO: Figure out what to do with this
     uint32_t* parent;       // Pointer to parent task
     /* TODO: Also store parent's kernel stack and user stack and return address */
+    unint8_t buf_args[128];
 } pcb_t;
 
 typdef struct fd {

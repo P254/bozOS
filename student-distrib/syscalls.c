@@ -224,8 +224,12 @@ int32_t ece391_read(int32_t fd, void* buf, int32_t nbytes) {
     printf("System call READ.\n");
     // This function is called within a given user program.
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
-
-    return 0;
+    // in the read you look for the fd file in the fd_arr, then
+      // use the operations pointer to get the function
+      //
+  if(buff==NULL || fd<0 || fd>MAX_FILES-1)
+      return -1;
+    return PCB_base[process_number]->fd_arr[fd].fotp[FOTP_READ](PCB_base[process_number]->fd_arr[fd], buf, nbytes)
 }
 
 /*
@@ -240,17 +244,20 @@ int32_t ece391_read(int32_t fd, void* buf, int32_t nbytes) {
  */
 int32_t ece391_write(int32_t fd, void* buf, int32_t nbytes) {
     printf("System call WRITE.\n");
-    // This function is called within a given user program.
-    // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
-
-    return 0;
+    // if file's buffer is NULLL or fd is nto in range then we return -1
+    if(buff==NULL || fd<0 || fd>MAX_FILES-1)
+      return -1;
+    // if file has never been opened we return -1
+    if (PCB_base[process_number]->fd_arr[fd].in_use_flag==FILE_NOT_IN_USE)
+      return -1;
+    return PCB_base[process_number]->fd_arr[fd].fotp[FOTP_WRITE](fd, buf, nbytes)
 }
 
 
 /*
  * ece391_open
  *   DESCRIPTION: Handler for 'open' system call.
- *   INPUTS: filename -- ???
+ *   INPUTS: filename -- the filename to put in fd_array
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
@@ -258,9 +265,47 @@ int32_t ece391_write(int32_t fd, void* buf, int32_t nbytes) {
 int32_t ece391_open(const uint8_t* filename) {
     printf("System call OPEN.\n");
     // This function is called within a given user program.
-    // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
+    // Finds the first 'fd' that is not in use and opens the file and puts it there
+      // by setting the appropriate inode numbers!
+    dentry_t file_dentry;
+    int i=0, fd=0;
+    if (read_dentry_by_name(filename, &file_dentry) == -1) return -1;
 
-    return 0;
+    // find the fd that is not in use
+    for(i=0; i<MAX_FILES; i++){ // you always start from 0->7 right?
+      if(PCB_base[process_number]->fd_arr[fd].in_use_flag != FILE_IN_USE){
+        fd=i;
+        break; // we found the first entry which is not in use!
+      }
+    }
+    if(i==MAX_FILES-1)
+      return -1; //all the fd's are in use :(
+
+    if(file_dentry.fileType == "DIR_TYPE"){
+      if(dopen(filename)!=0) return -1;
+      PCB_base[process_number]->fd_arr[fd].inode_number= -1; // TODO: only set this for text file right?
+      PCB_base[process_number]->fd_arr[fd].file_position= 0; //NOTE: idk if this is correct
+      PCB_base[process_number]->fd_arr[fd].fotp= {dopen, dclose, dread, dwrite};
+      PCB_base[process_number]->fd_arr[fd].in_use_flag= FILE_IN_USE;
+    }
+    else if (file_dentry.fileType == "FILE_TYPE"){
+      if(fopen(filename)!=0) return -1;
+      PCB_base[process_number]->fd_arr[fd].inode_number= file_dentry.innode;
+      PCB_base[process_number]->fd_arr[fd].file_position= 0; //NOTE: idk if this is correct
+      PCB_base[process_number]->fd_arr[fd].fotp= {fopen, fclose, fread, fwrite};
+      PCB_base[process_number]->fd_arr[fd].in_use_flag= FILE_IN_USE;
+    }
+    else if(file_dentry.fileType == "RTC_TYPE"){
+      if(ropen(filename)!=0) return -1;
+      PCB_base[process_number]->fd_arr[fd].inode_number= -1;
+      PCB_base[process_number]->fd_arr[fd].file_position= 0; //NOTE: idk if this is correct
+      PCB_base[process_number]->fd_arr[fd].fotp= {ropen, rclose, rread, rwrite};
+      PCB_base[process_number]->fd_arr[fd].in_use_flag= FILE_IN_USE;
+    }
+    else
+      return -1; //We cannot understand the file type..
+
+    return 0; //success
 }
 
 /*
@@ -274,24 +319,35 @@ int32_t ece391_open(const uint8_t* filename) {
 int32_t ece391_close(int32_t fd) {
     printf("System call CLOSE.\n");
     // This function is called within a given user program.
-    // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
-
-    return 0;
+    // Finds the corredsponding fd and sets all its elements in the struct equal to nothing
+      //
+    if(PCB_base[process_number]->fd_arr[fd].in_use_flag != FILE_IN_USE){
+      return -1; // WRONG fd given
+    }
+    // check if I can close the file!
+    if(PCB_base[process_number]->fd_arr[fd].fotp[FOTP_CLOSE](fd)!=0)
+      return -1;
+    // set the flag to not in use
+    PCB_base[process_number]->fd_arr[fd].in_use_flag= FILE_NOT_IN_USE;
+    return 0; // return success
 
 }
 
 /*
  * ece391_getargs
  *   DESCRIPTION: Handler for 'getargs' system call.
- *   INPUTS: buf -- ???
- *           nbytes -- ???
+ *   INPUTS: buf -- buffer to copy the argument into
+ *           nbytes -- number of bytes to copy
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_close(uint8_t* buf, int32_t nbytes) {
+int32_t ece391_getargs(uint8_t* buf, int32_t nbytes) {
     printf("System call GETARGS.\n");
-
+    if(buf!=NULL)
+      strcpy((unint8_t*)buf, PCB_base[process_number].buf_args, nbytes);
+    else
+      return -1;
     return 0;
 }
 
