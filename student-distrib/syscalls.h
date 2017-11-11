@@ -16,7 +16,9 @@
 #define BYTES_4 4
 #define SHIFT_8 8
 #define ENTRY_PT_OFFSET 24
-
+#define FILE_IN_USE 1
+#define FILE_NOT_IN_USE 0
+#define MAX_FILES 8
 // User memory paging
 #define USER_PROG_LOC 0x08048000
 #define USER_PROG_SIZE (4 << ALIGN_1MB)
@@ -51,9 +53,16 @@ typedef struct pcb {
     uint32_t* user_loc;     // Location of program in physical memory
     fd_t* fd_arr;       // File descriptor array -- TODO: Figure out what to do with this
     uint32_t* parent;       // Pointer to parent task
-
     /* TODO: Also store parent's kernel stack and user stack and return address */
+    unint8_t buf_args[128];
 } pcb_t;
+
+typdef struct fd {
+    uint8_t* fotp; //file operations table Pointer
+    unint8_t inode_number; //inode, only for text files
+    unint8_t file_position; //FP
+    unint8_t in_use_flag;
+} fd_t;
 
 /* Forward declarations */
 int32_t halt(uint8_t status);
