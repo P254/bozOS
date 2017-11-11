@@ -81,8 +81,8 @@ int32_t execute(const uint8_t* command) {
     uint32_t entry_pt_addr = 0;
     for (i = 0; i < BYTES_4; i++) {
         // Sanity check: The entry point address should be somewhere near 0x08048000 (see Appendix C)
-        // TODO: Check if the order of bits in entry_pt_addr is [24-25-26-27] or [27-26-25-24]
-        entry_pt_addr = (entry_pt_addr << SHIFT_8) | entry_pt_buf[i];
+        // The order of bits in entry_pt_addr is [27-26-25-24]
+        entry_pt_addr = entry_pt_addr | (entry_pt_buf[i] << SHIFT_8*i);
     }
     
     /*********** Step 3: Set up paging ***********/
@@ -129,6 +129,7 @@ int32_t execute(const uint8_t* command) {
         fd_array[i].file_position = 0;
         fd_array[i].in_use_flag = 0;
     }
+    // PCB_base->fd_arr = fd_array;
 
     if (process_number==0)  PCB_base->parent = NULL;
     else {
@@ -195,12 +196,12 @@ int32_t execute(const uint8_t* command) {
     asm volatile(
         "cli;"                  /* Context-switch is critical, so we suppress interrupts */
 
-        "movw %0, %%cx;"
-        "movw %%cx, %%ss;"      /* Code-segment */
-        "movw %%cx, %%ds;"      /* Data-segment */
-        "movw %%cx, %%es;"      /* Additional data-segment register */
-        "movw %%cx, %%fs;"      /* Additional data-segment register */
-        "movw %%cx, %%gs;"      /* Additional data-segment register */
+        // "movw %0, %%cx;"
+        // "movw %%cx, %%ss;"      /* Code-segment */
+        // "movw %%cx, %%ds;"      /* Data-segment */
+        // "movw %%cx, %%es;"      /* Additional data-segment register */
+        // "movw %%cx, %%fs;"      /* Additional data-segment register */
+        // "movw %%cx, %%gs;"      /* Additional data-segment register */
 
         "pushl %1;"         /* Push USER_DS */
         "pushl %2;"         /* Push USER_STACK pointer */

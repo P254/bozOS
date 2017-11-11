@@ -49,7 +49,7 @@ typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
     uint32_t* user_loc;     // Location of program in physical memory
-    fd_t* fd_arr;       // File descriptor array -- TODO: Figure out what to do with this
+    fd_t fd_arr[8];       // File descriptor array -- TODO: Figure out what to do with this
     uint32_t* parent;       // Pointer to parent task
 
     /* TODO: Also store parent's kernel stack and user stack and return address */
