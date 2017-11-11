@@ -113,7 +113,7 @@ int32_t execute(const uint8_t* command) {
     // TODO: This needs to be completed
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
     process_number++;
-    uint32_t kernel_base = 0x400000; //4MB is base of kernel
+    uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
     uint32_t PCB_offset = (process_number + 1) * 0x8000;
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
