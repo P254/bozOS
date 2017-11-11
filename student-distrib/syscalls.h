@@ -40,12 +40,18 @@
 typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
-  //  uint32_t* pcb_loc;      // PCB location in the 8 KB block within the kernel
     uint32_t* user_loc;     // Location of program in physical memory
     uint32_t* fd_arr;       // File descriptor array -- TODO: Figure out what to do with this
     uint32_t* parent;       // Pointer to parent task
     /* TODO: Also store parent's kernel stack and user stack and return address */
 } pcb_t;
+
+typdef struct fd {
+    uint8_t* fotp; //file operations table Pointer
+    unint8_t inode_number; //inode, only for text files
+    unint8_t file_position; //FP
+    unint8_t in_use_flag;
+} fd_t;
 
 /* Forward declarations */
 int32_t ece391_halt(uint8_t status);

@@ -110,19 +110,39 @@ int32_t ece391_execute(const uint8_t* command) {
     // TODO: This needs to be completed
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
      process_number++;
-     kernel_base = 0x400000; //4MP is base of kernel
+     kernel_base = 0x400000; //4MB is base of kernel
      PCB_offset = (process_number+1)*0x8000;
      program_kernel_base= kernel_base - PCB_offset; //find where program stack starts
      pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
      PCB_base.status = TASK_RUNNING;
      PCB_base.pid = process_number            // Process ID
-    // PCB_base->pcb_loc = ??;      // PCB location in the 8 KB block within the kernel, ISNT IT ALWAYS AT BASE?
      PCB_base->user_loc = (0x800000 + process_number* 0x400000);     // Location of program in physical memory
-     PCB_base->fd_arr = ??;   //TODO: PRANAV Figure out what to do with this
-     if(process_number==0)  PCB_base->parent = NULL;       // Pointer to parent task
+     (fd_t*) file_array[8];
+     for(int i = 0 ; i<8 ; i++){  //initalize file array
+         file_array[i]->fotp = NULL;
+         file_array[i].inode_number = 0;
+         file_array[i].file_position = 0;
+         file_array[i].in_use_flag = 0;
+     }
+     PCB_base->fd_arr = file_array;
+
+     if(process_number==0)  PCB_base->parent = NULL;
      else {
        //use in line assembly to acquire parent ESP and store in PCB_base->parent;
      }
+
+     //start stdin process
+     PCB_base->fd_arr[0]->fotp = //TABLE FOR STDIN
+     PCB_base->fd_arr[0].inode_number = 0; //NOT A DATA File
+     PCB_base->fd_arr[0].file_position = 0;
+     PCB_base->fd_arr[0].in_use_flag = 1; //in use
+     //start stdout process
+     PCB_base->fd_arr[1]->fotp = //TABLE FOR STDOUT
+     PCB_base->fd_arr[1].inode_number = 0; //NOT A DATA File
+     PCB_base->fd_arr[1].file_position = 0;
+     PCB_base->fd_arr[1].in_use_flag = 1; //in use
+
+
     /*********** Step 6: Set up IRET context ***********/
     // The only things that really change here upon each syscall are: 1) tss.esp0, 2) ESP-on-stack (in IRET context), 3) page table
 
