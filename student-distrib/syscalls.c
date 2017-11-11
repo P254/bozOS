@@ -4,33 +4,35 @@
 #include "filesystem.h"
 #include "paging.h"
 
+static int8_t process_number = -1;
+
 /* 
  * ----------- Notes for everyone: -----------
- * If you haven't already read through the relevant material, I suggest you do so. 
- * Look at the slides from last week's discussion, plus Appendices A, C, D, E and the flowchart on Piazza. 
- * So the bulk of the stuff is here. I wrote bits and pieces of the ece391_execute function. 
- * 
+ * If you haven't already read through the relevant material, I suggest you do so.
+ * Look at the slides from last week's discussion, plus Appendices A, C, D, E and the flowchart on Piazza.
+ * So the bulk of the stuff is here. I wrote bits and pieces of the execute function.
+ *
  * There's a couple things that need to be done, in order of priority:
  * 1) Figure out what needs to go into the structure for the PCB (and why)
  * 2) Complete steps 4 and 5
- * 3) Complete the ece391_halt function, which sort of does the opposite thing that ece391_execute does. 
- * 4) Complete the ece391_read, ece391_write, ece391_open and ece391_close system calls.  
- * 5) Finish step 1 of ece391_execute. 
- * 
- * I think it's best to work together on how to complete steps 4 and 5, as well as the PCB structure. 
+ * 3) Complete the halt function, which sort of does the opposite thing that execute does.
+ * 4) Complete the read, write, open and close system calls.
+ * 5) Finish step 1 of execute.
+ *
+ * I think it's best to work together on how to complete steps 4 and 5, as well as the PCB structure.
  * - Sean 11/8/17
  * --------------------------------------------
  */
 
 /*
- * ece391_halt
- *   DESCRIPTION: Handler for 'halt' system call. 
- *   INPUTS: status -- ??? 
+ * halt
+ *   DESCRIPTION: Handler for 'halt' system call.
+ *   INPUTS: status -- ???
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_halt(uint8_t status) {
+int32_t halt(uint8_t status) {
     printf("System call HALT.\n");
 
     // Store ESP and EBP of the parent process, we can call a normal ret 
@@ -41,14 +43,14 @@ int32_t ece391_halt(uint8_t status) {
 }
 
 /*
- * ece391_execute
- *   DESCRIPTION: Handler for 'execute' system call. 
+ * execute
+ *   DESCRIPTION: Handler for 'execute' system call.
  *   INPUTS: command -- space-separated sequence of words
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_execute(const uint8_t* command) {
+int32_t execute(const uint8_t* command) {
     printf("System call EXECUTE.\n");
     uint8_t i;
 
@@ -56,13 +58,13 @@ int32_t ece391_execute(const uint8_t* command) {
     // TODO: Need to perform appropriate checking of command string
     // Command is a space-separated sequence of words
     // For now, I hardcode cmd so that we execute "shell"
-    uint8_t* cmd = "shell";
+    int8_t* cmd = "shell";
 
     
     /*********** Step 2: Check file validity ***********/
     // Check if the file can be read or not
     dentry_t cmd_dentry;
-    if (read_dentry_by_name(cmd, &cmd_dentry) == -1) return -1;
+    if (read_dentry_by_name((uint8_t*) cmd, &cmd_dentry) == -1) return -1;
 
     // Check if the file can be executed or not
     uint8_t exe_buf[BYTES_4];
@@ -86,13 +88,14 @@ int32_t ece391_execute(const uint8_t* command) {
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
     // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
+    // TODO: Change USER_MEM_P to something that uses 'program_kernel_base'
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = USER_MEM_P | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
     
     // Tadas pointed out that we don't need to reload page_directory into CR3 
     // Flush the TLB (flushing happens whenever we reload CR3)
     asm volatile(
-        "movl %%cr3, %%eax"
-        "movl %%eax, %%cr3"
+        "movl %%cr3, %%eax;"
+        "movl %%eax, %%cr3;"
         : /* no outputs */
         : /* no inputs */
         : "eax"
@@ -101,11 +104,47 @@ int32_t ece391_execute(const uint8_t* command) {
     /*********** Step 4: Load file into memory ***********/
     // The program image must be copied to the correct offset (0x48000) within that page
     // TODO: This needs to be completed
+    uint8_t * data_buf = (uint8_t*) USER_PROG_LOC; // We probably don't need an array data_buf, instead we can cast an address to a pointer
+    if (read_data(cmd_dentry.inode, 0, data_buf, USER_PROG_SIZE) == -1) return -1;
+    // memcpy(USER_PROG, data_buf ,0x400000);
 
 
     /*********** Step 5: Create PCB / open FDs ***********/
     // TODO: This needs to be completed
-    // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy. 
+    // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
+    process_number++;
+    uint32_t kernel_base = 0x400000; //4MB is base of kernel
+    uint32_t PCB_offset = (process_number + 1) * 0x8000;
+    uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
+    pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
+    
+    PCB_base->status = TASK_RUNNING;
+    PCB_base->pid = process_number;            // Process ID
+    PCB_base->user_loc = (uint32_t*) (0x800000 + process_number * 0x400000);     // Location of program in physical memory
+    
+    fd_t* fd_array = PCB_base->fd_arr;
+    for (i = 0 ; i < 8 ; i++) {  // initalize file descriptor array
+        fd_array[i].fotp = NULL;
+        fd_array[i].inode_number = 0;
+        fd_array[i].file_position = 0;
+        fd_array[i].in_use_flag = 0;
+    }
+
+    if (process_number==0)  PCB_base->parent = NULL;
+    else {
+        // use inline assembly to acquire parent ESP and store in PCB_base->parent;
+    }
+
+    // start stdin process
+    PCB_base->fd_arr[0].fotp = NULL; //TABLE FOR STDIN TODO: Always terminal_open
+    PCB_base->fd_arr[0].inode_number = 0; //NOT A DATA File
+    PCB_base->fd_arr[0].file_position = 0;
+    PCB_base->fd_arr[0].in_use_flag = 1; //in use
+    // start stdout process
+    PCB_base->fd_arr[1].fotp = NULL; //TABLE FOR STDOUT TODO: Always terminal_close
+    PCB_base->fd_arr[1].inode_number = 0; //NOT A DATA File
+    PCB_base->fd_arr[1].file_position = 0;
+    PCB_base->fd_arr[1].in_use_flag = 1; //in use
 
 
     /*********** Step 6: Set up IRET context ***********/
@@ -113,7 +152,7 @@ int32_t ece391_execute(const uint8_t* command) {
 
     // TODO: Check SS0 and ESP0 again
     tss.ss0 = KERNEL_DS; // Segment selector
-    tss.esp0 = ??; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1, etc...
+    tss.esp0 = program_kernel_base; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1, etc... TODO: This needs to be updated to reflect process #
 
     /* The IRET instruction expects, when executed, the stack to have the following contents 
      * (starting from the stack pointer - lowermost address upwards):
@@ -147,45 +186,51 @@ int32_t ece391_execute(const uint8_t* command) {
      * http://wiki.osdev.org/Context_Switching
      */
     // Push IRET context to stack
+    uint16_t user_ds_addr16 = USER_DS;
+    uint32_t user_ds_addr32 = USER_DS;
+    uint32_t user_stack_addr = USER_STACK;
+    uint32_t int_flag_bitmask = INT_FLAG;
+    uint32_t user_cs_addr = USER_CS;
+
     asm volatile(
-        "cli"                   /* Context-switch is critical, so we suppress interrupts */
-        
-        "movw $USER_DS, %%cx"
-        "movw %%cx, %%ss"       /* Code-segment */
-        "movw %%cx, %%ds"       /* Data-segment */
-        "movw %%cx, %%es"       /* Additional data-segment register */
-        "movw %%cx, %%fs"       /* Additional data-segment register */
-        "movw %%cx, %%gs"       /* Additional data-segment register */
+        "cli;"                  /* Context-switch is critical, so we suppress interrupts */
 
-        "pushl $USER_DS"
-        "pushl $USER_STACK"     /* TODO: Figure out why we set the virutal ESP-on-stack memory to only be 4 MiB */
+        "movw %0, %%cx;"
+        "movw %%cx, %%ss;"      /* Code-segment */
+        "movw %%cx, %%ds;"      /* Data-segment */
+        "movw %%cx, %%es;"      /* Additional data-segment register */
+        "movw %%cx, %%fs;"      /* Additional data-segment register */
+        "movw %%cx, %%gs;"      /* Additional data-segment register */
 
-        "pushf"                 /* Push EFLAGS onto the stack */
-        "popl %%eax"            /* Get EFLAGS back into EAX. The only way to read EFLAGS is to pushf then pop */
-        "orl $INT_FLAG, %%eax"   /* Set the IF flag (same thing as STI; we use this because calling STI will cause a pagefault) */
-        "pushl %%eax"           /* Push the new EFLAGS value back onto the stack */
+        "pushl %1;"         /* Push USER_DS */
+        "pushl %2;"         /* Push USER_STACK pointer */
 
-        "pushl $USER_CS"
-        "pushl %0"              /* User program/function entry point */
-        "iret"
-        : /*no outputs*/ 
-        : "r" (entry_pt_addr)
+        "pushf;"            /* Push EFLAGS onto the stack */
+        "popl %%eax;"       /* Get EFLAGS back into EAX. The only way to read EFLAGS is to pushf then pop */
+        "orl %3, %%eax;"    /* Set the IF flag (same thing as STI; we use this because calling STI will cause a pagefault) */
+        "pushl %%eax;"      /* Push the new EFLAGS value back onto the stack */
+
+        "pushl %4;"
+        "pushl %5;"         /* User program/function entry point */
+        "iret;"
+        : /*no outputs*/
+        : "r" (user_ds_addr16), "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr), "r" (entry_pt_addr)
     );
     
     return 0;
 }
 
 /*
- * ece391_read
- *   DESCRIPTION: Handler for 'read' system call. 
- *   INPUTS: fd -- ??? 
+ * read
+ *   DESCRIPTION: Handler for 'read' system call.
+ *   INPUTS: fd -- ???
  *           buf -- ???
  *           nbytes -- ???
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_read(int32_t fd, void* buf, int32_t nbytes) {
+int32_t read (int32_t fd, void* buf, int32_t nbytes) {
     printf("System call READ.\n");
     // This function is called within a given user program. 
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
@@ -194,16 +239,16 @@ int32_t ece391_read(int32_t fd, void* buf, int32_t nbytes) {
 }
 
 /*
- * ece391_write
- *   DESCRIPTION: Handler for 'write' system call. 
- *   INPUTS: fd -- ??? 
+ * write
+ *   DESCRIPTION: Handler for 'write' system call.
+ *   INPUTS: fd -- ???
  *           buf -- ???
  *           nbytes -- ???
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_write(int32_t fd, void* buf, int32_t nbytes) {
+int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
     printf("System call WRITE.\n");
     // This function is called within a given user program. 
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
@@ -213,14 +258,14 @@ int32_t ece391_write(int32_t fd, void* buf, int32_t nbytes) {
 
 
 /*
- * ece391_open
- *   DESCRIPTION: Handler for 'open' system call. 
+ * open
+ *   DESCRIPTION: Handler for 'open' system call.
  *   INPUTS: filename -- ???
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_open(const uint8_t* filename) {
+int32_t open (const uint8_t* filename) {
     printf("System call OPEN.\n");
     // This function is called within a given user program. 
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
@@ -229,14 +274,14 @@ int32_t ece391_open(const uint8_t* filename) {
 }
 
 /*
- * ece391_close
- *   DESCRIPTION: Handler for 'close' system call. 
+ * close
+ *   DESCRIPTION: Handler for 'close' system call.
  *   INPUTS: fd -- ???
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_close(int32_t fd) {
+int32_t close (int32_t fd) {
     printf("System call CLOSE.\n");
     // This function is called within a given user program. 
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
@@ -246,43 +291,43 @@ int32_t ece391_close(int32_t fd) {
 }
 
 /*
- * ece391_getargs
- *   DESCRIPTION: Handler for 'getargs' system call. 
+ * getargs
+ *   DESCRIPTION: Handler for 'getargs' system call.
  *   INPUTS: buf -- ???
  *           nbytes -- ???
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_close(uint8_t* buf, int32_t nbytes) {
+int32_t getargs (uint8_t* buf, int32_t nbytes) {
     printf("System call GETARGS.\n");
 
     return 0;
 }
 
 /*
- * ece391_vidmap
- *   DESCRIPTION: Handler for 'vidmap' system call. 
+ * vidmap
+ *   DESCRIPTION: Handler for 'vidmap' system call.
  *   INPUTS: screen_start -- ???
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_vidmap (uint8_t** screen_start) {
+int32_t vidmap (uint8_t** screen_start) {
     printf("System call VIDMAP.\n");
     
     return 0;
 }
 /*
- * ece391_set_handler
- *   DESCRIPTION: Handler for 'set_handler' system call. 
+ * set_handler
+ *   DESCRIPTION: Handler for 'set_handler' system call.
  *   INPUTS: signum -- ???
  *           handler -- ???
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_set_handler (int32_t signum, void* handler) {
+int32_t set_handler (int32_t signum, void* handler) {
     printf("System call SET_HANDLER.\n");
     /******************* EXTRA CREDIT *************************/
     
@@ -290,14 +335,14 @@ int32_t ece391_set_handler (int32_t signum, void* handler) {
 }
 
 /*
- * ece391_sigreturn
- *   DESCRIPTION: Handler for 'sigreturn' system call. 
+ * sigreturn
+ *   DESCRIPTION: Handler for 'sigreturn' system call.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t ece391_sigreturn (void) {
+int32_t sigreturn (void) {
     printf("System call SIGRETURN.\n");
     /******************* EXTRA CREDIT *************************/
     
