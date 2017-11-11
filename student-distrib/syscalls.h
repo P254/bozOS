@@ -19,6 +19,7 @@
 #define FILE_IN_USE 1
 #define FILE_NOT_IN_USE 0
 #define MAX_FILES 8
+#define OPERATIONS_SIZE 4
 // User memory paging
 #define USER_PROG_LOC 0x08048000
 #define USER_PROG_SIZE (4 << ALIGN_1MB)
@@ -27,6 +28,7 @@
 #define USER_STACK ((132 << ALIGN_1MB) - 4)
 
 #define TASK_RUNNING 1
+
 
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
@@ -57,8 +59,10 @@ typedef struct pcb {
     unint8_t buf_args[128];
 } pcb_t;
 
-typdef struct fd {
-    uint8_t* fotp; //file operations table Pointer
+typedef struct fd {
+    //https://stackoverflow.com/questions/7670766/c-how-can-i-use-a-single-function-pointer-array-for-functions-with-variable-par
+    fp fotp[OPERATIONS_SIZE];
+    //uint8_t* fotp; //file operations table Pointer
     unint8_t inode_number; //inode, only for text files
     unint8_t file_position; //FP
     unint8_t in_use_flag;
@@ -75,5 +79,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes);
 int32_t vidmap (uint8_t** screen_start);
 int32_t set_handler (int32_t signum, void* handler);
 int32_t sigreturn (void);
+
+typedef uint32_t (*fp)(void);
 
 #endif /* SYS_CALL_H */
