@@ -33,6 +33,7 @@
 #define USER_STACK ((132 << ALIGN_1MB) - 4)
 
 #define TASK_RUNNING 1
+#define MAX_PROCESSES 6
 
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
@@ -70,11 +71,13 @@ typedef struct fd {
 typedef struct pcb {
     uint8_t status;       // Holds the status of the current process
     uint8_t pid;          // Process ID
-    uint32_t* user_loc;   // Location of program in physical memory
+    uint32_t user_loc;   // Location of program in physical memory
     fd_t fd_arr[8];         // File descriptor array -- TODO: Figure out what to do with this
-    uint32_t* parent_esp;       // Pointer to parent task
-    uint32_t* parent_ebp;       // Pointer to parent task
+    uint32_t self_esp;       // Pointer to own ESP (will be used by child process later)
+    uint32_t self_ebp;       // Pointer to own EBP (will be used by child process later)
     /* TODO: Also store parent's kernel stack and user stack and return address */
+    uint32_t self_k_stack;
+    uint32_t self_usr_stack;
     // unsigned int buf_args[128];
 } pcb_t;
 
@@ -91,6 +94,6 @@ int32_t vidmap (uint8_t** screen_start);
 int32_t set_handler (int32_t signum, void* handler);
 int32_t sigreturn (void);
 
-pcb_t* get_PCB_base();
+pcb_t* get_PCB_base(int8_t process_num);
 
 #endif /* SYS_CALL_H */
