@@ -47,24 +47,23 @@ int32_t halt(uint8_t status) {
     // Then we can resume at the parent program where we left off
     // Also check the diagram for the other things that need to be done (e.g. change paging)
 
-    uint8_t i;
     printf("System call HALT.\n");
-    uint32_t status_32= status;
-    // uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    // uint32_t PCB_offset = (process_number + 1) * 0x8000;
-    // uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
-    // pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
-    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t i;
+    uint32_t status_32 = status;
+    process_number--;
+    // We cannot close the base shell
+    if (process_number == 0) {
+        // Call execute again with all values reinitialized
+        execute((uint8_t*) "shell");
+    }
+    
+    // We subtract -1 to get the parent process. This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
+    pcb_t* PCB_base_parent = get_PCB_base(process_number-1); 
+    pcb_t* PCB_base_self = get_PCB_base(process_number); 
 
-    // //cannot close the base shell
-    // if(process_number==0){
-    //   // call execute again with all values reinitialized
-    //   execute("shell");
-    // }
-
-    /*Restore parent's paging*/
-    uint32_t user_mem_physical = (uint32_t*) PCB_base->parent_usr_stack;
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_mem_physical | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
+    /* Restore parent's paging */
+    uint32_t parent_user_mem_physical = PCB_base_parent->self_usr_stack;
+    page_directory[(USER_MEM_V >> ALIGN_4MB)] = parent_user_mem_physical | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
     // Flush the TLB (flushing happens whenever we reload CR3)
@@ -75,31 +74,35 @@ int32_t halt(uint8_t status) {
         : /* no inputs */
         : "eax"
     );
-    //close relevant FDs
-    fd_t* fd_array = PCB_base->fd_arr;
-    for (i = 0 ; i < 8 ; i++) {
+    
+    // close relevant FDs
+    fd_t* fd_array = PCB_base_self->fd_arr;
+    for (i = 0 ; i < MAX_FILES ; i++) {
         if(fd_array[i].in_use_flag == FILE_IN_USE){
-        fd_array[i].fotp = NULL;
-        fd_array[i].inode_number = 0;
-        fd_array[i].file_position = 0;
-        fd_array[i].in_use_flag = FILE_NOT_IN_USE;
-      }
+            fd_array[i].fotp = NULL;
+            fd_array[i].inode_number = 0;
+            fd_array[i].file_position = 0;
+            fd_array[i].in_use_flag = FILE_NOT_IN_USE;
+        }
     }
+
+    // Decrement process number
+    process_number--;
 
     //restore parent esp/ebp
     tss.ss0 = KERNEL_DS; // Segment selector:: we dont have to do this
-    tss.esp0 = (uint32_t*) PCB_base->parent_k_stack; // restore to point to parent_k_stack
+    tss.esp0 = PCB_base_parent->self_k_stack; // restore to pointer to parent_k_stack
     // move 2 eax because you need to have a return value of 2 as a parameter
     asm volatile(
-            "movl %0, %%esp;"
-            "movl %1, %%ebp;"
-            "movl %2, %%eax;"
-            "jmp SYS_HALT_RET;"
-            : /*no outputs*/
-            : "r" (PCB_base->parent_esp), "r" (PCB_base->parent_ebp), "r" (status_32)
-        );
-    process_number--;
-
+        "movl %0, %%esp;"
+        "movl %1, %%ebp;"
+        "movl %2, %%eax;"
+        "jmp SYS_HALT_RETURN_POINT;"
+        : /*no outputs*/
+        : "r" (PCB_base_parent->self_esp), "r" (PCB_base_parent->self_ebp), "r" (status_32)
+        : "esp", "ebp", "eax"
+    );
+    
     return status;
 }
 
@@ -183,7 +186,6 @@ int32_t execute(const uint8_t* command) {
     uint8_t * data_buf = (uint8_t*) USER_PROG_LOC; // We probably don't need an array data_buf, instead we can cast an address to a pointer
     if (read_data(cmd_dentry.inode, 0, data_buf, USER_PROG_SIZE) == -1) return -1;
 
-
     /*********** Step 5: Create PCB / open FDs ***********/
     // TODO: Check again if the PCB is correct. Also limit # of processes to 6.
 
@@ -195,32 +197,26 @@ int32_t execute(const uint8_t* command) {
 
     PCB_base->status = TASK_RUNNING;
     PCB_base->pid = process_number;            // Process ID
-    PCB_base->user_loc = (uint32_t*) ((8 << ALIGN_1MB) + process_number * (4 << ALIGN_1MB));     // Location of program in physical memory
-    PCB_base->parent_k_stack= (uint32_t*) program_kernel_base; // Store the Parent's kernel Stack.
-    PCB_base->parent_usr_stack= user_mem_physical; // Store the Parent's User Stack.
+    PCB_base->user_loc = ((8 << ALIGN_1MB) + process_number * (4 << ALIGN_1MB));     // Location of program in physical memory
+    PCB_base->self_k_stack = program_kernel_base; // Store it's own kernel stack
+    PCB_base->self_usr_stack = user_mem_physical; // Store it's own user stack
+    
     fd_t* fd_array = PCB_base->fd_arr;
-    for (i = 0 ; i < 8 ; i++) {  // initalize file descriptor array
+    for (i = 0 ; i < MAX_FILES ; i++) {  // initalize file descriptor array
         fd_array[i].fotp = NULL;
         fd_array[i].inode_number = 0;
         fd_array[i].file_position = 0;
         fd_array[i].in_use_flag = 0;
     }
-
-    if (process_number == 0)  {
-      PCB_base->parent_esp = NULL;
-      PCB_base->parent_ebp = NULL;
-    }
-    else {
-        uint32_t parent_esp;
-        uint32_t parent_ebp;
-        asm volatile(
-            "movl %%esp, %0;"
-            "movl %%ebp, %1;"
-            : "=r" (parent_esp), "=r" (parent_ebp)
-        );
-        PCB_base->parent_esp = (uint32_t*) parent_esp;
-        PCB_base->parent_ebp = (uint32_t*) parent_ebp;
-    }
+    
+    uint32_t self_esp, self_ebp;
+    asm volatile(
+        "movl %%esp, %0;"
+        "movl %%ebp, %1;"
+        : "=r" (self_esp), "=r" (self_ebp)
+    );
+    PCB_base->self_esp = self_esp;
+    PCB_base->self_ebp = self_ebp;
 
     // start stdin process
     PCB_base->fd_arr[0].fotp = (generic_fp*) stdin_fotp; //TABLE FOR STDIN
@@ -304,8 +300,7 @@ int32_t execute(const uint8_t* command) {
         "pushl %3;"
         "pushl %4;"         /* User program/function entry point */
         "iret;"
-        "SYS_HALT_RET:;"
-        "ret;"
+        "SYS_HALT_RETURN_POINT: ;"
         : /*no outputs*/
         : "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr32), "r" (entry_pt_addr)
         : "eax"
@@ -525,10 +520,12 @@ int32_t sigreturn (void) {
  *   RETURN VALUE: pcb_t -- pointer to the topmost PCB on the kernel stack
  *   SIDE EFFECTS: none
  */
-pcb_t* get_PCB_base(int process_num) {
+pcb_t* get_PCB_base(int8_t process_num) {
+    if (process_num < 0 || process_num >= MAX_PROCESSES) return NULL;
+    
     uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
     uint32_t PCB_offset = process_num * (8 << ALIGN_1KB);
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
-    return PCB_base;
+    return PCB_base;    
 }
