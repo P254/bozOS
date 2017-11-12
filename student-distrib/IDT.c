@@ -70,7 +70,7 @@ void init_IDT() {
             // System call
             set_IDT_wrapper(i, handle_syscall_asm); 
             idt[i].dpl = 3; // System call should have its DPL set to 3 so that it is accessible from user space via the 'int' instruction
-            idt[i].seg_selector = USER_CS; 
+            idt[i].seg_selector = KERNEL_CS; 
         }
     }
 }
@@ -204,13 +204,14 @@ void handle_e7() {
 /*
  * handle_e8
  *   DESCRIPTION: Handler for exception #8
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e8() {
+void handle_e8(uint32_t error_code) {
     printf("Interrupt 8 - Double Fault Exception (#DF)\n");
+    printf("Error code (hex): %x\n", error_code);
     cli();
     while(1);
 }
@@ -248,13 +249,14 @@ void handle_e10() {
 /*
  * handle_e11
  *   DESCRIPTION: Handler for exception #11
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e11() {
+void handle_e11(uint32_t error_code) {
     printf("Interrupt 11 - Segment Not Present (#NP)\n");
+    printf("Error code (hex): %x\n", error_code);
     cli();
     while(1);
 }
@@ -262,13 +264,14 @@ void handle_e11() {
 /*
  * handle_e12
  *   DESCRIPTION: Handler for exception #12
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e12() {
+void handle_e12(uint32_t error_code) {
     printf("Interrupt 12 - Stack Fault Exception (#SS)\n");
+    printf("Error code (hex): %x\n", error_code);
     cli();
     while(1);
 }
@@ -276,13 +279,14 @@ void handle_e12() {
 /*
  * handle_e13
  *   DESCRIPTION: Handler for exception #13
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e13() {
+void handle_e13(uint32_t error_code) {
     printf("Interrupt 13 - General Protection Exception (#GP)\n");
+    printf("Error code (hex): %x\n", error_code);
     cli();
     while(1);
 }
@@ -290,12 +294,12 @@ void handle_e13() {
 /*
  * handle_e14
  *   DESCRIPTION: Handler for exception #14
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e14() {
+void handle_e14(uint32_t error_code) {
     // Grab CR2 register (tells us the page fault linear address)
     uint32_t addr;
     asm volatile( 
@@ -304,6 +308,7 @@ void handle_e14() {
         : /* no inputs */
     );
     printf("Interrupt 14 - Page-Fault Exception (#PF) at address 0x%x\n", addr);
+    printf("Error code (hex): %x\n", error_code);
     cli();
     while(1);
 }
@@ -339,13 +344,14 @@ void handle_e16() {
 /*
  * handle_e17
  *   DESCRIPTION: Handler for exception #17
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e17() {
+void handle_e17(uint32_t error_code) {
     printf("Interrupt 17 - Alignment Check Exception (#AC)\n");
+    printf("Error code (hex): %x\n", error_code);
     cli();
     while(1);
 }

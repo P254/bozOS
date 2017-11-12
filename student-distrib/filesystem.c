@@ -24,7 +24,7 @@ void fs_init(uint32_t start) {// this will take in mod_start
  *   RETURN VALUE:
  *   SIDE EFFECTS: nothing
  */
-int32_t fopen(uint8_t *fname) {
+int32_t fopen(const uint8_t *fname) {
 
     return -1;
 }
@@ -48,7 +48,8 @@ int32_t fclose(uint8_t *fname) {
  *   RETURN VALUE:
  *   SIDE EFFECTS: changes the buffer
  */
-int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
+// int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
+int32_t fread(uint8_t *fname, uint8_t *buf, int32_t nbytes)
 {
     return 0;
 }
@@ -73,7 +74,7 @@ int32_t fwrite(void) {
  *   SIDE EFFECTS: nothing
  */
 
-int32_t dopen(uint8_t* fname, dentry_t *dentry) {
+int32_t dopen(const uint8_t* fname, dentry_t *dentry) {
     // return read_dentry_by_name(fname, dentry);
     return 0;
 }

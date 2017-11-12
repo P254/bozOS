@@ -125,7 +125,7 @@ int32_t rtc_write (int32_t fd, const void* buf, int32_t nbytes) {
  *   RETURN VALUE: void
  *   SIDE EFFECTS: none
  */
-int32_t rtc_open (const int8_t* filename){
+int32_t rtc_open (const uint8_t* filename){
     unsigned int rate;
     rate = INIT_RATE;
     rtc_write(NULL, &rate, 0);
