@@ -75,6 +75,8 @@ typedef struct pcb {
     uint32_t* parent_esp;       // Pointer to parent task
     uint32_t* parent_ebp;       // Pointer to parent task
     /* TODO: Also store parent's kernel stack and user stack and return address */
+    uint32_t* parent_k_stack;
+    uint32_t* parent_usr_stack;
     // unsigned int buf_args[128];
 } pcb_t;
 
@@ -91,6 +93,6 @@ int32_t vidmap (uint8_t** screen_start);
 int32_t set_handler (int32_t signum, void* handler);
 int32_t sigreturn (void);
 
-pcb_t* get_PCB_base();
+pcb_t* get_PCB_base(int process_num);
 
 #endif /* SYS_CALL_H */
