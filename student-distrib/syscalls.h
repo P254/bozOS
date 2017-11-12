@@ -56,16 +56,13 @@
 #define _FILE_       2
 
         /* Declaring Global Variables and arrays */
-typedef int32_t (*generic_fp)(void);
+typedef int (*generic_fp)();
 
 static volatile int process_number = -1;
-static generic_fp* file_fotp[4]= {(generic_fp*)fopen, (generic_fp*)fclose, (generic_fp*)fread,(generic_fp*) fwrite};
-static generic_fp* dir_fotp[4]=  {(generic_fp*)dopen, (generic_fp*)dclose, (generic_fp*)dread, (generic_fp*)dwrite};
-static generic_fp* rtc_fotp[4]=  {(generic_fp*)rtc_open, (generic_fp*)rtc_close, (generic_fp*)rtc_read, (generic_fp*)rtc_write};
 
 typedef struct fd {
   uint8_t fileName[32]; // 32B
-  generic_fp** fotp; //file operations table Pointer
+  generic_fp* fotp; //file operations table Pointer
   uint8_t inode_number; //inode, only for text files
   uint8_t file_position; //FP
   uint8_t in_use_flag;

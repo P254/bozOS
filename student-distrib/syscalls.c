@@ -24,6 +24,12 @@
  * --------------------------------------------
  */
 
+generic_fp* file_fotp[4]= {(generic_fp*) fopen, (generic_fp*) fclose, (generic_fp*) fread, (generic_fp*) fwrite};
+generic_fp* dir_fotp[4]=  { (generic_fp*) dopen, (generic_fp*) (generic_fp*) dclose, (generic_fp*) dread, (generic_fp*) dwrite};
+generic_fp* rtc_fotp[4]=  {(generic_fp*) rtc_open, (generic_fp*) rtc_close, (generic_fp*) rtc_read, (generic_fp*) rtc_write};
+
+
+
 /*
  * halt
  *   DESCRIPTION: Handler for 'halt' system call.
@@ -236,14 +242,15 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
     // in the read you look for the fd file in the fd_arr, then
       // use the operations pointer to get the function
       //
-    int retval;
     pcb_t* PCB_base;
     PCB_base= get_PCB_base();
     if(buf==NULL || fd<0 || fd>MAX_FILES-1)
       return -1;
-    retval= *(PCB_base->fd_arr[fd].fotp[FOTP_READ])(&(PCB_base->fd_arr[fd].fileName), buf, nbytes);
-    return retval;
-}
+    // return retval;
+    return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(&(PCB_base->fd_arr[fd].fileName), buf, nbytes);
+    //NOTE: .fileName in the struct is just there so that this function can return 0... filname
+    /// TODO: Remove the above line before demo...
+  }
 
 /*
  * write
@@ -266,7 +273,7 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
     // if file has never been opened we return -1
     if (PCB_base->fd_arr[fd].in_use_flag == FILE_NOT_IN_USE)
       return -1;
-    return *(PCB_base->fd_arr[fd].fotp[FOTP_WRITE])(fd, buf, nbytes);
+    return (PCB_base->fd_arr[fd].fotp[FOTP_WRITE])(fd, buf, nbytes);
 }
 
 /*
@@ -300,12 +307,12 @@ int32_t open (const uint8_t* filename) {
       return -1; //all the fd's are in use :(
 
     if(file_dentry.fileType == _DIR_){
-      if(dopen(filename, &file_dentry)!=0) return -1;
+      if(dopen(filename, (dentry_t *) &file_dentry)!=0) return -1;
       PCB_base->fd_arr[fd].inode_number= NULL; // TODO: only set this for text file right?
       PCB_base->fd_arr[fd].file_position= 0; //NOTE: idk if this is correct
       PCB_base->fd_arr[fd].fotp= dir_fotp;
       PCB_base->fd_arr[fd].in_use_flag= FILE_IN_USE;
-      PCB_base->fd_arr[fd].fileName= filename;
+      // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
     }
     else if (file_dentry.fileType == _FILE_){
       if(fopen(filename)!=0) return -1;
@@ -313,7 +320,8 @@ int32_t open (const uint8_t* filename) {
       PCB_base->fd_arr[fd].file_position= 0; //NOTE: idk if this is correct
       PCB_base->fd_arr[fd].fotp= file_fotp;
       PCB_base->fd_arr[fd].in_use_flag= FILE_IN_USE;
-      PCB_base->fd_arr[fd].fileName= filename;
+      // PCB_base->fd_arr[fd].fileName= *filename;
+      // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
     }
     else if(file_dentry.fileType == _RTC_){
       if(rtc_open(filename)!=0) return -1;
@@ -321,7 +329,8 @@ int32_t open (const uint8_t* filename) {
       PCB_base->fd_arr[fd].file_position= 0; //NOTE: idk if this is correct
       PCB_base->fd_arr[fd].fotp= rtc_fotp;
       PCB_base->fd_arr[fd].in_use_flag= FILE_IN_USE;
-      PCB_base->fd_arr[fd].fileName= filename;
+      // PCB_base->fd_arr[fd].fileName= *filename;
+      // (int8_t*) PCB_base->fd_arr[fd].fileName=  (int8_t*) filename;
     }
     else
       return -1; //We cannot understand the file type..
@@ -348,7 +357,7 @@ int32_t close (int32_t fd) {
       return -1; // WRONG fd given
     }
     // check if I can close the file!
-    if( *(PCB_base->fd_arr[fd].fotp[FOTP_CLOSE])(fd) != 0)
+    if( (PCB_base->fd_arr[fd].fotp[FOTP_CLOSE])(fd) != 0)
       return -1;
     // set the flag to not in use
     PCB_base->fd_arr[fd].in_use_flag= FILE_NOT_IN_USE;
