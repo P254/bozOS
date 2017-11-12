@@ -8,23 +8,25 @@
 
 /*
  * ----------- Notes for everyone: -----------
- * If you haven't already read through the relevant material, I suggest you do so.
- * Look at the slides from last week's discussion, plus Appendices A, C, D, E and the flowchart on Piazza.
- * So the bulk of the stuff is here. I wrote bits and pieces of the execute function.
+ * Seems like we have managed to make some good progress with our code. 
+ * Execute seems to be working as we would like it to be, so let's move ahead and finish halt. 
  *
- * There's a couple things that need to be done, in order of priority:
- * 1) Figure out what needs to go into the structure for the PCB (and why)
- * 2) Complete steps 4 and 5
- * 3) Complete the halt function, which sort of does the opposite thing that execute does.
- * 4) Complete the read, write, open and close system calls.
- * 5) Finish step 1 of execute.
+ * The next things that need to be done, in order of priority:
+ * 1) Complete the halt function, which sort of does the opposite thing that execute does. 
+ *       a) We need to figure out how to prevent a halt on the initial shell. We should not be able to quit the first user program. 
+ *          Or rather, if we quit the first shell, we should immediately open a new shell. 
+ *       b) We need to limit the number of user programs to 6. 
+ * 2) Complete the read, write, open and close system calls.
+ * 3) Check all the user programs that should be able to run on this MP actually work. 
+ *    I don't have the list, but we can look through the 'syscalls' directory and figure out quickly.
+ * 4) Check against the specs for CP3 grading to make sure we didn't miss out on anything. 
+ * 5) Unit tests and miscellaneous bug fixes. 
  *
- * I think it's best to work together on how to complete steps 4 and 5, as well as the PCB structure.
- * xoxo
- * Gossip Girl 11/8/17
+ * Sean 11/12/17
  * --------------------------------------------
  */
 
+/* File Operations Table Pointers */
 generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, NULL, (generic_fp*) terminal_close};
 generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) terminal_write, (generic_fp*) terminal_close};
 
@@ -66,12 +68,29 @@ int32_t execute(const uint8_t* command) {
     // TODO: Need to perform appropriate checking of command string
     // Command is a space-separated sequence of words
     // For now, I hardcode cmd so that we execute "shell"
-    int8_t* cmd = "shell";
+    i = 0;
+    uint8_t nbytes = 0;
+    uint8_t cmd1[KB_BUF_SIZE]; // First command word
+    memset(cmd1, '\0', KB_BUF_SIZE);
+
+    while (i < KB_BUF_SIZE) {
+        if (command[i] == '\n' || command[i] == '\0' || command[i] == ' ') {
+            nbytes = i;
+            strncpy((int8_t*) cmd1, (int8_t*) command, nbytes);
+            break;
+        }
+        i++;
+    }
+    // Edge case: We need to copy the entire command string to cmd1
+    if (i == KB_BUF_SIZE) {
+        strncpy((int8_t*) cmd1, (int8_t*) command, KB_BUF_SIZE);
+    }
+    // TODO: Employ getargs here, probably need to use 'nbytes' as a starting point
 
     /*********** Step 2: Check file validity ***********/
     // Check if the file can be read or not
     dentry_t cmd_dentry;
-    if (read_dentry_by_name((uint8_t*) cmd, &cmd_dentry) == -1) return -1;
+    if (read_dentry_by_name((uint8_t*) cmd1, &cmd_dentry) == -1) return -1;
 
     // Check if the file can be executed or not
     uint8_t exe_buf[BYTES_4];
