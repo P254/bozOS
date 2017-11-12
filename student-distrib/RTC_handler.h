@@ -40,7 +40,7 @@ void rtc_handler(void);
 
 int32_t rtc_read (int32_t rtc_fd, void* buf, int32_t rtc_nbytes);
 int32_t rtc_write (int32_t rtc_fd, const void* buf, int32_t rtc_nbytes);
-int32_t rtc_open (const int8_t* filename);
+int32_t rtc_open (const uint8_t* filename);
 int32_t rtc_close(int32_t rtc_fd);
 
 #endif /* _RTC_H */
