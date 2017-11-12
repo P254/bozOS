@@ -50,10 +50,14 @@ typedef struct pcb {
     uint8_t pid;            // Process ID
     uint32_t* user_loc;     // Location of program in physical memory
     fd_t fd_arr[8];       // File descriptor array -- TODO: Figure out what to do with this
-    uint32_t* parent;       // Pointer to parent task
+    uint32_t* parent_esp;       // Pointer to parent task
+    uint32_t* parent_ebp;       // Pointer to parent task
 
     /* TODO: Also store parent's kernel stack and user stack and return address */
+    uint8_t buf_args[128];
 } pcb_t;
+
+
 
 /* Forward declarations */
 int32_t halt(uint8_t status);
