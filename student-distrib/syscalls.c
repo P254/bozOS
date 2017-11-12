@@ -4,7 +4,7 @@
 #include "filesystem.h"
 #include "paging.h"
 
-static int8_t process_number = -1;
+static int8_t process_number = 0;
 
 /* 
  * ----------- Notes for everyone: -----------
@@ -88,8 +88,8 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
     // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
-    // TODO: Change USER_MEM_P to something that uses 'program_kernel_base'
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = USER_MEM_P | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
+    uint32_t user_mem_virtual = USER_MEM_V + process_number * (4 << ALIGN_1MB);
+    page_directory[(user_mem_virtual >> ALIGN_4MB)] = USER_MEM_P | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
     
     // Tadas pointed out that we don't need to reload page_directory into CR3 
     // Flush the TLB (flushing happens whenever we reload CR3)
@@ -104,23 +104,21 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 4: Load file into memory ***********/
     // The program image must be copied to the correct offset (0x48000) within that page
     // TODO: This needs to be completed
-    uint8_t * data_buf = (uint8_t*) USER_PROG_LOC; // We probably don't need an array data_buf, instead we can cast an address to a pointer
+    uint8_t * data_buf = (uint8_t*) USER_MEM_V; // We probably don't need an array data_buf, instead we can cast an address to a pointer
     if (read_data(cmd_dentry.inode, 0, data_buf, USER_PROG_SIZE) == -1) return -1;
-    // memcpy(USER_PROG, data_buf ,0x400000);
 
 
     /*********** Step 5: Create PCB / open FDs ***********/
     // TODO: This needs to be completed
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
-    process_number++;
     uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    uint32_t PCB_offset = (process_number + 1) * 0x8000;
+    uint32_t PCB_offset = (process_number + 1) * (8 << ALIGN_1KB);
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
     
     PCB_base->status = TASK_RUNNING;
     PCB_base->pid = process_number;            // Process ID
-    PCB_base->user_loc = (uint32_t*) (0x800000 + process_number * 0x400000);     // Location of program in physical memory
+    PCB_base->user_loc = (uint32_t*) ((8 << ALIGN_1MB) + process_number * (4 << ALIGN_1MB));     // Location of program in physical memory
     
     fd_t* fd_array = PCB_base->fd_arr;
     for (i = 0 ; i < 8 ; i++) {  // initalize file descriptor array
@@ -146,7 +144,7 @@ int32_t execute(const uint8_t* command) {
     PCB_base->fd_arr[1].inode_number = 0; //NOT A DATA File
     PCB_base->fd_arr[1].file_position = 0;
     PCB_base->fd_arr[1].in_use_flag = 1; //in use
-
+    process_number++;
 
     /*********** Step 6: Set up IRET context ***********/
     // The only things that really change here upon each syscall are: 1) tss.esp0, 2) ESP-on-stack (in IRET context), 3) page table
@@ -189,19 +187,19 @@ int32_t execute(const uint8_t* command) {
     // Push IRET context to stack
     uint16_t user_ds_addr16 = USER_DS;
     uint32_t user_ds_addr32 = USER_DS;
-    uint32_t user_stack_addr = USER_STACK;
+    uint32_t user_stack_addr = user_mem_virtual + (4 << ALIGN_1MB) - 4;
     uint32_t int_flag_bitmask = INT_FLAG;
     uint32_t user_cs_addr = USER_CS;
 
     asm volatile(
         "cli;"                  /* Context-switch is critical, so we suppress interrupts */
 
-        // "movw %0, %%cx;"
-        // "movw %%cx, %%ss;"      /* Code-segment */
-        // "movw %%cx, %%ds;"      /* Data-segment */
-        // "movw %%cx, %%es;"      /* Additional data-segment register */
-        // "movw %%cx, %%fs;"      /* Additional data-segment register */
-        // "movw %%cx, %%gs;"      /* Additional data-segment register */
+        "movw %0, %%cx;"
+        "movw %%cx, %%ss;"      /* Code-segment */
+        "movw %%cx, %%ds;"      /* Data-segment */
+        "movw %%cx, %%es;"      /* Additional data-segment register */
+        "movw %%cx, %%fs;"      /* Additional data-segment register */
+        "movw %%cx, %%gs;"      /* Additional data-segment register */
 
         "pushl %1;"         /* Push USER_DS */
         "pushl %2;"         /* Push USER_STACK pointer */
