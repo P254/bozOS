@@ -206,11 +206,11 @@ int32_t execute(const uint8_t* command) {
         fd_array[i].in_use_flag = 0;
     }
 
-    // if (process_number == 0)  {
-    //   PCB_base->parent_esp = NULL;
-    //   PCB_base->parent_ebp = NULL;
-    // }
-    // else {
+    if (process_number == 0)  {
+      PCB_base->parent_esp = NULL;
+      PCB_base->parent_ebp = NULL;
+    }
+    else {
         uint32_t parent_esp;
         uint32_t parent_ebp;
         asm volatile(
@@ -220,7 +220,7 @@ int32_t execute(const uint8_t* command) {
         );
         PCB_base->parent_esp = (uint32_t*) parent_esp;
         PCB_base->parent_ebp = (uint32_t*) parent_ebp;
-    // }
+    }
 
     // start stdin process
     PCB_base->fd_arr[0].fotp = (generic_fp*) stdin_fotp; //TABLE FOR STDIN
