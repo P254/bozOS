@@ -7,7 +7,7 @@ static int process_number=-1;
 
 static int8_t process_number = -1;
 
-/* 
+/*
  * ----------- Notes for everyone: -----------
  * If you haven't already read through the relevant material, I suggest you do so.
  * Look at the slides from last week's discussion, plus Appendices A, C, D, E and the flowchart on Piazza.
@@ -35,10 +35,38 @@ static int8_t process_number = -1;
  */
 int32_t halt(uint8_t status) {
     printf("System call HALT.\n");
+    uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
+    uint32_t PCB_offset = (process_number + 1) * 0x8000;
+    uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
+    pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
 
-    // Store ESP and EBP of the parent process, we can call a normal ret
-    // Then we can resume at the parent program where we left off
-    // Also check the diagram for the other things that need to be done (e.g. change paging)
+    //restore parent data ????
+
+    //TODO : restore parent paging
+
+    //close relevant FDs
+    fd_t* fd_array = PCB_base->fd_arr;
+    for (i = 0 ; i < 8 ; i++) {
+        if(fd_array[i].in_use_flag == FILE_IN_USE){
+        fd_array[i]->fotp = NULL;
+        fd_array[i].inode_number = 0;
+        fd_array[i].file_position = 0;
+        fd_array[i].in_use_flag = FILE_NOT_IN_USE;
+      }
+    }
+
+    //restore parent esp/ebp
+    tss.ss0 = KERNEL_DS; // Segment selector
+    tss.esp0 = PCB_base->parent_esp;
+
+    asm volatile(
+            "movl %0, %%esp;"
+            "movl %1, %%ebp;"
+            "leave;"
+            "ret;"
+            : /*no outputs*/
+            : "r" (PCB_base->parent_esp), "r" (PCB_base->parent_ebp)
+        );
 
     return 0;
 }
@@ -54,7 +82,8 @@ int32_t halt(uint8_t status) {
 int32_t execute(const uint8_t* command) {
     printf("System call EXECUTE.\n");
     uint8_t i;
-
+    uint8_t parent_esp;
+    uint8_t parent_ebp;
     /*********** Step 1: Parse arguments ***********/
     // TODO: Need to perform appropriate checking of command string
     // Command is a space-separated sequence of words
@@ -117,23 +146,34 @@ int32_t execute(const uint8_t* command) {
     uint32_t PCB_offset = (process_number + 1) * 0x8000;
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
-    
+
     PCB_base->status = TASK_RUNNING;
     PCB_base->pid = process_number;            // Process ID
     PCB_base->user_loc = (uint32_t*) (0x800000 + process_number * 0x400000);     // Location of program in physical memory
-    
+
     fd_t* fd_array = PCB_base->fd_arr;
     for (i = 0 ; i < 8 ; i++) {  // initalize file descriptor array
-        fd_array[i].fotp = NULL;
+        fd_array[i]->fotp = NULL;
         fd_array[i].inode_number = 0;
         fd_array[i].file_position = 0;
         fd_array[i].in_use_flag = 0;
     }
 
-    if (process_number==0)  PCB_base->parent = NULL;
-    else {
-        // use inline assembly to acquire parent ESP and store in PCB_base->parent;
+    if (process_number==0)  {
+      PCB_base->parent_esp = NULL;
+      PCB_base->parent_ebp = NULL;
     }
+    else {
+      asm volatile(
+              "movl %%esp, %0;"
+              "movl %%ebp, %1;"
+
+              : "=r" (parent_esp), "=r" (parent_ebp)
+          );
+          PCB_base->parent_esp = parent_esp;
+          PCB_base->parent_ebp = parent_ebp;
+    }
+
 
     // start stdin process
     PCB_base->fd_arr[0].fotp = NULL; //TABLE FOR STDIN TODO: Always terminal_open
