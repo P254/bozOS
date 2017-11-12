@@ -4,6 +4,7 @@
 #include "filesystem.h"
 #include "paging.h"
 #include "RTC_handler.h"
+#include "terminal.h"
 
 /*
  * ----------- Notes for everyone: -----------
@@ -24,9 +25,12 @@
  * --------------------------------------------
  */
 
-generic_fp* file_fotp[4] = {(generic_fp*) fopen, (generic_fp*) fclose, (generic_fp*) fread, (generic_fp*) fwrite};
-generic_fp* dir_fotp[4] = {(generic_fp*) dopen, (generic_fp*) dclose, (generic_fp*) dread, (generic_fp*) dwrite};
-generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_close, (generic_fp*) rtc_read, (generic_fp*) rtc_write};
+generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, NULL, (generic_fp*) terminal_close};
+generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) terminal_write, (generic_fp*) terminal_close};
+
+generic_fp* file_fotp[4] = {(generic_fp*) fopen, (generic_fp*) fread, (generic_fp*) fwrite,(generic_fp*) fclose};
+generic_fp* dir_fotp[4] = {(generic_fp*) dopen, (generic_fp*) dread, (generic_fp*) dwrite, (generic_fp*) dclose};
+generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (generic_fp*) rtc_write, (generic_fp*) rtc_close};
 
 /*
  * halt
@@ -55,7 +59,7 @@ int32_t halt(uint8_t status) {
  *   SIDE EFFECTS: none
  */
 int32_t execute(const uint8_t* command) {
-    printf("System call EXECUTE.\n");
+    // printf("System call EXECUTE.\n");
     uint8_t i;
 
     /*********** Step 1: Parse arguments ***********/
@@ -106,16 +110,16 @@ int32_t execute(const uint8_t* command) {
 
     /*********** Step 4: Load file into memory ***********/
     // The program image must be copied to the correct offset (0x48000) within that page
-    // TODO: This needs to be completed
     uint8_t * data_buf = (uint8_t*) USER_PROG_LOC; // We probably don't need an array data_buf, instead we can cast an address to a pointer
     if (read_data(cmd_dentry.inode, 0, data_buf, USER_PROG_SIZE) == -1) return -1;
 
 
     /*********** Step 5: Create PCB / open FDs ***********/
-    // TODO: This needs to be completed
+    // TODO: Check again if the PCB is correct. Also limit # of processes to 6. 
+
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
-    uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    uint32_t PCB_offset = (process_number + 1) * (8 << ALIGN_1KB);
+    uint32_t kernel_base = (8 << ALIGN_1MB); // 8MB is base of kernel
+    uint32_t PCB_offset = (process_number + 1) * (8 << ALIGN_1KB); // We do '+1' here as we only increment process_number below
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
 
@@ -130,47 +134,40 @@ int32_t execute(const uint8_t* command) {
         fd_array[i].file_position = 0;
         fd_array[i].in_use_flag = 0;
     }
-    // PCB_base->fd_arr = fd_array;
-    uint32_t parent_esp;
-    uint32_t parent_ebp;
 
-    if (process_number==0)  {
+    if (process_number == 0)  {
       PCB_base->parent_esp = NULL;
       PCB_base->parent_ebp = NULL;
     }
     else {
+        uint32_t parent_esp;
+        uint32_t parent_ebp;
         asm volatile(
-                "movl %%esp, %0;"
-                "movl %%ebp, %1;"
-
-                : "=r" (parent_esp), "=r" (parent_ebp)
-            );
-            PCB_base->parent_esp = (uint32_t*)parent_esp;
-            PCB_base->parent_ebp = (uint32_t*)parent_ebp;
-
-        // use inline assembly to acquire parent ESP and store in PCB_base->parent;
+            "movl %%esp, %0;"
+            "movl %%ebp, %1;"
+            : "=r" (parent_esp), "=r" (parent_ebp)
+        );
+        PCB_base->parent_esp = (uint32_t*) parent_esp;
+        PCB_base->parent_ebp = (uint32_t*) parent_ebp;
     }
 
     // start stdin process
-    PCB_base->fd_arr[0].fotp = NULL; //TABLE FOR STDIN TODO: Always terminal_open
+    PCB_base->fd_arr[0].fotp = (generic_fp*) stdin_fotp; //TABLE FOR STDIN 
     PCB_base->fd_arr[0].inode_number = 0; //NOT A DATA File
     PCB_base->fd_arr[0].file_position = 0;
     PCB_base->fd_arr[0].in_use_flag = 1; //in use
     // start stdout process
-    PCB_base->fd_arr[1].fotp = NULL; //TABLE FOR STDOUT TODO: Always terminal_close
+    PCB_base->fd_arr[1].fotp = (generic_fp*) stdout_fotp; //TABLE FOR STDOUT 
     PCB_base->fd_arr[1].inode_number = 0; //NOT A DATA File
     PCB_base->fd_arr[1].file_position = 0;
     PCB_base->fd_arr[1].in_use_flag = 1; //in use
+    
     process_number++;
 
     /*********** Step 6: Set up IRET context ***********/
-    // The only things that really change here upon each syscall are: 1) tss.esp0, 2) ESP-on-stack (in IRET context), 3) page table
-
-    // TODO: Check SS0 and ESP0 again
-    tss.ss0 = KERNEL_DS; // Segment selector
-    tss.esp0 = program_kernel_base; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1, etc... TODO: This needs to be updated to reflect process #
-
-    /* The IRET instruction expects, when executed, the stack to have the following contents
+    /* The only things that really change here upon each syscall are: 1) tss.esp0, 2) ESP-on-stack (in IRET context), 3) page table
+     *
+     * The IRET instruction expects, when executed, the stack to have the following contents
      * (starting from the stack pointer - lowermost address upwards):
      * 1. The instruction to continue execution at - the value of EIP (pointer to our function entry point).
      * 2. The code segment (CS) selector to change to.
@@ -201,19 +198,23 @@ int32_t execute(const uint8_t* command) {
      * http://wiki.osdev.org/Task_State_Segment
      * http://wiki.osdev.org/Context_Switching
      */
+    
+    // TODO: Check SS0 and ESP0 again
+    tss.ss0 = KERNEL_DS; // Segment selector
+    tss.esp0 = program_kernel_base; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1
+    
     // Push IRET context to stack
-    uint16_t user_cs_addr16 = USER_CS;
     uint16_t user_ds_addr16 = USER_DS;
     asm volatile(
         "cli;"                  /* Context-switch is critical, so we suppress interrupts */
 
-        // "movw %1, %%ss;"      /* Code-segment */
+        // "movw %1, %%ss;"      /* Code-segment */ The IRET below will update %ss for us 
         "movw %0, %%ds;"      /* Data-segment */
         "movw %0, %%es;"      /* Additional data-segment register */
         "movw %0, %%fs;"      /* Additional data-segment register */
         "movw %0, %%gs;"      /* Additional data-segment register */
         : /*no outputs*/
-        : "r" (user_ds_addr16), "r" (user_cs_addr16)
+        : "r" (user_ds_addr16)
     );
 
     uint32_t user_ds_addr32 = USER_DS;
@@ -231,10 +232,12 @@ int32_t execute(const uint8_t* command) {
 
         "pushl %3;"
         "pushl %4;"         /* User program/function entry point */
-        "iret;"
         : /*no outputs*/
         : "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr32), "r" (entry_pt_addr)
+        : "eax"
     );
+
+    asm volatile("iret;");
 
     return 0;
 }
@@ -242,26 +245,30 @@ int32_t execute(const uint8_t* command) {
 /*
  * read
  *   DESCRIPTION: Handler for 'read' system call.
- *   INPUTS: fd -- ???
- *           buf -- ???
- *           nbytes -- ???
+ *   INPUTS: fd -- file descriptor to index into fd array
+ *           buf -- buffer to read from 
+ *           nbytes -- number of bytes to read
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
 int32_t read (int32_t fd, void* buf, int32_t nbytes) {
-    printf("System call READ.\n");
+    // printf("System call READ.\n");
     // This function is called within a given user program.
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
     // in the read you look for the fd file in the fd_arr, then
-      // use the operations pointer to get the function
-      //
-    pcb_t* PCB_base;
-    PCB_base= get_PCB_base();
-    if(buf==NULL || fd<0 || fd>MAX_FILES-1)
-      return -1;
-    // return retval;
-    return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(&(PCB_base->fd_arr[fd].fileName), buf, nbytes);
+    // use the operations pointer to get the function
+    
+    pcb_t* PCB_base = get_PCB_base();
+    if (buf == NULL || fd < 0 || fd > MAX_FILES-1) return -1;
+    else {
+        uint8_t* fname = PCB_base->fd_arr[fd].fileName;
+        if (PCB_base->fd_arr[fd].fotp[FOTP_READ] != NULL) {
+            return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(fname, buf, nbytes);
+        }
+    }
+    return -1;
+    
     //NOTE: .fileName in the struct is just there so that this function can return 0... filname
     /// TODO: Remove the above line before demo...
   }
@@ -277,17 +284,18 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: none
  */
 int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
-    printf("System call WRITE.\n");
+    // printf("System call WRITE.\n");
     // if file's buffer is NULLL or fd is nto in range then we return -1
-    pcb_t* PCB_base;
-    PCB_base= get_PCB_base();
+    pcb_t* PCB_base = get_PCB_base();
 
-    if(buf==NULL || fd<0 || fd>MAX_FILES-1)
-      return -1;
+    if (buf == NULL || fd < 0 || fd > MAX_FILES-1) return -1;
     // if file has never been opened we return -1
-    if (PCB_base->fd_arr[fd].in_use_flag == FILE_NOT_IN_USE)
-      return -1;
-    return (PCB_base->fd_arr[fd].fotp[FOTP_WRITE])(fd, buf, nbytes);
+    if (PCB_base->fd_arr[fd].in_use_flag == FILE_NOT_IN_USE) return -1;
+    
+    else if (PCB_base->fd_arr[fd].fotp[FOTP_WRITE] != NULL) {
+        return (PCB_base->fd_arr[fd].fotp[FOTP_WRITE])(fd, buf, nbytes);
+    }
+    return -1;
 }
 
 /*
@@ -309,50 +317,48 @@ int32_t open (const uint8_t* filename) {
     if (read_dentry_by_name(filename, &file_dentry) == -1) return -1;
 
     // find the fd that is not in use
-    for (i=0; i<MAX_FILES; i++) { // you always start from 0->7 right?
-      if (PCB_base->fd_arr[fd].in_use_flag != FILE_IN_USE) {
-        fd = i;
-        break; // we found the first entry which is not in use!
-      }
+    for (i = 0; i < MAX_FILES; i++) { // you always start from 0->7 right?
+        if (PCB_base->fd_arr[fd].in_use_flag != FILE_IN_USE) {
+            fd = i;
+            break; // we found the first entry which is not in use!
+        }
     }
-    if (i==MAX_FILES-1)
-      return -1; //all the fd's are in use :(
+    if (i == MAX_FILES-1) return -1; // all the fd's are in use :(
 
     if (file_dentry.fileType == _DIR_) {
-      if (dopen(filename, &file_dentry) != 0) return -1;
-      PCB_base->fd_arr[fd].inode_number = NULL; // TODO: only set this for text file right?
-      PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk if this is correct
-      PCB_base->fd_arr[fd].fotp = (generic_fp*) dir_fotp;
-      PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-      // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
+        if (dopen(filename, &file_dentry) != 0) return -1;
+        PCB_base->fd_arr[fd].inode_number = NULL; // TODO: only set this for text file right?
+        PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk if this is correct
+        PCB_base->fd_arr[fd].fotp = (generic_fp*) dir_fotp;
+        PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
+        // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
     }
-    else if (file_dentry.fileType == _FILE_){
-      if (fopen(filename) != 0) return -1;
-      PCB_base->fd_arr[fd].inode_number = file_dentry.inode;
-      PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk if this is correct
-      PCB_base->fd_arr[fd].fotp = (generic_fp*) file_fotp;
-      PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-      // PCB_base->fd_arr[fd].fileName= *filename;
-      // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
+    else if (file_dentry.fileType == _FILE_) {
+        if (fopen(filename) != 0) return -1;
+        PCB_base->fd_arr[fd].inode_number = file_dentry.inode;
+        PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk if this is correct
+        PCB_base->fd_arr[fd].fotp = (generic_fp*) file_fotp;
+        PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
+        // PCB_base->fd_arr[fd].fileName= *filename;
+        // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
     }
     else if (file_dentry.fileType == _RTC_) {
-      if (rtc_open(filename) != 0) return -1;
-      PCB_base->fd_arr[fd].inode_number = NULL;
-      PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk if this is correct
-      PCB_base->fd_arr[fd].fotp = rtc_fotp;
-      PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-      // PCB_base->fd_arr[fd].fileName= *filename;
-      // (int8_t*) PCB_base->fd_arr[fd].fileName=  (int8_t*) filename;
+        if (rtc_open(filename) != 0) return -1;
+        PCB_base->fd_arr[fd].inode_number = NULL;
+        PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk if this is correct
+        PCB_base->fd_arr[fd].fotp = (generic_fp*) rtc_fotp;
+        PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
+        // PCB_base->fd_arr[fd].fileName= *filename;
+        // (int8_t*) PCB_base->fd_arr[fd].fileName=  (int8_t*) filename;
     }
-    else return -1; //We cannot understand the file type..
-
+    else return -1; // We cannot understand the file type..
     return 0; //success
 }
 
 /*
  * close
  *   DESCRIPTION: Handler for 'close' system call.
- *   INPUTS: fd -- ???
+ *   INPUTS: fd -- file descriptor to index into fd array
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
@@ -361,17 +367,16 @@ int32_t close (int32_t fd) {
     printf("System call CLOSE.\n");
     // This function is called within a given user program.
     // Finds the corredsponding fd and sets all its elements in the struct equal to nothing
-    pcb_t* PCB_base;
-    PCB_base= get_PCB_base();
+    pcb_t* PCB_base = get_PCB_base();
 
-    if(PCB_base->fd_arr[fd].in_use_flag != FILE_IN_USE){
-      return -1; // WRONG fd given
-    }
+    if (PCB_base->fd_arr[fd].in_use_flag != FILE_IN_USE) return -1; // WRONG fd given
+    
     // check if I can close the file!
-    if( (PCB_base->fd_arr[fd].fotp[FOTP_CLOSE])(fd) != 0)
-      return -1;
+    if ((PCB_base->fd_arr[fd].fotp[FOTP_CLOSE])(fd) != 0) return -1;
+    
     // set the flag to not in use
-    PCB_base->fd_arr[fd].in_use_flag= FILE_NOT_IN_USE;
+    PCB_base->fd_arr[fd].in_use_flag = FILE_NOT_IN_USE;
+
     return 0; // return success
 }
 
@@ -440,9 +445,17 @@ int32_t sigreturn (void) {
     return 0;
 }
 
-pcb_t* get_PCB_base(){
+/*
+ * get_PCB_base
+ *   DESCRIPTION: Returns the PCB base pointer
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: pcb_t -- pointer to the topmost PCB on the kernel stack
+ *   SIDE EFFECTS: none
+ */
+pcb_t* get_PCB_base() {
     uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    uint32_t PCB_offset = (process_number + 1) * 0x8000;
+    uint32_t PCB_offset = process_number * (8 << ALIGN_1KB);
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
     return PCB_base;

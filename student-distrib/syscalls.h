@@ -47,9 +47,9 @@
 #define SYS_SIGRETURN   10
 
 #define FOTP_OPEN       0
-#define FOTP_CLOSE      1
-#define FOTP_READ       2
-#define FOTP_WRITE      3
+#define FOTP_READ       1
+#define FOTP_WRITE      2
+#define FOTP_CLOSE      3
 
 #define _RTC_        0
 #define _DIR_        1
@@ -57,8 +57,7 @@
 
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
-
-static volatile int process_number = -1;
+static volatile int process_number = 0;
 
 typedef struct fd {
   uint8_t fileName[32]; // 32B
@@ -72,7 +71,7 @@ typedef struct pcb {
     uint8_t status;       // Holds the status of the current process
     uint8_t pid;          // Process ID
     uint32_t* user_loc;   // Location of program in physical memory
-    fd_t* fd_arr;         // File descriptor array -- TODO: Figure out what to do with this
+    fd_t fd_arr[8];         // File descriptor array -- TODO: Figure out what to do with this
     uint32_t* parent_esp;       // Pointer to parent task
     uint32_t* parent_ebp;       // Pointer to parent task
     /* TODO: Also store parent's kernel stack and user stack and return address */
