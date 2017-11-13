@@ -35,6 +35,9 @@
 #define TASK_RUNNING 1
 #define MAX_PROCESSES 6
 
+#define KERNEL_BASE (8 << ALIGN_1MB)
+#define PCB_OFFSET (8 << ALIGN_1KB)
+
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
 #define SYS_EXECUTE     2
@@ -71,7 +74,6 @@ typedef struct fd {
 typedef struct pcb {
     uint8_t status;       // Holds the status of the current process
     uint8_t pid;          // Process ID
-    uint32_t user_loc;   // Location of program in physical memory
     fd_t fd_arr[8];         // File descriptor array -- TODO: Figure out what to do with this
     uint32_t self_esp;       // Pointer to own ESP (will be used by child process later)
     uint32_t self_ebp;       // Pointer to own EBP (will be used by child process later)
