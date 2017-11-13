@@ -51,7 +51,6 @@ int32_t halt(uint8_t status) {
     uint8_t i;
     uint32_t status_32 = status;
     process_number-=2;
-    printf("%d \n",process_number);
     // We cannot close the base shell
     if (process_number <= 0) {
         process_number=0;
@@ -119,7 +118,6 @@ int32_t halt(uint8_t status) {
 int32_t execute(const uint8_t* command) {
     // printf("System call EXECUTE.\n");
     uint8_t i;
-
     /*********** Step 1: Parse arguments ***********/
     // TODO: Need to perform appropriate checking of command string
     // Command is a space-separated sequence of words
@@ -332,9 +330,8 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
     pcb_t* PCB_base = get_PCB_base(process_number);
     if (buf == NULL || fd < 0 || fd > MAX_FILES-1) return -1;
     else {
-        uint8_t* fname = PCB_base->fd_arr[fd].fileName;
         if (PCB_base->fd_arr[fd].fotp[FOTP_READ] != NULL) {
-            return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(fname, buf, nbytes);
+            return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(fd, buf, nbytes);
         }
     }
     return -1;
@@ -377,7 +374,7 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: sets the in_use_flag of the file
  */
 int32_t open (const uint8_t* filename) {
-    printf("System call OPEN.\n");
+    // printf("System call OPEN.\n");
     // This function is called within a given user program.
     // Finds the first 'fd' that is not in use and opens the file and puts it there
     // by setting the appropriate inode numbers!
@@ -434,7 +431,7 @@ int32_t open (const uint8_t* filename) {
  *   SIDE EFFECTS: none
  */
 int32_t close (int32_t fd) {
-    printf("System call CLOSE.\n");
+    // printf("System call CLOSE.\n");
     // This function is called within a given user program.
     // Finds the corredsponding fd and sets all its elements in the struct equal to nothing
     pcb_t* PCB_base = get_PCB_base(process_number);

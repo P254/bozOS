@@ -61,7 +61,6 @@ typedef int (*generic_fp)();
 static volatile int process_number = 0;
 
 typedef struct fd {
-  uint8_t fileName[32]; // 32B
   generic_fp* fotp; //file operations table Pointer
   uint8_t inode_number; //inode, only for text files
   uint8_t file_position; //FP
