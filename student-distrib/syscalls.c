@@ -52,15 +52,25 @@ int32_t halt(uint8_t status) {
     uint32_t status_32 = status;
     process_number-=2;
     // We cannot close the base shell
-    if (process_number <= 0) {
+    if (process_number < 0) {
         process_number=0;
         // Call execute again with all values reinitialized
         execute((uint8_t*) "shell");
     }
 
     // We subtract -1 to get the parent process. This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
-    pcb_t* PCB_base_parent = get_PCB_base(process_number-1);
-    pcb_t* PCB_base_self = get_PCB_base(process_number);
+    uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
+    uint32_t PCB_offset = (process_number+1) * (8 << ALIGN_1KB);
+    uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
+    pcb_t* PCB_base_parent = (pcb_t*) program_kernel_base; //cast it to PCB so start
+
+
+    kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
+    PCB_offset = (process_number+2) * (8 << ALIGN_1KB);
+    program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
+    pcb_t* PCB_base_self = (pcb_t*) program_kernel_base; //cast it to PCB so start
+    //pcb_t* PCB_base_parent = get_PCB_base(process_number-1);
+    //pcb_t* PCB_base_self = get_PCB_base(process_number);
 
     /* Restore parent's paging */
     uint32_t parent_user_mem_physical = PCB_base_parent->self_usr_stack;
@@ -194,11 +204,12 @@ int32_t execute(const uint8_t* command) {
     uint32_t PCB_offset = (process_number + 1) * (8 << ALIGN_1KB); // We do '+1' here as we only increment process_number below
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
+    uint32_t new_esp0 = kernel_base - (process_number * (8 << ALIGN_1KB)) - 4;
 
     PCB_base->status = TASK_RUNNING;
     PCB_base->pid = process_number;            // Process ID
     PCB_base->user_loc = ((8 << ALIGN_1MB) + process_number * (4 << ALIGN_1MB));     // Location of program in physical memory
-    PCB_base->self_k_stack = program_kernel_base; // Store it's own kernel stack
+    PCB_base->self_k_stack = new_esp0; // Store it's own kernel stack
     PCB_base->self_usr_stack = user_mem_physical; // Store it's own user stack
 
     fd_t* fd_array = PCB_base->fd_arr;
@@ -268,7 +279,7 @@ int32_t execute(const uint8_t* command) {
 
     // TODO: Check SS0 and ESP0 again
     tss.ss0 = KERNEL_DS; // Segment selector
-    tss.esp0 = program_kernel_base; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1
+    tss.esp0 =  new_esp0; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1
 
     // Push IRET context to stack
     uint16_t user_ds_addr16 = USER_DS;
