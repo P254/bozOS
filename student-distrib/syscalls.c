@@ -60,22 +60,21 @@ int32_t halt(uint8_t status) {
         execute((uint8_t*) "shell");
     }
 
-    // We subtract -1 to get the parent process. This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
-    uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    uint32_t PCB_offset = (process_number) * (8 << ALIGN_1KB);
-    uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
-    pcb_t* PCB_base_parent = (pcb_t*) program_kernel_base; //cast it to PCB so start
+    // We subtract -1 to get the parent process. 
+    // This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
+    uint32_t kernel_base = _8MB;                                // 8MB is base of kernel
+    uint32_t PCB_offset = (process_number) * _8KB;
+    uint32_t program_kernel_base = kernel_base - PCB_offset;    // find where program stack starts
+    pcb_t* PCB_base_parent = (pcb_t*) program_kernel_base;      // cast it to PCB so start
 
-    kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    PCB_offset = (process_number+1) * (8 << ALIGN_1KB);
-    program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
-    pcb_t* PCB_base_self = (pcb_t*) program_kernel_base; //cast it to PCB so start
-    //pcb_t* PCB_base_parent = get_PCB_base(process_number-1);
-    //pcb_t* PCB_base_self = get_PCB_base(process_number);
+    kernel_base = _8MB;                                         // 8MB is base of kernel
+    PCB_offset = (process_number+1) * _8KB;
+    program_kernel_base = kernel_base - PCB_offset;             // find where program stack starts
+    pcb_t* PCB_base_self = (pcb_t*) program_kernel_base;        // cast it to PCB so start
 
     /* Restore parent's paging */
-    uint32_t parent_user_mem_physical = PCB_base_parent->self_usr_stack;
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = parent_user_mem_physical | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
+    uint32_t parent_user_mem_physical = PCB_base_parent->self_page;
+    page_directory[(USER_MEM_V >> ALIGN_4MB)] = parent_user_mem_physical | USER_PAGE_SET_BITS; 
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
     // Flush the TLB (flushing happens whenever we reload CR3)
@@ -98,11 +97,10 @@ int32_t halt(uint8_t status) {
         }
     }
 
-    // Restore parent esp/ebp
-    tss.ss0 = KERNEL_DS; // Segment selector:: we dont have to do this
-    tss.esp0 = PCB_base_parent->self_k_stack; // restore to pointer to parent_k_stack
+    // Restore parent ESP0
+    tss.ss0 = KERNEL_DS;                        // Segment selector: we don't actually have to do this
+    tss.esp0 = PCB_base_parent->self_k_stack;   // restore to pointer to parent_k_stack
 
-    // move 2 eax because you need to have a return value of 2 as a parameter
     asm volatile(
         "movl %0, %%esp;"
         "movl %1, %%ebp;"
@@ -163,12 +161,14 @@ int32_t execute(const uint8_t* command) {
     }
     // TODO: Employ getargs here, probably need to use 'nbytes' as a starting point/offset
 
+
     /*********** Step 2: Check file validity ***********/
     // Check if the file can be read or not
     if (read_dentry_by_name((uint8_t*) cmd1, &cmd_dentry) == -1) return -1;
 
     // Check if the file can be executed or not
     if (read_data(cmd_dentry.inode, 0, exe_buf, BYTES_4) == -1) return -1;
+    // The first 4 bytes of the file represent a series of "magic numbers" that identify the file as executable 
     if (exe_buf[0] != EXE_BYTE0) return -1;
     if (exe_buf[1] != EXE_BYTE1) return -1;
     if (exe_buf[2] != EXE_BYTE2) return -1;
@@ -187,8 +187,8 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
     // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
-    user_mem_physical = USER_MEM_P + process_number * (4 << ALIGN_1MB);
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_mem_physical | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
+    user_mem_physical = USER_MEM_P + process_number * USER_PROG_SIZE;
+    page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_mem_physical | USER_PAGE_SET_BITS; 
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
     // Flush the TLB (flushing happens whenever we reload CR3)
@@ -205,20 +205,20 @@ int32_t execute(const uint8_t* command) {
     data_buf = (uint8_t*) USER_PROG_LOC; // We probably don't need an array data_buf, instead we can cast an address to a pointer
     if (read_data(cmd_dentry.inode, 0, data_buf, USER_PROG_SIZE) == -1) return -1;
 
-    /*********** Step 5: Create PCB / open FDs ***********/
-    // TODO: Check again if the PCB is correct. Also limit # of processes to 6.
 
+    /*********** Step 5: Create PCB / open FDs ***********/
+    // TODO: Limit # of processes to 6.
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
-    kernel_base = (8 << ALIGN_1MB); // 8MB is base of kernel
-    PCB_offset = (process_number + 1) * (8 << ALIGN_1KB); // We do '+1' here as we only increment process_number below
-    program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
-    PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
-    new_esp0 = kernel_base - (process_number * (8 << ALIGN_1KB)) - 4;
+    kernel_base = _8MB;                                     // 8MB is base of kernel
+    PCB_offset = (process_number + 1) * _8KB;   // We do '+1' here as we only increment process_number below
+    program_kernel_base = kernel_base - PCB_offset;         //find where program stack starts
+    PCB_base = (pcb_t*) program_kernel_base;                //cast it to PCB so start of program stack contains PCB.
+    new_esp0 = kernel_base - (process_number * _8KB) - BYTES_4;
 
     PCB_base->status = TASK_RUNNING;
     PCB_base->pid = process_number;            // Process ID
     PCB_base->self_k_stack = new_esp0; // Store it's own kernel stack
-    PCB_base->self_usr_stack = user_mem_physical; // Store it's own user stack
+    PCB_base->self_page = user_mem_physical; // Store it's own user stack
 
     fd_array = PCB_base->fd_arr;
     for (i = 0 ; i < MAX_FILES ; i++) {  // initalize file descriptor array
@@ -228,6 +228,7 @@ int32_t execute(const uint8_t* command) {
         fd_array[i].in_use_flag = 0;
     }
 
+    // Save ESP and EBP
     asm volatile(
         "movl %%esp, %0;"
         "movl %%ebp, %1;"
@@ -237,15 +238,16 @@ int32_t execute(const uint8_t* command) {
     PCB_base->self_ebp = self_ebp;
 
     // start stdin process
-    PCB_base->fd_arr[0].fotp = (generic_fp*) stdin_fotp; //TABLE FOR STDIN
-    PCB_base->fd_arr[0].inode_number = 0; //NOT A DATA File
+    PCB_base->fd_arr[0].fotp = (generic_fp*) stdin_fotp; // TABLE FOR STDIN
+    PCB_base->fd_arr[0].inode_number = 0; // NOT A DATA File
     PCB_base->fd_arr[0].file_position = 0;
-    PCB_base->fd_arr[0].in_use_flag = 1; //in use
+    PCB_base->fd_arr[0].in_use_flag = FILE_IN_USE; 
+    
     // start stdout process
-    PCB_base->fd_arr[1].fotp = (generic_fp*) stdout_fotp; //TABLE FOR STDOUT
-    PCB_base->fd_arr[1].inode_number = 0; //NOT A DATA File
+    PCB_base->fd_arr[1].fotp = (generic_fp*) stdout_fotp; // TABLE FOR STDOUT
+    PCB_base->fd_arr[1].inode_number = 0; // NOT A DATA File
     PCB_base->fd_arr[1].file_position = 0;
-    PCB_base->fd_arr[1].in_use_flag = 1; //in use
+    PCB_base->fd_arr[1].in_use_flag = FILE_IN_USE; 
 
     process_number++;
 
@@ -284,7 +286,6 @@ int32_t execute(const uint8_t* command) {
      * http://wiki.osdev.org/Context_Switching
      */
 
-    // TODO: Check SS0 and ESP0 again
     tss.ss0 = KERNEL_DS; // Segment selector
     tss.esp0 = new_esp0; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1
 
@@ -340,8 +341,11 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
     // in the read you look for the fd file in the fd_arr, then
     // use the operations pointer to get the function
 
+    // Check for invalid inputs
     pcb_t* PCB_base = get_PCB_base(process_number);
-    if (buf == NULL || fd < 0 || fd > MAX_FILES-1) return -1;
+    if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
+    if (buf == NULL || fd < 0 || fd > MAX_FILES-1 || nbytes < 0) return -1;
+
     else {
         if (PCB_base->fd_arr[fd].fotp[FOTP_READ] != NULL) {
             return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(fd, buf, nbytes);
@@ -367,8 +371,11 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
     // printf("System call WRITE.\n");
     // if file's buffer is NULLL or fd is nto in range then we return -1
     pcb_t* PCB_base = get_PCB_base(process_number);
-
-    if (buf == NULL || fd < 0 || fd > MAX_FILES-1) return -1;
+    
+    // Check for invalid inputs
+    if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
+    if (buf == NULL || fd < 0 || fd > MAX_FILES-1 || nbytes < 0) return -1;
+    
     // if file has never been opened we return -1
     if (PCB_base->fd_arr[fd].in_use_flag == FILE_NOT_IN_USE) return -1;
 
@@ -392,19 +399,22 @@ int32_t open (const uint8_t* filename) {
     // Finds the first 'fd' that is not in use and opens the file and puts it there
     // by setting the appropriate inode numbers!
     pcb_t* PCB_base = get_PCB_base(process_number);
+    // Check for invalid inputs
+    if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
+
     dentry_t file_dentry;
-    int i = 0, fd = 0;
+    int8_t i = 0, fd = 0;
     if (read_dentry_by_name(filename, &file_dentry) == -1) return -1;
 
     // find the fd that is not in use
-    for (i = 0; i < MAX_FILES; i++) { // you always start from 0->7 right?
+    for (i = 0; i < MAX_FILES; i++) { // you always traverse 0 --> 7 
         if (PCB_base->fd_arr[fd].in_use_flag != FILE_IN_USE) {
             fd = i;
             break; // we found the first entry which is not in use!
         }
     }
     if (i == MAX_FILES-1) return -1; // all the fd's are in use :(
-    if (PCB_base->fd_arr[fd].file_position > 5) return -1;
+    if (PCB_base->fd_arr[fd].file_position > MAX_FILE_POS) return -1;
 
     if (file_dentry.fileType == _DIR_) {
         if (dopen(filename, &file_dentry) != 0) return -1;
@@ -412,7 +422,6 @@ int32_t open (const uint8_t* filename) {
         PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) dir_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-        // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
     }
     else if (file_dentry.fileType == _FILE_) {
         if (fopen(filename) != 0) return -1;
@@ -420,8 +429,6 @@ int32_t open (const uint8_t* filename) {
         PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) file_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-        // PCB_base->fd_arr[fd].fileName= *filename;
-        // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
     }
     else if (file_dentry.fileType == _RTC_) {
         if (rtc_open(filename) != 0) return -1;
@@ -429,8 +436,6 @@ int32_t open (const uint8_t* filename) {
         PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) rtc_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-        // PCB_base->fd_arr[fd].fileName= *filename;
-        // (int8_t*) PCB_base->fd_arr[fd].fileName=  (int8_t*) filename;
     }
     else return -1; // We cannot understand the file type..
     return 0; //success
@@ -449,7 +454,10 @@ int32_t close (int32_t fd) {
     // This function is called within a given user program.
     // Finds the corredsponding fd and sets all its elements in the struct equal to nothing
     pcb_t* PCB_base = get_PCB_base(process_number);
-    if (fd==0 || fd==1) return -1;
+    // Check for invalid inputs
+    if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
+    if (fd == 0 || fd == 1 || fd < 0 || fd > MAX_FILES-1) return -1;
+
     if (PCB_base->fd_arr[fd].in_use_flag != FILE_IN_USE) return -1; // WRONG fd given
 
     // check if I can close the file!
@@ -537,9 +545,10 @@ int32_t sigreturn (void) {
 pcb_t* get_PCB_base(int8_t process_num) {
     if (process_num < 0 || process_num >= MAX_PROCESSES) return NULL;
 
-    uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    uint32_t PCB_offset = process_num * (8 << ALIGN_1KB);
-    uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
-    pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
+    uint32_t kernel_base = _8MB; // 8MB is base of kernel
+    uint32_t PCB_offset = process_num * _8KB;
+    uint32_t program_kernel_base = kernel_base - PCB_offset; // find where program stack starts
+    pcb_t* PCB_base = (pcb_t*) program_kernel_base; // cast it to PCB so start of program stack contains PCB.
+
     return PCB_base;
 }
