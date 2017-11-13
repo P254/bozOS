@@ -51,8 +51,10 @@ int32_t halt(uint8_t status) {
     uint8_t i;
     uint32_t status_32 = status;
     process_number-=2;
+    printf("%d \n",process_number);
     // We cannot close the base shell
-    if (process_number == 0) {
+    if (process_number <= 0) {
+        process_number=0;
         // Call execute again with all values reinitialized
         execute((uint8_t*) "shell");
     }
