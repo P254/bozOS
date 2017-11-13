@@ -225,7 +225,7 @@ int32_t execute(const uint8_t* command) {
         fd_array[i].fotp = NULL;
         fd_array[i].inode_number = 0;
         fd_array[i].file_position = 0;
-        fd_array[i].in_use_flag = 0;
+        fd_array[i].in_use_flag = FILE_NOT_IN_USE;
     }
 
     // Save ESP and EBP
@@ -335,7 +335,6 @@ int32_t execute(const uint8_t* command) {
  *   SIDE EFFECTS: none
  */
 int32_t read (int32_t fd, void* buf, int32_t nbytes) {
-    // printf("System call READ.\n");
     // This function is called within a given user program.
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
     // in the read you look for the fd file in the fd_arr, then
@@ -343,13 +342,14 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
 
     // Check for invalid inputs
     pcb_t* PCB_base = get_PCB_base(process_number);
+
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
     if (buf == NULL || fd < 0 || fd > MAX_FILES-1 || nbytes < 0) return -1;
 
-    else {
-        if (PCB_base->fd_arr[fd].fotp[FOTP_READ] != NULL) {
-            return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(fd, buf, nbytes);
-        }
+    if (PCB_base->fd_arr[fd].fotp != NULL && PCB_base->fd_arr[fd].fotp[FOTP_READ]) {
+        return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(fd, buf, nbytes);
+
+        
     }
     return -1;
 
@@ -403,7 +403,7 @@ int32_t open (const uint8_t* filename) {
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
     dentry_t file_dentry;
-    int8_t i = 0, fd = 0;
+    int32_t i = 0, fd = 0;
     if (read_dentry_by_name(filename, &file_dentry) == -1) return -1;
 
     // find the fd that is not in use
