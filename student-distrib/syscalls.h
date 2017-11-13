@@ -25,6 +25,7 @@
 #define FILE_IN_USE 1
 #define FILE_NOT_IN_USE 0
 #define MAX_FILES 8
+
 // User memory paging
 #define USER_PROG_LOC 0x08048000
 #define USER_PROG_SIZE (4 << ALIGN_1MB)
@@ -70,7 +71,6 @@ typedef struct fd {
 typedef struct pcb {
     uint8_t status;       // Holds the status of the current process
     uint8_t pid;          // Process ID
-    uint32_t user_loc;   // Location of program in physical memory
     fd_t fd_arr[8];         // File descriptor array -- TODO: Figure out what to do with this
     uint32_t self_esp;       // Pointer to own ESP (will be used by child process later)
     uint32_t self_ebp;       // Pointer to own EBP (will be used by child process later)

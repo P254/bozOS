@@ -51,22 +51,22 @@ int32_t halt(uint8_t status) {
     uint8_t i;
     uint32_t status_32 = status;
     
-    process_number -= 2;
+    process_number--;
     // We cannot close the base shell
     if (process_number < 0) {
-        process_number=0;
+        process_number = 0;
         // Call execute again with all values reinitialized
         execute((uint8_t*) "shell");
     }
 
     // We subtract -1 to get the parent process. This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
     uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    uint32_t PCB_offset = (process_number+1) * (8 << ALIGN_1KB);
+    uint32_t PCB_offset = (process_number) * (8 << ALIGN_1KB);
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base_parent = (pcb_t*) program_kernel_base; //cast it to PCB so start
 
     kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
-    PCB_offset = (process_number+2) * (8 << ALIGN_1KB);
+    PCB_offset = (process_number+1) * (8 << ALIGN_1KB);
     program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base_self = (pcb_t*) program_kernel_base; //cast it to PCB so start
     //pcb_t* PCB_base_parent = get_PCB_base(process_number-1);
@@ -105,13 +105,13 @@ int32_t halt(uint8_t status) {
     asm volatile(
         "movl %0, %%esp;"
         "movl %1, %%ebp;"
-        // "movl %2, %%eax;"
+        "movl %2, %%eax;"
         // "jmp SYS_HALT_RETURN_POINT;"
-        "pushl %%ebp;"
+        // "pushl %%ebp;"
         "leave;"
         "ret;"
         : /*no outputs*/
-        : "r" (PCB_base_parent->self_esp), "r" (PCB_base_parent->self_ebp), "r" (status_32)
+        : "r" (PCB_base_self->self_esp), "r" (PCB_base_self->self_ebp), "r" (status_32)
         : "esp", "ebp"
     );
 
@@ -125,18 +125,28 @@ int32_t halt(uint8_t status) {
  *   INPUTS: command -- space-separated sequence of words
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
- *   SIDE EFFECTS: none
+ *   SIDE EFFECTS: executes the user program given by 'command' input
  */
 int32_t execute(const uint8_t* command) {
     // printf("System call EXECUTE.\n");
-    uint8_t i;
+    uint8_t i, nbytes, cmd1[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
+    uint8_t * data_buf;
+    uint32_t entry_pt_addr, user_mem_physical, kernel_base, PCB_offset, program_kernel_base, new_esp0, self_ebp, self_esp;
+    dentry_t cmd_dentry;
+    pcb_t* PCB_base;
+    fd_t* fd_array;
+
+    uint16_t user_ds_addr16 = USER_DS;
+    uint32_t user_ds_addr32 = USER_DS;
+    uint32_t user_stack_addr = USER_STACK;
+    uint32_t int_flag_bitmask = INT_FLAG;
+    uint32_t user_cs_addr32 = USER_CS;
 
     /*********** Step 1: Parse arguments ***********/
     // 'command' is a space-separated sequence of words
     i = 0;
-    uint8_t nbytes = 0;
-    uint8_t cmd1[KB_BUF_SIZE]; // First command word
-    memset(cmd1, '\0', KB_BUF_SIZE);
+    nbytes = 0;
+    memset(cmd1, '\0', KB_BUF_SIZE); // Set buffer for first command word to be null-terminated
 
     while (i < KB_BUF_SIZE) {
         if (command[i] == '\n' || command[i] == '\0' || command[i] == ' ') {
@@ -154,11 +164,9 @@ int32_t execute(const uint8_t* command) {
 
     /*********** Step 2: Check file validity ***********/
     // Check if the file can be read or not
-    dentry_t cmd_dentry;
     if (read_dentry_by_name((uint8_t*) cmd1, &cmd_dentry) == -1) return -1;
 
     // Check if the file can be executed or not
-    uint8_t exe_buf[BYTES_4];
     if (read_data(cmd_dentry.inode, 0, exe_buf, BYTES_4) == -1) return -1;
     if (exe_buf[0] != EXE_BYTE0) return -1;
     if (exe_buf[1] != EXE_BYTE1) return -1;
@@ -166,10 +174,9 @@ int32_t execute(const uint8_t* command) {
     if (exe_buf[3] != EXE_BYTE3) return -1;
 
     // Get the entry point from bytes 24-27 of the executable
-    uint8_t entry_pt_buf[BYTES_4];
     if (read_data(cmd_dentry.inode, ENTRY_PT_OFFSET, entry_pt_buf, BYTES_4) == -1) return -1;
 
-    uint32_t entry_pt_addr = 0;
+    entry_pt_addr = 0;
     for (i = 0; i < BYTES_4; i++) {
         // Sanity check: The entry point address should be somewhere near 0x08048000 (see Appendix C)
         // The order of bits in entry_pt_addr is [27-26-25-24]
@@ -179,7 +186,7 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
     // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
-    uint32_t user_mem_physical = USER_MEM_P + process_number * (4 << ALIGN_1MB);
+    user_mem_physical = USER_MEM_P + process_number * (4 << ALIGN_1MB);
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_mem_physical | 0x87; // 4 MiB page, user & supervisor-access, r/w access, present
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
@@ -194,26 +201,25 @@ int32_t execute(const uint8_t* command) {
 
     /*********** Step 4: Load file into memory ***********/
     // The program image must be copied to the correct offset (0x48000) within that page
-    uint8_t * data_buf = (uint8_t*) USER_PROG_LOC; // We probably don't need an array data_buf, instead we can cast an address to a pointer
+    data_buf = (uint8_t*) USER_PROG_LOC; // We probably don't need an array data_buf, instead we can cast an address to a pointer
     if (read_data(cmd_dentry.inode, 0, data_buf, USER_PROG_SIZE) == -1) return -1;
 
     /*********** Step 5: Create PCB / open FDs ***********/
     // TODO: Check again if the PCB is correct. Also limit # of processes to 6.
 
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
-    uint32_t kernel_base = (8 << ALIGN_1MB); // 8MB is base of kernel
-    uint32_t PCB_offset = (process_number + 1) * (8 << ALIGN_1KB); // We do '+1' here as we only increment process_number below
-    uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
-    pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
-    uint32_t new_esp0 = kernel_base - (process_number * (8 << ALIGN_1KB)) - 4;
+    kernel_base = (8 << ALIGN_1MB); // 8MB is base of kernel
+    PCB_offset = (process_number + 1) * (8 << ALIGN_1KB); // We do '+1' here as we only increment process_number below
+    program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
+    PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
+    new_esp0 = kernel_base - (process_number * (8 << ALIGN_1KB)) - 4;
 
     PCB_base->status = TASK_RUNNING;
     PCB_base->pid = process_number;            // Process ID
-    PCB_base->user_loc = ((8 << ALIGN_1MB) + process_number * (4 << ALIGN_1MB));     // Location of program in physical memory
     PCB_base->self_k_stack = new_esp0; // Store it's own kernel stack
     PCB_base->self_usr_stack = user_mem_physical; // Store it's own user stack
 
-    fd_t* fd_array = PCB_base->fd_arr;
+    fd_array = PCB_base->fd_arr;
     for (i = 0 ; i < MAX_FILES ; i++) {  // initalize file descriptor array
         fd_array[i].fotp = NULL;
         fd_array[i].inode_number = 0;
@@ -221,7 +227,6 @@ int32_t execute(const uint8_t* command) {
         fd_array[i].in_use_flag = 0;
     }
 
-    uint32_t self_esp, self_ebp;
     asm volatile(
         "movl %%esp, %0;"
         "movl %%ebp, %1;"
@@ -283,7 +288,6 @@ int32_t execute(const uint8_t* command) {
     tss.esp0 = new_esp0; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1
 
     // Push IRET context to stack
-    uint16_t user_ds_addr16 = USER_DS;
     asm volatile(
         "cli;"                  /* Context-switch is critical, so we suppress interrupts */
 
@@ -296,10 +300,6 @@ int32_t execute(const uint8_t* command) {
         : "r" (user_ds_addr16)
     );
 
-    uint32_t user_ds_addr32 = USER_DS;
-    uint32_t user_stack_addr = USER_STACK;
-    uint32_t int_flag_bitmask = INT_FLAG;
-    uint32_t user_cs_addr32 = USER_CS;
     asm volatile(
         "pushl %0;"         /* Push USER_DS */
         "pushl %1;"         /* Push USER_STACK pointer */
@@ -312,7 +312,7 @@ int32_t execute(const uint8_t* command) {
         "pushl %3;"
         "pushl %4;"         /* User program/function entry point */
         "iret;"
-        "SYS_HALT_RETURN_POINT: ;"
+        // "SYS_HALT_RETURN_POINT: ;"
 
         : /*no outputs*/
         : "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr32), "r" (entry_pt_addr)
