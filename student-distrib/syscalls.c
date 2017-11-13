@@ -47,15 +47,16 @@ int32_t halt(uint8_t status) {
     // Then we can resume at the parent program where we left off
     // Also check the diagram for the other things that need to be done (e.g. change paging)
 
-    printf("System call HALT.\n");
+    // printf("System call HALT.\n");
     uint8_t i;
     uint32_t status_32 = status;
     
     process_number--;
     // We cannot close the base shell
-    if (process_number < 0) {
+    if (process_number <= 0) {
         process_number = 0;
         // Call execute again with all values reinitialized
+        clear();
         execute((uint8_t*) "shell");
     }
 
@@ -403,11 +404,12 @@ int32_t open (const uint8_t* filename) {
         }
     }
     if (i == MAX_FILES-1) return -1; // all the fd's are in use :(
+    if (PCB_base->fd_arr[fd].file_position > 5) return -1;
 
     if (file_dentry.fileType == _DIR_) {
         if (dopen(filename, &file_dentry) != 0) return -1;
         PCB_base->fd_arr[fd].inode_number = NULL;
-        PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk what to do with file_position
+        PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) dir_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
         // (int8_t*) PCB_base->fd_arr[fd].fileName=  filename;
@@ -415,7 +417,7 @@ int32_t open (const uint8_t* filename) {
     else if (file_dentry.fileType == _FILE_) {
         if (fopen(filename) != 0) return -1;
         PCB_base->fd_arr[fd].inode_number = file_dentry.inode;
-        PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk what to do with file_position
+        PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) file_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
         // PCB_base->fd_arr[fd].fileName= *filename;
@@ -424,7 +426,7 @@ int32_t open (const uint8_t* filename) {
     else if (file_dentry.fileType == _RTC_) {
         if (rtc_open(filename) != 0) return -1;
         PCB_base->fd_arr[fd].inode_number = NULL;
-        PCB_base->fd_arr[fd].file_position = 0; //NOTE: idk what to do with file_position
+        PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) rtc_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
         // PCB_base->fd_arr[fd].fileName= *filename;

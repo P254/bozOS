@@ -171,14 +171,6 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
-    // uint8_t* cmd = (uint8_t*) "shell";
-    // asm volatile(
-    //     "movl $2, %%eax;"
-    //     "movl %0, %%ebx;"
-    //     "int $0x80;"
-    //     : /*no outputs*/
-    //     : "r" (cmd)
-    // );
     execute((uint8_t*) "shell");
 
     /* Spin (nicely, so we don't chew up cycles) */
