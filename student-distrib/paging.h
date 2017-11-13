@@ -3,15 +3,19 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#define ALIGN_4KB 4096
+#define ALIGN_4MB 22
+#define ALIGN_4KB 12
 #define PAGE_SIZE 1024
 
-uint32_t page_directory[PAGE_SIZE] __attribute__((aligned(ALIGN_4KB))); //directory table
-uint32_t page_table[PAGE_SIZE] __attribute__((aligned(ALIGN_4KB))); // pages table
+#define PROG_MEM_SIZE 4 // We haev 4 such 4 MiB blocks that makes 16 MiB
+#define ALIGN_1MB 20
+#define ALIGN_1KB 10
+
+uint32_t page_directory[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB))); //directory table
+uint32_t page_table[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB))); // pages table
 
 #define VIDEO_MEM 0xB8000 // Taken from lib.c
-#define KERNEL_MEM 0x400000 // Corresponds to 4MB
-#define ALIGN_4KB_SHIFT 12 // We need to shift right by 12 to align to 4KB
+#define KERNEL_MEM 0x400000 // Corresponds to 4 MiB = 0x400000
 
 void paging_init();
 

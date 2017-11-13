@@ -262,7 +262,7 @@ int read_data_test(int8_t * fname, int32_t size_to_copy, uint32_t offset, int ty
  * Side Effects: None
  * Coverage:
  */
-int print_all_directories_test()
+/*int print_all_directories_test()
 {
     int i;
     int num_directories = boot->dirEntries;
@@ -274,7 +274,7 @@ int print_all_directories_test()
     }
     return 0;
 }
-
+*/
 /*test_terminal_write_overload()
  *Checks if terminal_write stops writing at buffer max length instead of overflowing
  * Inputs: None
@@ -440,7 +440,6 @@ void launch_tests() {
     // TEST_OUTPUT("paging_table_test", paging_table_test());
     // TEST_OUTPUT("test_exceptions", test_exceptions());
 
-
     /************ Checkpoint 2 Tests **********************/
     #if (READ_DATA_TEST_ENABLE == 1)
     read_data_test("frame0.txt",-1,0,TEXT);
@@ -454,10 +453,10 @@ void launch_tests() {
     read_dentry_by_name_test("verylargetextwithverylongname.txt");
     read_dentry_by_name_test("wtf name");
     #endif
-
+/*
     #if (PRINT_ALL_DIR_TEST_ENABLE == 1)
     print_all_directories_test();
-    #endif
+    #endif*/
 
     #if (READ_DENTRY_IDX_TEST_ENABLE == 1)
     read_dentry_by_index_test(5);
@@ -475,5 +474,17 @@ void launch_tests() {
 
     #if (RTC_TEST_ENABLE == 1)
     TEST_OUTPUT("rtc handler test", rtc_handler_test());
+    #endif
+
+    /******************** Checkpoint 3 Tests ***************************/
+    // Check that we set up user space paging correctly
+    #if (PAGING_TEST_ENABLE == 1)
+    int i, addr;
+    int* mem_ptr;
+    for (i = 0; i < 5; i++) {
+        mem_ptr = (int*) ((128 + i*4) << 20);
+        printf("Deferencing address %x\n", (int) mem_ptr);
+        addr = *mem_ptr;
+    }
     #endif
 }

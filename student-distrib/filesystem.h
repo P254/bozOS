@@ -49,13 +49,13 @@ int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry);
 int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry);
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length);
 
-int32_t fopen(uint8_t *fname);
+int32_t fopen(const uint8_t *fname);
 int32_t fclose(uint8_t *fname);
-int32_t fread(uint8_t *fname, uint32_t offset, uint8_t *buf, uint32_t length);
+int32_t fread(uint8_t *fname, uint8_t *buf, int32_t nbytes);
 int32_t fwrite(void);
 
-int32_t dopen(uint8_t* fname, dentry_t *dentry);
-int32_t dread(uint32_t index, dentry_t *dentry);
+int32_t dopen(const uint8_t* fname, dentry_t *dentry);
+int32_t dread(uint8_t fd, uint8_t *buf, int32_t nbytes);
 
 int32_t dclose();
 int32_t dwrite(void);

@@ -14,8 +14,9 @@
 #include "paging.h"
 #include "terminal.h"
 #include "filesystem.h"
+#include "syscalls.h"
 
-#define RUN_TESTS 1
+#define RUN_TESTS       0
 
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
@@ -145,12 +146,12 @@ void entry(unsigned long magic, unsigned long addr) {
         ltr(KERNEL_TSS);
     }
 
+    module_t* mod = (module_t*)mbi->mods_addr;
+    fs_init((uint32_t)mod->mod_start); /* Init filesystem */
 
     i8259_init(); /* Init the PIC */
     kb_init(); /* Init the keyboard */
     rtc_init(); /* Init the RTC */
-    module_t* mod = (module_t*)mbi->mods_addr;
-    fs_init((uint32_t)mod->mod_start);
     paging_init(); /* Init the paging */
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
@@ -169,6 +170,8 @@ void entry(unsigned long magic, unsigned long addr) {
     launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
+    // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
+    execute((uint8_t*) "shell");
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

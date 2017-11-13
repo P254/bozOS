@@ -24,7 +24,7 @@ void fs_init(uint32_t start) {// this will take in mod_start
  *   RETURN VALUE:
  *   SIDE EFFECTS: nothing
  */
-int32_t fopen(uint8_t *fname) {
+int32_t fopen(const uint8_t *fname) {
 
     return -1;
 }
@@ -48,7 +48,8 @@ int32_t fclose(uint8_t *fname) {
  *   RETURN VALUE:
  *   SIDE EFFECTS: changes the buffer
  */
-int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
+// int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
+int32_t fread(uint8_t *fname, uint8_t *buf, int32_t nbytes)
 {
     return 0;
 }
@@ -73,7 +74,7 @@ int32_t fwrite(void) {
  *   SIDE EFFECTS: nothing
  */
 
-int32_t dopen(uint8_t* fname, dentry_t *dentry) {
+int32_t dopen(const uint8_t* fname, dentry_t *dentry) {
     // return read_dentry_by_name(fname, dentry);
     return 0;
 }
@@ -86,8 +87,20 @@ int32_t dopen(uint8_t* fname, dentry_t *dentry) {
  *   RETURN VALUE:
  *   SIDE EFFECTS: fills in dentry
  */
-int32_t dread(uint32_t index, dentry_t *dentry) {
-    return read_dentry_by_index(index, dentry);
+static int32_t dread_loc = 0;
+int32_t dread(uint8_t fd, uint8_t *buf, int32_t nbytes) {
+    int num_directories = boot->dirEntries;
+    dentry_t temp_dentry;
+    if (dread_loc+1 > num_directories)
+    {
+        dread_loc = 0;
+        return 0;
+    }
+    read_dentry_by_index(dread_loc, &temp_dentry);
+    strncpy((int8_t*) buf, (int8_t*) temp_dentry.fileName, FILE_NAME_LEN);
+    dread_loc++;
+    
+    return strlen((int8_t*) temp_dentry.fileName);;
 }
 /*
  * dclose
