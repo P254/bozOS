@@ -87,8 +87,20 @@ int32_t dopen(const uint8_t* fname, dentry_t *dentry) {
  *   RETURN VALUE:
  *   SIDE EFFECTS: fills in dentry
  */
-int32_t dread(uint32_t index, dentry_t *dentry) {
-    return read_dentry_by_index(index, dentry);
+static int32_t dread_loc = 0;
+int32_t dread(uint8_t fd, uint8_t *buf, int32_t nbytes) {
+    int num_directories = boot->dirEntries;
+    dentry_t temp_dentry;
+    if (dread_loc+1 > num_directories)
+    {
+        dread_loc = 0;
+        return 0;
+    }
+    read_dentry_by_index(dread_loc, &temp_dentry);
+    strncpy((int8_t*) buf, (int8_t*) temp_dentry.fileName, FILE_NAME_LEN);
+    dread_loc++;
+    
+    return strlen((int8_t*) temp_dentry.fileName);;
 }
 /*
  * dclose

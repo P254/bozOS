@@ -25,6 +25,12 @@
 #define FILE_IN_USE 1
 #define FILE_NOT_IN_USE 0
 #define MAX_FILES 8
+
+#define MAX_FILE_POS 5
+
+#define _8MB (8 << ALIGN_1MB)
+#define _8KB (8 << ALIGN_1KB)
+
 // User memory paging
 #define USER_PROG_LOC 0x08048000
 #define USER_PROG_SIZE (4 << ALIGN_1MB)
@@ -34,6 +40,9 @@
 
 #define TASK_RUNNING 1
 #define MAX_PROCESSES 6
+
+// 4 MiB page, user & supervisor-access, r/w access, present
+#define USER_PAGE_SET_BITS 0x87 
 
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
@@ -61,7 +70,6 @@ typedef int (*generic_fp)();
 static volatile int process_number = 0;
 
 typedef struct fd {
-  uint8_t fileName[32]; // 32B
   generic_fp* fotp; //file operations table Pointer
   uint8_t inode_number; //inode, only for text files
   uint8_t file_position; //FP
@@ -69,16 +77,13 @@ typedef struct fd {
 } fd_t;
 
 typedef struct pcb {
-    uint8_t status;       // Holds the status of the current process
-    uint8_t pid;          // Process ID
-    uint32_t user_loc;   // Location of program in physical memory
+    uint8_t status;         // Holds the status of the current process
+    uint8_t pid;            // Process ID
     fd_t fd_arr[8];         // File descriptor array -- TODO: Figure out what to do with this
-    uint32_t self_esp;       // Pointer to own ESP (will be used by child process later)
-    uint32_t self_ebp;       // Pointer to own EBP (will be used by child process later)
-    /* TODO: Also store parent's kernel stack and user stack and return address */
+    uint32_t self_esp;      // Pointer to own ESP (will be used by child process later)
+    uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
     uint32_t self_k_stack;
-    uint32_t self_usr_stack;
-    // unsigned int buf_args[128];
+    uint32_t self_page;
 } pcb_t;
 
 
