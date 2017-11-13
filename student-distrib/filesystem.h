@@ -41,7 +41,7 @@ dentry_t *dentries;
 inode_t *inodes;
 bootBlock_t *boot;
 data_block_t *dataBlocks;
-int loc;
+
 // File system init functions. Similar to RTC, keyboard and others.
 void fs_init(uint32_t start);
 

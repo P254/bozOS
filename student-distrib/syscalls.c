@@ -50,7 +50,8 @@ int32_t halt(uint8_t status) {
     printf("System call HALT.\n");
     uint8_t i;
     uint32_t status_32 = status;
-    process_number-=2;
+    
+    process_number -= 2;
     // We cannot close the base shell
     if (process_number < 0) {
         process_number=0;
@@ -63,7 +64,6 @@ int32_t halt(uint8_t status) {
     uint32_t PCB_offset = (process_number+1) * (8 << ALIGN_1KB);
     uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base_parent = (pcb_t*) program_kernel_base; //cast it to PCB so start
-
 
     kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
     PCB_offset = (process_number+2) * (8 << ALIGN_1KB);
@@ -97,23 +97,25 @@ int32_t halt(uint8_t status) {
         }
     }
 
-    // Decrement process number
-  //  process_number--;
-
-    //restore parent esp/ebp
+    // Restore parent esp/ebp
     tss.ss0 = KERNEL_DS; // Segment selector:: we dont have to do this
     tss.esp0 = PCB_base_parent->self_k_stack; // restore to pointer to parent_k_stack
+
     // move 2 eax because you need to have a return value of 2 as a parameter
     asm volatile(
         "movl %0, %%esp;"
         "movl %1, %%ebp;"
-        "movl %2, %%eax;"
-        "jmp SYS_HALT_RETURN_POINT;"
+        // "movl %2, %%eax;"
+        // "jmp SYS_HALT_RETURN_POINT;"
+        "pushl %%ebp;"
+        "leave;"
+        "ret;"
         : /*no outputs*/
         : "r" (PCB_base_parent->self_esp), "r" (PCB_base_parent->self_ebp), "r" (status_32)
-        : "esp", "ebp", "eax"
+        : "esp", "ebp"
     );
 
+    // We should never reach here
     return status;
 }
 
@@ -128,10 +130,9 @@ int32_t halt(uint8_t status) {
 int32_t execute(const uint8_t* command) {
     // printf("System call EXECUTE.\n");
     uint8_t i;
+
     /*********** Step 1: Parse arguments ***********/
-    // TODO: Need to perform appropriate checking of command string
-    // Command is a space-separated sequence of words
-    // For now, I hardcode cmd so that we execute "shell"
+    // 'command' is a space-separated sequence of words
     i = 0;
     uint8_t nbytes = 0;
     uint8_t cmd1[KB_BUF_SIZE]; // First command word
@@ -149,7 +150,7 @@ int32_t execute(const uint8_t* command) {
     if (i == KB_BUF_SIZE) {
         strncpy((int8_t*) cmd1, (int8_t*) command, KB_BUF_SIZE);
     }
-    // TODO: Employ getargs here, probably need to use 'nbytes' as a starting point
+    // TODO: Employ getargs here, probably need to use 'nbytes' as a starting point/offset
 
     /*********** Step 2: Check file validity ***********/
     // Check if the file can be read or not
@@ -279,7 +280,7 @@ int32_t execute(const uint8_t* command) {
 
     // TODO: Check SS0 and ESP0 again
     tss.ss0 = KERNEL_DS; // Segment selector
-    tss.esp0 =  new_esp0; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1
+    tss.esp0 = new_esp0; // New user program's kernel stack. Starts at (8MB - 8KB) for process #0, (8MB - 8KB - 8KB) for process #1
 
     // Push IRET context to stack
     uint16_t user_ds_addr16 = USER_DS;
