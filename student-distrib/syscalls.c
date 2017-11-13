@@ -50,16 +50,16 @@ int32_t halt(uint8_t status) {
     printf("System call HALT.\n");
     uint8_t i;
     uint32_t status_32 = status;
+    process_number-=2;
     // We cannot close the base shell
     if (process_number == 0) {
         // Call execute again with all values reinitialized
         execute((uint8_t*) "shell");
     }
-    
+
     // We subtract -1 to get the parent process. This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
-    pcb_t* PCB_base_parent = get_PCB_base(process_number-1); 
-    pcb_t* PCB_base_self = get_PCB_base(process_number); 
-    process_number--;
+    pcb_t* PCB_base_parent = get_PCB_base(process_number-1);
+    pcb_t* PCB_base_self = get_PCB_base(process_number);
 
     /* Restore parent's paging */
     uint32_t parent_user_mem_physical = PCB_base_parent->self_usr_stack;
@@ -74,7 +74,7 @@ int32_t halt(uint8_t status) {
         : /* no inputs */
         : "eax"
     );
-    
+
     // close relevant FDs
     fd_t* fd_array = PCB_base_self->fd_arr;
     for (i = 0 ; i < MAX_FILES ; i++) {
@@ -87,7 +87,7 @@ int32_t halt(uint8_t status) {
     }
 
     // Decrement process number
-    process_number--;
+  //  process_number--;
 
     //restore parent esp/ebp
     tss.ss0 = KERNEL_DS; // Segment selector:: we dont have to do this
@@ -102,7 +102,7 @@ int32_t halt(uint8_t status) {
         : "r" (PCB_base_parent->self_esp), "r" (PCB_base_parent->self_ebp), "r" (status_32)
         : "esp", "ebp", "eax"
     );
-    
+
     return status;
 }
 
@@ -190,14 +190,17 @@ int32_t execute(const uint8_t* command) {
     // TODO: Check again if the PCB is correct. Also limit # of processes to 6.
 
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
-    uint32_t program_kernel_base = KERNEL_BASE - (process_number + 1) * PCB_OFFSET; //find where program stack starts, we do '+1' here as we only increment process_number below
+    uint32_t kernel_base = (8 << ALIGN_1MB); // 8MB is base of kernel
+    uint32_t PCB_offset = (process_number + 1) * (8 << ALIGN_1KB); // We do '+1' here as we only increment process_number below
+    uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
 
     PCB_base->status = TASK_RUNNING;
     PCB_base->pid = process_number;            // Process ID
+    PCB_base->user_loc = ((8 << ALIGN_1MB) + process_number * (4 << ALIGN_1MB));     // Location of program in physical memory
     PCB_base->self_k_stack = program_kernel_base; // Store it's own kernel stack
     PCB_base->self_usr_stack = user_mem_physical; // Store it's own user stack
-    
+
     fd_t* fd_array = PCB_base->fd_arr;
     for (i = 0 ; i < MAX_FILES ; i++) {  // initalize file descriptor array
         fd_array[i].fotp = NULL;
@@ -205,7 +208,7 @@ int32_t execute(const uint8_t* command) {
         fd_array[i].file_position = 0;
         fd_array[i].in_use_flag = 0;
     }
-    
+
     uint32_t self_esp, self_ebp;
     asm volatile(
         "movl %%esp, %0;"
@@ -298,6 +301,7 @@ int32_t execute(const uint8_t* command) {
         "pushl %4;"         /* User program/function entry point */
         "iret;"
         "SYS_HALT_RETURN_POINT: ;"
+
         : /*no outputs*/
         : "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr32), "r" (entry_pt_addr)
         : "eax"
@@ -512,15 +516,17 @@ int32_t sigreturn (void) {
 /*
  * get_PCB_base
  *   DESCRIPTION: Returns the CURRENT PCB base pointer
- *   INPUTS: p_num -- process number that we interested in 
+ *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: pcb_t -- pointer to the topmost PCB on the kernel stack
  *   SIDE EFFECTS: none
  */
-pcb_t* get_PCB_base(int8_t p_num) {
-    if (p_num < 0 || p_num >= MAX_PROCESSES) return NULL;
-    
-    uint32_t program_kernel_base = KERNEL_BASE - p_num*PCB_OFFSET; //find where program stack starts
+pcb_t* get_PCB_base(int8_t process_num) {
+    if (process_num < 0 || process_num >= MAX_PROCESSES) return NULL;
+
+    uint32_t kernel_base = (8 << ALIGN_1MB); //8MB is base of kernel
+    uint32_t PCB_offset = process_num * (8 << ALIGN_1KB);
+    uint32_t program_kernel_base = kernel_base - PCB_offset; //find where program stack starts
     pcb_t* PCB_base = (pcb_t*) program_kernel_base; //cast it to PCB so start of program stack contains PCB.
-    return PCB_base;    
+    return PCB_base;
 }
