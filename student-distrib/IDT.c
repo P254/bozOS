@@ -1,6 +1,7 @@
 #include "lib.h"
 #include "IDT.h"
 #include "x86_desc.h"
+#include "syscalls.h"
 
 /* Functions to handle exceptions
  * Source: http://www.osdever.net/bkerndev/Docs/isrs.htm
@@ -70,7 +71,7 @@ void init_IDT() {
             // System call
             set_IDT_wrapper(i, handle_syscall_asm); 
             idt[i].dpl = 3; // System call should have its DPL set to 3 so that it is accessible from user space via the 'int' instruction
-            idt[i].seg_selector = USER_CS; 
+            idt[i].seg_selector = KERNEL_CS; 
         }
     }
 }
@@ -99,8 +100,7 @@ void print_error_code(uint32_t code) {
  */
 void handle_e0() {
     printf("Interrupt 0 - Divide Error Exception (#DE) \n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -113,8 +113,7 @@ void handle_e0() {
  */
 void handle_e1() {
     printf("Interrupt 1 - Debug Exception (#DB) \n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -127,8 +126,7 @@ void handle_e1() {
  */
 void handle_e2() {
     printf("Interrupt 2 - NMI Interrupt\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -141,8 +139,7 @@ void handle_e2() {
  */
 void handle_e3() {
     printf("Interrupt 3 - Breakpoint Exception (#BP)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -155,8 +152,7 @@ void handle_e3() {
  */
 void handle_e4() {
     printf("Interrupt 4 - Overflow Exception (#OF)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -169,8 +165,7 @@ void handle_e4() {
  */
 void handle_e5() {
     printf("Interrupt 5 - BOUND Range Exceeded Exception (#BR)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -183,8 +178,7 @@ void handle_e5() {
  */
 void handle_e6() {
     printf("Interrupt 6 - Invalid Opcode Exception (#UD)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -197,22 +191,21 @@ void handle_e6() {
  */
 void handle_e7() {
     printf("Interrupt 7 - Device Not Available Exception (#NM)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
  * handle_e8
  *   DESCRIPTION: Handler for exception #8
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e8() {
+void handle_e8(uint32_t error_code) {
     printf("Interrupt 8 - Double Fault Exception (#DF)\n");
-    cli();
-    while(1);
+    printf("Error code (hex): %x\n", error_code);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -227,8 +220,7 @@ void handle_e9() {
     // Exception Class Abort.
     // Intel reserved; do not use. Recent IA-32 processors do not generate this exception.
     printf("Interrupt 9 - Coprocessor Segment Overrun\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -241,61 +233,60 @@ void handle_e9() {
  */
 void handle_e10() {
     printf("Interrupt 10 - Invalid TSS Exception (#TS)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
  * handle_e11
  *   DESCRIPTION: Handler for exception #11
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e11() {
+void handle_e11(uint32_t error_code) {
     printf("Interrupt 11 - Segment Not Present (#NP)\n");
-    cli();
-    while(1);
+    printf("Error code (hex): %x\n", error_code);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
  * handle_e12
  *   DESCRIPTION: Handler for exception #12
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e12() {
+void handle_e12(uint32_t error_code) {
     printf("Interrupt 12 - Stack Fault Exception (#SS)\n");
-    cli();
-    while(1);
+    printf("Error code (hex): %x\n", error_code);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
  * handle_e13
  *   DESCRIPTION: Handler for exception #13
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e13() {
+void handle_e13(uint32_t error_code) {
     printf("Interrupt 13 - General Protection Exception (#GP)\n");
-    cli();
-    while(1);
+    printf("Error code (hex): %x\n", error_code);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
  * handle_e14
  *   DESCRIPTION: Handler for exception #14
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e14() {
+void handle_e14(uint32_t error_code) {
     // Grab CR2 register (tells us the page fault linear address)
     uint32_t addr;
     asm volatile( 
@@ -304,8 +295,8 @@ void handle_e14() {
         : /* no inputs */
     );
     printf("Interrupt 14 - Page-Fault Exception (#PF) at address 0x%x\n", addr);
-    cli();
-    while(1);
+    printf("Error code (hex): %x\n", error_code);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -318,8 +309,7 @@ void handle_e14() {
  */
 void handle_e15() {
     printf("Interrupt 15 - Reserved\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -332,22 +322,21 @@ void handle_e15() {
  */
 void handle_e16() {
     printf("Interrupt 16 - x87 FPU Floating-Point Error (#MF)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
  * handle_e17
  *   DESCRIPTION: Handler for exception #17
- *   INPUTS: none
+ *   INPUTS: error_code -- error code to print to the terminal
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: masks interrupts, halts system
  */
-void handle_e17() {
+void handle_e17(uint32_t error_code) {
     printf("Interrupt 17 - Alignment Check Exception (#AC)\n");
-    cli();
-    while(1);
+    printf("Error code (hex): %x\n", error_code);
+    halt(PROG_DIED_BY_EXCEPTION);    
 }
 
 /*
@@ -360,8 +349,7 @@ void handle_e17() {
  */
 void handle_e18() {
     printf("Interrupt 18 - Machine-Check Exception (#MC)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -374,8 +362,7 @@ void handle_e18() {
  */
 void handle_e19() {
     printf("Interrupt 19 - SIMD Floating-Point Exception (#XF)\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -388,7 +375,6 @@ void handle_e19() {
  */
 void handle_default() {
     printf("Default interrupt handler called. Nothing specified here.\n");
-    cli();
-    while(1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
