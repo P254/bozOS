@@ -1,6 +1,6 @@
 .data
     ONE_LEVEL       = 4
-    ERROR_CODE_LOC  = 44
+    ERROR_CODE_LOC  = 32
     
     SYSCALL_NUM_MIN = 1
     SYSCALL_NUM_MAX = 10
@@ -217,7 +217,9 @@ handle_e7_asm:
 #	 SIDE EFFECTS : none
 handle_e8_asm:
     pushal
+    pushl ERROR_CODE_LOC(%esp)
     call handle_e8 # Calling interrupt handler defined in C
+    addl ONE_LEVEL, %esp
     popal
     iret # Return control to interrupted program
 
@@ -253,7 +255,9 @@ handle_e10_asm:
 #	 SIDE EFFECTS : none
 handle_e11_asm:
     pushal
+    pushl ERROR_CODE_LOC(%esp)
     call handle_e11 # Calling interrupt handler defined in C
+    addl ONE_LEVEL, %esp
     popal
     iret # Return control to interrupted program
 
@@ -265,7 +269,9 @@ handle_e11_asm:
 #	 SIDE EFFECTS : none
 handle_e12_asm:
     pushal
+    pushl ERROR_CODE_LOC(%esp)
     call handle_e12 # Calling interrupt handler defined in C
+    addl ONE_LEVEL, %esp
     popal
     iret # Return control to interrupted program
 
@@ -277,7 +283,9 @@ handle_e12_asm:
 #	 SIDE EFFECTS : none
 handle_e13_asm:
     pushal
+    pushl ERROR_CODE_LOC(%esp)
     call handle_e13 # Calling interrupt handler defined in C
+    addl ONE_LEVEL, %esp
     popal
     iret # Return control to interrupted program
 
@@ -289,7 +297,9 @@ handle_e13_asm:
 #	 SIDE EFFECTS : none
 handle_e14_asm:
     pushal
+    pushl ERROR_CODE_LOC(%esp)
 	call handle_e14 # Calling interrupt handler defined in C
+    addl ONE_LEVEL, %esp
 	popal
 	iret # Return control to interrupted program
 
@@ -325,7 +335,9 @@ handle_e16_asm:
 #	 SIDE EFFECTS : none
 handle_e17_asm:
     pushal
+    pushl ERROR_CODE_LOC(%esp)
     call handle_e17 # Calling interrupt handler defined in C
+    addl ONE_LEVEL, %esp
     popal
     iret # Return control to interrupted program
 

@@ -262,7 +262,7 @@ int read_data_test(int8_t * fname, int32_t size_to_copy, uint32_t offset, int ty
  * Side Effects: None
  * Coverage:
  */
-int print_all_directories_test()
+/*int print_all_directories_test()
 {
     int i;
     int num_directories = boot->dirEntries;
@@ -274,7 +274,7 @@ int print_all_directories_test()
     }
     return 0;
 }
-
+*/
 /*test_terminal_write_overload()
  *Checks if terminal_write stops writing at buffer max length instead of overflowing
  * Inputs: None
@@ -453,10 +453,10 @@ void launch_tests() {
     read_dentry_by_name_test("verylargetextwithverylongname.txt");
     read_dentry_by_name_test("wtf name");
     #endif
-
+/*
     #if (PRINT_ALL_DIR_TEST_ENABLE == 1)
     print_all_directories_test();
-    #endif
+    #endif*/
 
     #if (READ_DENTRY_IDX_TEST_ENABLE == 1)
     read_dentry_by_index_test(5);

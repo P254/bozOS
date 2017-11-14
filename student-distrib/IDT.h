@@ -7,6 +7,7 @@
 #define N_EXCEPTIONS_RESERVED 32
 #define USER_INT_START 32
 #define SYS_CALL_ADDR 0x80
+#define PROG_DIED_BY_EXCEPTION 255
 
 /*Forward Declerations*/
 void set_IDT_wrapper(uint8_t idt_num, void* handler_function);

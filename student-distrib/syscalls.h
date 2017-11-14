@@ -25,6 +25,12 @@
 #define FILE_IN_USE 1
 #define FILE_NOT_IN_USE 0
 #define MAX_FILES 8
+
+#define MAX_FILE_POS 5
+
+#define _8MB (8 << ALIGN_1MB)
+#define _8KB (8 << ALIGN_1KB)
+
 // User memory paging
 #define USER_PROG_LOC 0x08048000
 #define USER_PROG_SIZE (4 << ALIGN_1MB)
@@ -33,6 +39,10 @@
 #define USER_STACK ((132 << ALIGN_1MB) - 4)
 
 #define TASK_RUNNING 1
+#define MAX_PROCESSES 6
+
+// 4 MiB page, user & supervisor-access, r/w access, present
+#define USER_PAGE_SET_BITS 0x87 
 
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
@@ -47,21 +57,19 @@
 #define SYS_SIGRETURN   10
 
 #define FOTP_OPEN       0
-#define FOTP_CLOSE      1
-#define FOTP_READ       2
-#define FOTP_WRITE      3
+#define FOTP_READ       1
+#define FOTP_WRITE      2
+#define FOTP_CLOSE      3
 
 #define _RTC_        0
 #define _DIR_        1
 #define _FILE_       2
 
-        /* Declaring Global Variables and arrays */
+/* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
-
-static volatile int process_number = -1;
+static volatile int process_number = 0;
 
 typedef struct fd {
-  uint8_t fileName[32]; // 32B
   generic_fp* fotp; //file operations table Pointer
   uint8_t inode_number; //inode, only for text files
   uint8_t file_position; //FP
@@ -69,13 +77,13 @@ typedef struct fd {
 } fd_t;
 
 typedef struct pcb {
-    uint8_t status;       // Holds the status of the current process
-    uint8_t pid;          // Process ID
-    uint32_t* user_loc;   // Location of program in physical memory
-    fd_t* fd_arr;         // File descriptor array -- TODO: Figure out what to do with this
-    uint32_t* parent;     // Pointer to parent task
-    /* TODO: Also store parent's kernel stack and user stack and return address */
-    // unsigned int buf_args[128];
+    uint8_t status;         // Holds the status of the current process
+    uint8_t pid;            // Process ID
+    fd_t fd_arr[8];         // File descriptor array -- TODO: Figure out what to do with this
+    uint32_t self_esp;      // Pointer to own ESP (will be used by child process later)
+    uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
+    uint32_t self_k_stack;
+    uint32_t self_page;
 } pcb_t;
 
 
@@ -90,5 +98,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes);
 int32_t vidmap (uint8_t** screen_start);
 int32_t set_handler (int32_t signum, void* handler);
 int32_t sigreturn (void);
-pcb_t* get_PCB_base();
+
+pcb_t* get_PCB_base(int8_t process_num);
+
 #endif /* SYS_CALL_H */
