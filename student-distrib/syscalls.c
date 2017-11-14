@@ -105,10 +105,7 @@ int32_t halt(uint8_t status) {
         "movl %0, %%esp;"
         "movl %1, %%ebp;"
         "movl %2, %%eax;"
-        // "jmp SYS_HALT_RETURN_POINT;"
-        // "pushl %%ebp;"
-        "leave;"
-        "ret;"
+        "jmp SYS_HALT_RETURN_POINT;"
         : /*no outputs*/
         : "r" (PCB_base_self->self_esp), "r" (PCB_base_self->self_ebp), "r" (status_32)
         : "esp", "ebp"
@@ -314,7 +311,7 @@ int32_t execute(const uint8_t* command) {
         "pushl %3;"
         "pushl %4;"         /* User program/function entry point */
         "iret;"
-        // "SYS_HALT_RETURN_POINT: ;"
+        "SYS_HALT_RETURN_POINT: ;"
 
         : /*no outputs*/
         : "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr32), "r" (entry_pt_addr)
