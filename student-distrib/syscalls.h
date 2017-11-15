@@ -28,8 +28,8 @@
 
 #define MAX_FILE_POS 5
 
-#define _8MB (8 << ALIGN_1MB)
-#define _8KB (8 << ALIGN_1KB)
+#define KERNEL_BASE (8 << ALIGN_1MB)
+#define PCB_OFFSET (8 << ALIGN_1KB)
 
 // User memory paging
 #define USER_PROG_LOC 0x08048000
@@ -43,6 +43,12 @@
 
 // 4 MiB page, user & supervisor-access, r/w access, present
 #define USER_PAGE_SET_BITS 0x87 
+
+// Stuff for the vidmap
+#define VIDEO_MEM   0xB8000
+#define NUM_COLS    80
+#define NUM_ROWS    25
+#define KERNEL_TOP  (4 << ALIGN_1MB)
 
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
@@ -68,6 +74,7 @@
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
 static volatile int process_number = 0;
+uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB))); 
 
 typedef struct fd {
   generic_fp* fotp; //file operations table Pointer

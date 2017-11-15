@@ -62,16 +62,9 @@ int32_t halt(uint8_t status) {
 
     // We subtract -1 to get the parent process. 
     // This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
-    uint32_t kernel_base = _8MB;                                // 8MB is base of kernel
-    uint32_t PCB_offset = (process_number) * _8KB;
-    uint32_t program_kernel_base = kernel_base - PCB_offset;    // find where program stack starts
-    pcb_t* PCB_base_parent = (pcb_t*) program_kernel_base;      // cast it to PCB so start
-
-    kernel_base = _8MB;                                         // 8MB is base of kernel
-    PCB_offset = (process_number+1) * _8KB;
-    program_kernel_base = kernel_base - PCB_offset;             // find where program stack starts
-    pcb_t* PCB_base_self = (pcb_t*) program_kernel_base;        // cast it to PCB so start
-
+    pcb_t* PCB_base_parent = (pcb_t*) KERNEL_BASE - process_number * PCB_OFFSET;
+    pcb_t* PCB_base_self = (pcb_t*) KERNEL_BASE - (process_number+1) * PCB_OFFSET;
+    
     /* Restore parent's paging */
     uint32_t parent_user_mem_physical = PCB_base_parent->self_page;
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = parent_user_mem_physical | USER_PAGE_SET_BITS; 
@@ -127,7 +120,7 @@ int32_t execute(const uint8_t* command) {
     // printf("System call EXECUTE.\n");
     uint8_t i, nbytes, cmd1[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
     uint8_t * data_buf;
-    uint32_t entry_pt_addr, user_mem_physical, kernel_base, PCB_offset, program_kernel_base, new_esp0, self_ebp, self_esp;
+    uint32_t entry_pt_addr, user_mem_physical, new_esp0, self_ebp, self_esp;
     dentry_t cmd_dentry;
     pcb_t* PCB_base;
     fd_t* fd_array;
@@ -205,12 +198,11 @@ int32_t execute(const uint8_t* command) {
 
     /*********** Step 5: Create PCB / open FDs ***********/
     // TODO: Limit # of processes to 6.
+    
+    // Find where program stack starts. we do '+1' here as we only increment process_number below
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
-    kernel_base = _8MB;                                     // 8MB is base of kernel
-    PCB_offset = (process_number + 1) * _8KB;   // We do '+1' here as we only increment process_number below
-    program_kernel_base = kernel_base - PCB_offset;         //find where program stack starts
-    PCB_base = (pcb_t*) program_kernel_base;                //cast it to PCB so start of program stack contains PCB.
-    new_esp0 = kernel_base - (process_number * _8KB) - BYTES_4;
+    PCB_base = (pcb_t*) KERNEL_BASE - (process_number + 1) * PCB_OFFSET;                
+    new_esp0 = KERNEL_BASE - (process_number * PCB_OFFSET) - BYTES_4;
 
     PCB_base->status = TASK_RUNNING;
     PCB_base->pid = process_number;            // Process ID
@@ -489,14 +481,74 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
 
 /*
  * vidmap
- *   DESCRIPTION: Handler for 'vidmap' system call.
- *   INPUTS: screen_start -- ???
+ *   DESCRIPTION: Maps the text-mode video memory into user space at a pre-set virtual address. 
+ *   INPUTS: screen_start -- user-space pointer to video memory
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
- *   SIDE EFFECTS: none
+ *   SIDE EFFECTS: modifies paging structure
  */
 int32_t vidmap (uint8_t** screen_start) {
-    printf("System call VIDMAP.\n");
+    // printf("System call VIDMAP.\n");
+    
+    // Check for bad pointers
+    uint32_t screen_start_casted = (uint32_t) screen_start;
+    if (screen_start_casted == 0x0) return -1;
+    if (screen_start_casted >= KERNEL_TOP || screen_start_casted < KERNEL_BASE) return -1;
+
+    // Check if the specified address fits within a 4KB page
+    uint32_t vidmap_4mb_align = (screen_start_casted >> ALIGN_4MB);
+    uint32_t vidmap_4kb_align = (screen_start_casted  % (1 << ALIGN_4MB)) >> ALIGN_4KB;
+    uint32_t vidmap_4kb_align_next = (vidmap_4kb_align + 1);
+    uint32_t video_mem_size = (NUM_ROWS * NUM_COLS) >> 1;
+
+    if (video_mem_size + (vidmap_4kb_align << ALIGN_4KB) > (vidmap_4kb_align_next << ALIGN_4KB)) return -1;
+
+    /* The PDE look like this:
+    *
+    *             31:12              11:9    8   7   6   5   4   3   2   1   0
+    * [ Page table 4K-aligned addr | Avail | G | S | 0 | A | D | W | U | R | P ]
+    *
+    * Avail: Used by the OS to store accounting information
+    * 8 - G: Global page (ignored)
+    * 7 - S: Page Size (1: 4 MiB, 0: 4 KiB)
+    * 6 - 0: Ignored
+    * 5 - A: Accessed (has this page been written to? 1: Yes, 0: No)
+    * 4 - D: Cache Disabled (1: disable cache, 0: enable cache)
+    * 3 - W: Write-through (controls the write-through policy. 1: Enabled, 0: Disabled)
+    * 2 - U: User/supervisor access (1: accessed by all, 0: supervisor access only)
+    * 1 - R: Read/write access (1: read & write allowed, 0: read-only)
+    * 0 - P: Presence of the page (1: Present, 0: Page is swapped out)
+    */
+    
+    // TODO: Finish up from here
+    // Set up new user-level paging
+    page_directory[vidmap_4mb_align] = ((uint32_t) vidmap_ptable) | 0x7; // 4 KiB page, user access, r/w access, present
+
+    uint16_t i;
+    for (i = 0; i < PAGE_SIZE; i++) {
+        vidmap_ptable[i] = 0x6; // 4 KiB page, user access, r/w access, not present
+    }
+
+    vidmap_ptable[(screen_start_casted >> ALIGN_4KB)] = VIDEO_MEM | 0x7; // 4 Kib page, user access, r/w access, present
+    
+    page_directory[0] = ((uint32_t) vidmap_ptable) | 0x3; // assign table to [0], give r/w access, mark as present
+
+    for (i = 0; i < PAGE_SIZE; i++) {
+        vidmap_ptable[i] = 0x2; // 4 KiB page, supervisor-only, r/w access, not present
+    }
+    // We want to allocate a 4KiB page for VIDEO MEMORY
+    vidmap_ptable[(VIDEO_MEM >> ALIGN_4KB)] = VIDEO_MEM | 0x3; // give page r/w access, mark as present
+
+    // Flush the TLB
+    asm volatile(
+        "movl %%cr3, %%eax;"
+        "movl %%eax, %%cr3;"
+        : /*no outputs*/
+        : /*no inputs*/
+        : "eax"
+    );
+
+    // TODO: Check that this virutal address does not conflict with other mappings
 
     return 0;
 }
@@ -533,7 +585,7 @@ int32_t sigreturn (void) {
 
 /*
  * get_PCB_base
- *   DESCRIPTION: Returns the CURRENT PCB base pointer
+ *   DESCRIPTION: Returns the PCB base pointer of the CURRENT process
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: pcb_t -- pointer to the topmost PCB on the kernel stack
@@ -542,10 +594,7 @@ int32_t sigreturn (void) {
 pcb_t* get_PCB_base(int8_t process_num) {
     if (process_num < 0 || process_num >= MAX_PROCESSES) return NULL;
 
-    uint32_t kernel_base = _8MB; // 8MB is base of kernel
-    uint32_t PCB_offset = process_num * _8KB;
-    uint32_t program_kernel_base = kernel_base - PCB_offset; // find where program stack starts
-    pcb_t* PCB_base = (pcb_t*) program_kernel_base; // cast it to PCB so start of program stack contains PCB.
+    pcb_t* PCB_base = (pcb_t*) KERNEL_BASE - process_num * PCB_OFFSET; // cast it to PCB so start of program stack contains PCB.
 
     return PCB_base;
 }
