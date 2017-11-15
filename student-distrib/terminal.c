@@ -89,9 +89,9 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
     bytes_to_write = (nbytes < KB_BUF_SIZE) ? nbytes : KB_BUF_SIZE; //check how much we need to copy
     unsigned char* dest = (unsigned char*) buf; //set system buffer as dest
 
-    while (i < bytes_to_write){
+    while (i < nbytes){
         putc(dest[i]); //write buffer to terminal
-        if (dest[i] == '\n' || dest[i] == '\0') return (i+1); //stop if we encounter null or new line
+        //if (dest[i] == '\n' || dest[i] == '\0') return (i+1); //stop if we encounter null or new line
         i++;
     }
     return i;

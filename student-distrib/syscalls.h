@@ -8,6 +8,7 @@
 #include "filesystem.h"
 #include "paging.h"
 #include "RTC_handler.h"
+#include "terminal.h"
 
 #define N_SYSCALLS 10
 #define SYS_CALL_ADDR 0x80
@@ -42,7 +43,7 @@
 #define MAX_PROCESSES 6
 
 // 4 MiB page, user & supervisor-access, r/w access, present
-#define USER_PAGE_SET_BITS 0x87 
+#define USER_PAGE_SET_BITS 0x87
 
 
 // Taken from "../syscalls/ece391sysnum.h"
@@ -75,6 +76,7 @@ typedef struct fd {
   uint8_t inode_number; //inode, only for text files
   uint8_t file_position; //FP
   uint8_t in_use_flag;
+  uint8_t arg[KB_BUF_SIZE];
 } fd_t;
 
 typedef struct pcb {
