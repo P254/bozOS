@@ -1,6 +1,6 @@
 #include "filesystem.h"
 #include "lib.h"
-
+#include "syscalls.h"
 /*
  * fs_init
  *   DESCRIPTION: initializes the filesytem
@@ -25,8 +25,10 @@ void fs_init(uint32_t start) {// this will take in mod_start
  *   SIDE EFFECTS: nothing
  */
 int32_t fopen(const uint8_t *fname) {
+    dentry_t temp_dentry;
+    if (read_dentry_by_name(fname,&temp_dentry) == -1 ) return -1;
 
-    return -1;
+    return 0;
 }
 /*
  * fclose
@@ -48,10 +50,18 @@ int32_t fclose(uint8_t *fname) {
  *   RETURN VALUE:
  *   SIDE EFFECTS: changes the buffer
  */
-// int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
-int32_t fread(uint8_t *fname, uint8_t *buf, int32_t nbytes)
+static int32_t fread_loc = 0;
+int32_t fread(uint8_t fd, uint8_t *buf, int32_t nbytes)
 {
-    return 0;
+    pcb_t* PCB_base = get_PCB_base(fd);
+    uint8_t inode_number = PCB_base->fd_arr[fd].inode_number;
+    uint8_t file_position = PCB_base->fd_arr[fd].file_position;
+    if (file_position >= inodes[inode_number].length) return 0;
+    int status = read_data(PCB_base->fd_arr[fd].inode_number,PCB_base->fd_arr[fd].file_position,buf,nbytes);
+    if (status == -1) return -1;
+    PCB_base->fd_arr[fd].file_position += status;
+
+    return status;
 }
 /*
  * fwrite
@@ -99,8 +109,8 @@ int32_t dread(uint8_t fd, uint8_t *buf, int32_t nbytes) {
     read_dentry_by_index(dread_loc, &temp_dentry);
     strncpy((int8_t*) buf, (int8_t*) temp_dentry.fileName, FILE_NAME_LEN);
     dread_loc++;
-    
-    return strlen((int8_t*) temp_dentry.fileName);;
+
+    return strlen((int8_t*) temp_dentry.fileName);
 }
 /*
  * dclose
