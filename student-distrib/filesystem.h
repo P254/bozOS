@@ -60,4 +60,6 @@ int32_t dread(uint8_t fd, uint8_t *buf, int32_t nbytes);
 int32_t dclose();
 int32_t dwrite(void);
 
+extern volatile int process_number;
+
 #endif

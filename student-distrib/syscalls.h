@@ -10,6 +10,10 @@
 #include "RTC_handler.h"
 #include "terminal.h"
 
+#define BUF_SIZE 1024
+#define MIN_NAME_TEXT 4
+#define TXT ".txt"
+
 #define N_SYSCALLS 10
 #define SYS_CALL_ADDR 0x80
 #define INT_FLAG 0x200
@@ -69,14 +73,15 @@
 
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
-static volatile int process_number = 0;
+volatile int process_number;
 
 typedef struct fd {
   generic_fp* fotp; //file operations table Pointer
-  uint8_t inode_number; //inode, only for text files
-  uint8_t file_position; //FP
+  uint8_t inode_number;
+  uint32_t file_position; //FP
   uint8_t in_use_flag;
   uint8_t arg[KB_BUF_SIZE];
+  uint8_t text_file_flag;
 } fd_t;
 
 typedef struct pcb {

@@ -250,6 +250,9 @@ int32_t execute(const uint8_t* command) {
     PCB_base->self_esp = self_esp;
     PCB_base->self_ebp = self_ebp;
 
+    // flush the argument buffer in stdin
+    memset((int8_t*)PCB_base->fd_arr[0].arg,'\0',KB_BUF_SIZE);
+
 
     // start stdin process
     PCB_base->fd_arr[0].fotp = (generic_fp*) stdin_fotp; // TABLE FOR STDIN
@@ -257,6 +260,16 @@ int32_t execute(const uint8_t* command) {
     PCB_base->fd_arr[0].file_position = 0;
     PCB_base->fd_arr[0].in_use_flag = FILE_IN_USE;
     strncpy((int8_t*)PCB_base->fd_arr[0].arg,(int8_t*)cmd2,arg_nbytes);
+
+    // check if file is a textfile
+    if (strlen(cmd2) > MIN_NAME_TEXT){
+        if (strncmp(( uint8_t* )(cmd2 + (strlen(cmd2) - MIN_NAME_TEXT)), TXT , MIN_NAME_TEXT) == 0) PCB_base->fd_arr[1].text_file_flag = 1;
+        else PCB_base->fd_arr[1].text_file_flag = 0;
+    }
+    else {
+        PCB_base->fd_arr[1].text_file_flag = 0;
+    }
+
 
     // start stdout process
     PCB_base->fd_arr[1].fotp = (generic_fp*) stdout_fotp; // TABLE FOR STDOUT
@@ -501,9 +514,11 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
     if (PCB_base->fd_arr[0].arg == NULL) return -1;
-
+    // clear the buffer
+    memset(buf,'\0',BUF_SIZE);
+    printf("%s \n", buf);
     memcpy(buf,PCB_base->fd_arr[0].arg,nbytes);
-
+    printf("%s \n", buf);
     return 0;
 }
 

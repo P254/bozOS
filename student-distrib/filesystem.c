@@ -53,13 +53,16 @@ int32_t fclose(uint8_t *fname) {
 static int32_t fread_loc = 0;
 int32_t fread(uint8_t fd, uint8_t *buf, int32_t nbytes)
 {
-    pcb_t* PCB_base = get_PCB_base(fd);
+    pcb_t* PCB_base = get_PCB_base(process_number);
     uint8_t inode_number = PCB_base->fd_arr[fd].inode_number;
-    uint8_t file_position = PCB_base->fd_arr[fd].file_position;
-    if (file_position >= inodes[inode_number].length) return 0;
+    uint32_t file_position = PCB_base->fd_arr[fd].file_position;
+    if (file_position >= inodes[inode_number].length){
+        return 0;
+    }
     int status = read_data(PCB_base->fd_arr[fd].inode_number,PCB_base->fd_arr[fd].file_position,buf,nbytes);
     if (status == -1) return -1;
     PCB_base->fd_arr[fd].file_position += status;
+
 
     return status;
 }
