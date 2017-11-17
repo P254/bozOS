@@ -251,20 +251,23 @@ int32_t execute(const uint8_t* command) {
     PCB_base->self_ebp = self_ebp;
 
     // flush the argument buffer in stdin
-    memset((int8_t*)PCB_base->fd_arr[0].arg,'\0',KB_BUF_SIZE);
-
+    memset((int8_t*) PCB_base->fd_arr[0].arg, '\0' ,KB_BUF_SIZE);
 
     // start stdin process
     PCB_base->fd_arr[0].fotp = (generic_fp*) stdin_fotp; // TABLE FOR STDIN
     PCB_base->fd_arr[0].inode_number = 0; // NOT A DATA File
     PCB_base->fd_arr[0].file_position = 0;
     PCB_base->fd_arr[0].in_use_flag = FILE_IN_USE;
-    strncpy((int8_t*)PCB_base->fd_arr[0].arg,(int8_t*)cmd2,arg_nbytes);
+    strncpy((int8_t*) PCB_base->fd_arr[0].arg, (int8_t*) cmd2,arg_nbytes);
 
     // check if file is a textfile
-    if (strlen(cmd2) > MIN_NAME_TEXT){
-        if (strncmp(( uint8_t* )(cmd2 + (strlen(cmd2) - MIN_NAME_TEXT)), TXT , MIN_NAME_TEXT) == 0) PCB_base->fd_arr[1].text_file_flag = 1;
-        else PCB_base->fd_arr[1].text_file_flag = 0;
+    if (strlen((int8_t*) cmd2) > MIN_NAME_TEXT) {
+        if (strncmp((int8_t*) (cmd2 + (strlen((int8_t*) cmd2) - MIN_NAME_TEXT)), TXT , MIN_NAME_TEXT) == 0) { 
+            PCB_base->fd_arr[1].text_file_flag = 1;
+        }
+        else {
+            PCB_base->fd_arr[1].text_file_flag = 0;
+        }
     }
     else {
         PCB_base->fd_arr[1].text_file_flag = 0;
@@ -419,7 +422,7 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
  *   DESCRIPTION: Handler for 'open' system call.
  *   INPUTS: filename -- filename to be opened
  *   OUTPUTS: none
- *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
+ *   RETURN VALUE: int32_t -- fd # on success, -1 on failure
  *   SIDE EFFECTS: sets the in_use_flag of the file
  */
 int32_t open (const uint8_t* filename) {
@@ -450,6 +453,7 @@ int32_t open (const uint8_t* filename) {
         PCB_base->fd_arr[fd].file_position = 0 ;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) dir_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
+        return fd;
     }
     else if (file_dentry.fileType == _FILE_) {
         if (fopen(filename) != 0) return -1;
@@ -457,6 +461,7 @@ int32_t open (const uint8_t* filename) {
         PCB_base->fd_arr[fd].file_position = 0 ;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) file_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
+        return fd;
     }
     else if (file_dentry.fileType == _RTC_) {
         if (rtc_open(filename) != 0) return -1;
@@ -464,9 +469,9 @@ int32_t open (const uint8_t* filename) {
         PCB_base->fd_arr[fd].file_position = 0 ;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) rtc_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
+        return fd;
     }
     else return -1; // We cannot understand the file type..
-    return fd; //success
 }
 
 /*

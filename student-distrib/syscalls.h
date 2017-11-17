@@ -76,18 +76,18 @@ typedef int (*generic_fp)();
 volatile int process_number;
 
 typedef struct fd {
-  generic_fp* fotp; //file operations table Pointer
-  uint8_t inode_number;
-  uint32_t file_position; //FP
-  uint8_t in_use_flag;
-  uint8_t arg[KB_BUF_SIZE];
-  uint8_t text_file_flag;
+    generic_fp* fotp; //file operations table Pointer
+    uint8_t inode_number;
+    uint32_t file_position; //FP
+    uint8_t in_use_flag;
+    uint8_t arg[KB_BUF_SIZE];
+    uint8_t text_file_flag;
 } fd_t;
 
 typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
-    fd_t fd_arr[8];         // File descriptor array -- TODO: Figure out what to do with this
+    fd_t fd_arr[8];         // File descriptor array 
     uint32_t self_esp;      // Pointer to own ESP (will be used by child process later)
     uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
     uint32_t self_k_stack;
