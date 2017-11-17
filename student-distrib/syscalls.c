@@ -373,6 +373,7 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
 
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
     if (buf == NULL || fd < 0 || fd > MAX_FILES-1 || nbytes < 0) return -1;
+    if (PCB_base->fd_arr[fd].in_use_flag == FILE_NOT_IN_USE) return -1;
 
     if (PCB_base->fd_arr[fd].fotp != NULL && PCB_base->fd_arr[fd].fotp[FOTP_READ]) {
         return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(fd, buf, nbytes);
@@ -431,7 +432,7 @@ int32_t open (const uint8_t* filename) {
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
     dentry_t file_dentry;
-    int32_t i = 0, fd = 0;
+    int32_t i = 0, fd = -1;
     if (read_dentry_by_name(filename, &file_dentry) == -1) return -1;
 
     // find the fd that is not in use
@@ -441,8 +442,7 @@ int32_t open (const uint8_t* filename) {
             break; // we found the first entry which is not in use!
         }
     }
-    if (i == MAX_FILES-1) return -1; // all the fd's are in use :(
-    if (fd> MAX_FILE_POS) return -1;
+    if (fd > MAX_FILES-1 || fd == -1) return -1; // if there is no space to open a file. According to the spec, we are only allowed 6 opened files
 
     if (file_dentry.fileType == _DIR_) {
         if (dopen(filename, &file_dentry) != 0) return -1;
@@ -494,6 +494,7 @@ int32_t close (int32_t fd) {
     // set the flag to not in use
     PCB_base->fd_arr[fd].in_use_flag = FILE_NOT_IN_USE;
 
+
     return 0; // return success
 }
 
@@ -516,9 +517,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
     if (PCB_base->fd_arr[0].arg == NULL) return -1;
     // clear the buffer
     memset(buf,'\0',BUF_SIZE);
-    printf("%s \n", buf);
     memcpy(buf,PCB_base->fd_arr[0].arg,nbytes);
-    printf("%s \n", buf);
     return 0;
 }
 
@@ -532,6 +531,22 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
  */
 int32_t vidmap (uint8_t** screen_start) {
     printf("System call VIDMAP.\n");
+    if (screen_start == NULL || screen_start == USER_PROG_SIZE) return -1;
+    // something related to paging
+
+    // user_mem_physical = USER_MEM_P + process_number * USER_PROG_SIZE;
+    // page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_mem_physical | USER_PAGE_SET_BITS;
+
+    // Tadas pointed out that we don't need to reload page_directory into CR3
+    // Flush the TLB (flushing happens whenever we reload CR3)
+    // asm volatile(
+        // "movl %%cr3, %%eax;"
+        // "movl %%eax, %%cr3;"
+        : /* no outputs */
+        : /* no inputs */
+        // : "eax"
+    // );
+
 
     return 0;
 }
