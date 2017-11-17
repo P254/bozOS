@@ -1,12 +1,13 @@
 #include "filesystem.h"
 #include "lib.h"
+#include "syscalls.h"
 
 /*
  * fs_init
  *   DESCRIPTION: initializes the filesytem
  *   INPUTS: start - the start location of memory (mod_start)
  *   OUTPUTS: None
- *   RETURN VALUE:
+ *   RETURN VALUE: None
  *   SIDE EFFECTS: sets up global variables to pointers of different structures
  */
 void fs_init(uint32_t start) {// this will take in mod_start
@@ -18,15 +19,17 @@ void fs_init(uint32_t start) {// this will take in mod_start
 
 /*
  * fopen
- *   DESCRIPTION: nothing for now
+ *   DESCRIPTION: Opens a file based on the given filename
  *   INPUTS: fname
  *   OUTPUTS: None
- *   RETURN VALUE:
+ *   RETURN VALUE: int -- -1 if we can't read the file, else 0
  *   SIDE EFFECTS: nothing
  */
 int32_t fopen(const uint8_t *fname) {
+    dentry_t temp_dentry;
+    if (read_dentry_by_name(fname, &temp_dentry) == -1 ) return -1;
 
-    return -1;
+    return 0;
 }
 /*
  * fclose
@@ -41,17 +44,26 @@ int32_t fclose(uint8_t *fname) {
 }
 /*
  * fread
- *   DESCRIPTION: nothing for now
- *   INPUTS: fname - file name
- *           offset,buf,length
- *   OUTPUTS: None
- *   RETURN VALUE:
- *   SIDE EFFECTS: changes the buffer
+ *   DESCRIPTION: Reads data from an open file into a buffer
+ *   INPUTS: fd -- file descriptor to the open file
+ *           buf -- buffer to copy the data into
+ *           nbytes -- number of bytes we want to read
+ *   OUTPUTS: buf -- copies the file data into buf
+ *   RETURN VALUE: int -- number of bytes read, or -1 on failure
+ *   SIDE EFFECTS: changes buf
  */
-// int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
-int32_t fread(uint8_t *fname, uint8_t *buf, int32_t nbytes)
-{
-    return 0;
+int32_t fread(uint8_t fd, uint8_t *buf, int32_t nbytes) {
+    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t inode_number = PCB_base->fd_arr[fd].inode_number;
+    uint32_t file_position = PCB_base->fd_arr[fd].file_position;
+    
+    if (file_position >= inodes[inode_number].length) return 0;
+    
+    int status = read_data(inode_number, file_position, buf, nbytes);
+    if (status == -1) return -1;
+    PCB_base->fd_arr[fd].file_position += status;
+
+    return status;
 }
 /*
  * fwrite
@@ -80,27 +92,27 @@ int32_t dopen(const uint8_t* fname, dentry_t *dentry) {
 }
 /*
  * dread
- *   DESCRIPTION: nothing for now
- *   INPUTS: index - index of dentry
- *           dentry - dentry to fill
- *   OUTPUTS: None
- *   RETURN VALUE:
- *   SIDE EFFECTS: fills in dentry
+ *   DESCRIPTION: Called by 'ls' several times over to list the various files in a given directory
+ *   INPUTS: fd -- file descriptor of the file we want to look for
+ *           buf -- buffer to copy the filename into
+ *           nbytes -- unused (TODO: figure out why)
+ *   OUTPUTS: buf -- copies the name of the file into buf
+ *   RETURN VALUE: int -- length of a given filename, or 0 if we have no more files left to read
+ *   SIDE EFFECTS: changes buf
  */
 static int32_t dread_loc = 0;
 int32_t dread(uint8_t fd, uint8_t *buf, int32_t nbytes) {
-    int num_directories = boot->dirEntries;
+    uint32_t num_directories = boot->dirEntries;
     dentry_t temp_dentry;
-    if (dread_loc+1 > num_directories)
-    {
+    if (dread_loc+1 > num_directories) {
         dread_loc = 0;
         return 0;
     }
     read_dentry_by_index(dread_loc, &temp_dentry);
     strncpy((int8_t*) buf, (int8_t*) temp_dentry.fileName, FILE_NAME_LEN);
     dread_loc++;
-    
-    return strlen((int8_t*) temp_dentry.fileName);;
+
+    return strlen((int8_t*) temp_dentry.fileName);
 }
 /*
  * dclose
@@ -181,7 +193,7 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t* dentry) {
  *           length -- the number of bytes
  *   OUTPUTS: buf -- copies data from the file to the buffer
  *   RETURN VALUE: int -- number of bytes copied, or -1 if failure
- *   SIDE EFFECTS: none
+ *   SIDE EFFECTS: modifies buf
  */
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length) {
     int32_t i, mem_location_off, file_length, blocks_used,
