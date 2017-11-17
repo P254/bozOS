@@ -262,7 +262,7 @@ int32_t execute(const uint8_t* command) {
 
     // check if file is a textfile
     if (strlen((int8_t*) cmd2) > MIN_NAME_TEXT) {
-        if (strncmp((int8_t*) (cmd2 + (strlen((int8_t*) cmd2) - MIN_NAME_TEXT)), TXT , MIN_NAME_TEXT) == 0) { 
+        if (strncmp((int8_t*) (cmd2 + (strlen((int8_t*) cmd2) - MIN_NAME_TEXT)), TXT , MIN_NAME_TEXT) == 0) {
             PCB_base->fd_arr[1].text_file_flag = 1;
         }
         else {
@@ -536,7 +536,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
  */
 int32_t vidmap (uint8_t** screen_start) {
     printf("System call VIDMAP.\n");
-    if (screen_start == NULL || screen_start == USER_PROG_SIZE) return -1;
+    //if (screen_start == NULL || screen_start == USER_PROG_SIZE) return -1;
     // something related to paging
 
     // user_mem_physical = USER_MEM_P + process_number * USER_PROG_SIZE;
@@ -547,8 +547,8 @@ int32_t vidmap (uint8_t** screen_start) {
     // asm volatile(
         // "movl %%cr3, %%eax;"
         // "movl %%eax, %%cr3;"
-        : /* no outputs */
-        : /* no inputs */
+        //: /* no outputs */
+        // : /* no inputs */
         // : "eax"
     // );
 
