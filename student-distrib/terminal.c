@@ -2,7 +2,6 @@
 #include "terminal.h"
 #include "x86_desc.h"
 #include "lib.h"
-#include "syscalls.h"
 
 /*
  * terminal_open
@@ -85,18 +84,14 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
     // Check for bad inputs
     if (buf == NULL || nbytes < 0) return -1; //check invalid input
 
-    pcb_t* PCB_base = get_PCB_base(process_number);
-    uint8_t text_file_flag = PCB_base->fd_arr[fd].text_file_flag;
-
     uint32_t i, bytes_to_write;
     i = 0;
     bytes_to_write = (nbytes < KB_BUF_SIZE) ? nbytes : KB_BUF_SIZE; //check how much we need to copy
     unsigned char* dest = (unsigned char*) buf; //set system buffer as dest
 
-    while (i < nbytes){
+    while (i < bytes_to_write){
         putc(dest[i]); //write buffer to terminal
-
-        if (text_file_flag == 1 && dest[i] == '\0') return (i+1); //stop if we encounter null or new line
+        if (dest[i] == '\n' || dest[i] == '\0') return (i+1); //stop if we encounter null or new line
         i++;
     }
     return i;
