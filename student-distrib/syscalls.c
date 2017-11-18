@@ -47,7 +47,7 @@ int32_t halt(uint8_t status) {
     // printf("System call HALT.\n");
     uint8_t i;
     uint32_t status_32 = status;
-
+    
     process_number--;
     // We cannot close the base shell
     if (process_number <= 0) {
@@ -57,7 +57,7 @@ int32_t halt(uint8_t status) {
         execute((uint8_t*) "shell");
     }
 
-    // We subtract -1 to get the parent process.
+    // We subtract -1 to get the parent process. 
     // This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
     uint32_t pcb_addr = KERNEL_BASE - process_number * PCB_OFFSET;  // find where program stack starts
     pcb_t* PCB_base_parent = (pcb_t*) pcb_addr;                     // cast it to PCB so start
@@ -118,7 +118,7 @@ int32_t halt(uint8_t status) {
  */
 int32_t execute(const uint8_t* command) {
     // printf("System call EXECUTE.\n");
-    uint8_t i, j, nbytes, arg_nbytes, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
+    uint8_t i, nbytes, cmd1[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
     uint8_t * data_buf;
     uint32_t entry_pt_addr, user_prog_physical_mem, pcb_addr, new_esp0, self_ebp, self_esp;
     dentry_t cmd_dentry;
@@ -150,19 +150,6 @@ int32_t execute(const uint8_t* command) {
         strncpy((int8_t*) cmd1, (int8_t*) command, KB_BUF_SIZE);
     }
     // TODO: Employ getargs here, probably need to use 'nbytes' as a starting point/offset
-    // we should save argument 2 somewhere here. Do we need more than 1
-    i++;
-    j = i;
-    arg_nbytes = 0;
-    memset(cmd2,'\0',KB_BUF_SIZE);
-    while ( j < KB_BUF_SIZE) {
-        if (command[j] == '\n' || command[j] == '\0' || command[j] == ' ') {
-            arg_nbytes = j-i;
-            strncpy((int8_t*) cmd2, (int8_t*) (command + i), arg_nbytes);
-            break;
-        }
-        j++;
-    }
 
 
     /*********** Step 2: Check file validity ***********/
@@ -171,7 +158,7 @@ int32_t execute(const uint8_t* command) {
 
     // Check if the file can be executed or not
     if (read_data(cmd_dentry.inode, 0, exe_buf, BYTES_4) == -1) return -1;
-    // The first 4 bytes of the file represent a series of "magic numbers" that identify the file as executable
+    // The first 4 bytes of the file represent a series of "magic numbers" that identify the file as executable 
     if (exe_buf[0] != EXE_BYTE0) return -1;
     if (exe_buf[1] != EXE_BYTE1) return -1;
     if (exe_buf[2] != EXE_BYTE2) return -1;
@@ -211,6 +198,8 @@ int32_t execute(const uint8_t* command) {
 
     /*********** Step 5: Create PCB / open FDs ***********/
     // TODO: Limit # of processes to 6.
+    
+    // Find where program stack starts. we do '+1' here as we only increment process_number below
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
     pcb_addr = KERNEL_BASE - (process_number+1)*PCB_OFFSET;     // find where program stack starts
     PCB_base = (pcb_t*) pcb_addr;                               // cast it to PCB so start of program stack contains PCB.
@@ -238,9 +227,6 @@ int32_t execute(const uint8_t* command) {
     PCB_base->self_esp = self_esp;
     PCB_base->self_ebp = self_ebp;
 
-    // flush the argument buffer in stdin
-    memset((int8_t*) PCB_base->fd_arr[0].arg, '\0' ,KB_BUF_SIZE);
-
     // start stdin process
     PCB_base->fd_arr[0].fotp = (generic_fp*) stdin_fotp; // TABLE FOR STDIN
     PCB_base->fd_arr[0].inode_number = 0; // NOT A DATA File
@@ -266,7 +252,7 @@ int32_t execute(const uint8_t* command) {
     PCB_base->fd_arr[1].fotp = (generic_fp*) stdout_fotp; // TABLE FOR STDOUT
     PCB_base->fd_arr[1].inode_number = 0; // NOT A DATA File
     PCB_base->fd_arr[1].file_position = 0;
-    PCB_base->fd_arr[1].in_use_flag = FILE_IN_USE;
+    PCB_base->fd_arr[1].in_use_flag = FILE_IN_USE; 
 
     process_number++;
 
@@ -358,7 +344,7 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant 'file operations table pointer'
     // in the read you look for the fd file in the fd_arr, then
     // use the operations pointer to get the function
-    // printf("SYSCALL READ \n");
+
     // Check for invalid inputs
     pcb_t* PCB_base = get_PCB_base(process_number);
 
@@ -388,11 +374,11 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
     // printf("System call WRITE.\n");
     // if file's buffer is NULLL or fd is nto in range then we return -1
     pcb_t* PCB_base = get_PCB_base(process_number);
-
+    
     // Check for invalid inputs
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
     if (buf == NULL || fd < 0 || fd > MAX_FILES-1 || nbytes < 0) return -1;
-
+    
     // if file has never been opened we return -1
     if (PCB_base->fd_arr[fd].in_use_flag == FILE_NOT_IN_USE) return -1;
 
@@ -407,7 +393,7 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
  *   DESCRIPTION: Handler for 'open' system call.
  *   INPUTS: filename -- filename to be opened
  *   OUTPUTS: none
- *   RETURN VALUE: int32_t -- fd # on success, -1 on failure
+ *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: sets the in_use_flag of the file
  */
 int32_t open (const uint8_t* filename) {
@@ -424,8 +410,8 @@ int32_t open (const uint8_t* filename) {
     if (read_dentry_by_name(filename, &file_dentry) == -1) return -1;
 
     // find the fd that is not in use
-    for (i = 0; i < MAX_FILES; i++) { // you always traverse 0 --> 7
-        if (PCB_base->fd_arr[i].in_use_flag != FILE_IN_USE) {
+    for (i = 0; i < MAX_FILES; i++) { // you always traverse 0 --> 7 
+        if (PCB_base->fd_arr[fd].in_use_flag != FILE_IN_USE) {
             fd = i;
             break; // we found the first entry which is not in use!
         }
@@ -435,28 +421,26 @@ int32_t open (const uint8_t* filename) {
     if (file_dentry.fileType == _DIR_) {
         if (dopen(filename, &file_dentry) != 0) return -1;
         PCB_base->fd_arr[fd].inode_number = NULL;
-        PCB_base->fd_arr[fd].file_position = 0 ;
+        PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) dir_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-        return fd;
     }
     else if (file_dentry.fileType == _FILE_) {
         if (fopen(filename) != 0) return -1;
         PCB_base->fd_arr[fd].inode_number = file_dentry.inode;
-        PCB_base->fd_arr[fd].file_position = 0 ;
+        PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) file_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-        return fd;
     }
     else if (file_dentry.fileType == _RTC_) {
         if (rtc_open(filename) != 0) return -1;
         PCB_base->fd_arr[fd].inode_number = NULL;
-        PCB_base->fd_arr[fd].file_position = 0 ;
+        PCB_base->fd_arr[fd].file_position++;
         PCB_base->fd_arr[fd].fotp = (generic_fp*) rtc_fotp;
         PCB_base->fd_arr[fd].in_use_flag = FILE_IN_USE;
-        return fd;
     }
     else return -1; // We cannot understand the file type..
+    return 0; //success
 }
 
 /*
@@ -512,11 +496,11 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
 
 /*
  * vidmap
- *   DESCRIPTION: Handler for 'vidmap' system call.
- *   INPUTS: screen_start -- ???
+ *   DESCRIPTION: Maps the text-mode video memory into user space at a pre-set virtual address. 
+ *   INPUTS: screen_start -- user-space pointer to video memory
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
- *   SIDE EFFECTS: none
+ *   SIDE EFFECTS: modifies paging structure
  */
 int32_t vidmap (uint8_t** screen_start) {
     // printf("System call VIDMAP.\n");    
@@ -582,7 +566,7 @@ int32_t sigreturn (void) {
 
 /*
  * get_PCB_base
- *   DESCRIPTION: Returns the CURRENT PCB base pointer
+ *   DESCRIPTION: Returns the PCB base pointer of the CURRENT process
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: pcb_t -- pointer to the topmost PCB on the kernel stack
