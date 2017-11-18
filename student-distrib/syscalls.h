@@ -8,6 +8,11 @@
 #include "filesystem.h"
 #include "paging.h"
 #include "RTC_handler.h"
+#include "terminal.h"
+
+#define BUF_SIZE 1024
+#define MIN_NAME_TEXT 4
+#define TXT ".txt"
 
 #define N_SYSCALLS 10
 #define SYS_CALL_ADDR 0x80
@@ -73,20 +78,21 @@ uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB)));
 
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
-static volatile int process_number = 0;
-uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB))); 
+volatile int process_number;
 
 typedef struct fd {
-  generic_fp* fotp; //file operations table Pointer
-  uint8_t inode_number; //inode, only for text files
-  uint8_t file_position; //FP
-  uint8_t in_use_flag;
+    generic_fp* fotp; //file operations table Pointer
+    uint8_t inode_number;
+    uint32_t file_position; //FP
+    uint8_t in_use_flag;
+    uint8_t arg[KB_BUF_SIZE];
+    uint8_t text_file_flag;
 } fd_t;
 
 typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
-    fd_t fd_arr[8];         // File descriptor array -- TODO: Figure out what to do with this
+    fd_t fd_arr[8];         // File descriptor array 
     uint32_t self_esp;      // Pointer to own ESP (will be used by child process later)
     uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
     uint32_t self_k_stack;
