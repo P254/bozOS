@@ -8,25 +8,23 @@
 
 /*
  * ----------- Notes for everyone: -----------
- * Seems like we have managed to make some good progress with our code.
- * Execute seems to be working as we would like it to be, so let's move ahead and finish halt.
- *
- * The next things that need to be done, in order of priority:
- * 1) Complete the halt function, which sort of does the opposite thing that execute does.
- *       a) We need to figure out how to prevent a halt on the initial shell. We should not be able to quit the first user program.
- *          Or rather, if we quit the first shell, we should immediately open a new shell.
- *       b) We need to limit the number of user programs to 6.
- * 2) Complete the read, write, open and close system calls.
- * 3) Check all the user programs that should be able to run on this MP actually work.
- *    I don't have the list, but we can look through the 'syscalls' directory and figure out quickly.
- * 4) Check against the specs for CP3 grading to make sure we didn't miss out on anything.
- * 5) Unit tests and miscellaneous bug fixes.
- *
- * Sean 11/12/17
+ * It seems like CP4 is (mostly) done. Hooray!
+ * Before we start working on scheduling for CP5, I'd like everyone to work on cleaning up the code. 
+ * This would mean adding necessary comments, reducing unnecessary logic, etc.
+ * I'll think of a better way to manage the process_number, hopefully we can have a more robust approach. 
+ * 
+ * Some other things that need to be done:
+ * 1) Add support for function keys so we can use multiple terminals. Also the 'TAB' key prints weird characters, that needs to be fixed.
+ * 2) Redo the FOTP setup as per Andrew's recommendation. 
+ * 
+ * Have a good break. 
+ * Sean 11/17/17
  * --------------------------------------------
  */
 
 /* File Operations Table Pointers */
+// TODO: Andrew Sun suggested using a struct instead of this array. Kush, you I'd suggest you look into this.
+// Also replace 'NULL' with a generic function that does nothing. 
 generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, NULL, (generic_fp*) terminal_close};
 generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) terminal_write, (generic_fp*) terminal_close};
 
@@ -45,7 +43,6 @@ generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (gene
 int32_t halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
-    // Also check the diagram for the other things that need to be done (e.g. change paging)
 
     // printf("System call HALT.\n");
     uint8_t i;
@@ -62,19 +59,15 @@ int32_t halt(uint8_t status) {
 
     // We subtract -1 to get the parent process.
     // This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
-    uint32_t kernel_base = _8MB;                                // 8MB is base of kernel
-    uint32_t PCB_offset = (process_number) * _8KB;
-    uint32_t program_kernel_base = kernel_base - PCB_offset;    // find where program stack starts
-    pcb_t* PCB_base_parent = (pcb_t*) program_kernel_base;      // cast it to PCB so start
+    uint32_t pcb_addr = KERNEL_BASE - process_number * PCB_OFFSET;  // find where program stack starts
+    pcb_t* PCB_base_parent = (pcb_t*) pcb_addr;                     // cast it to PCB so start
 
-    kernel_base = _8MB;                                         // 8MB is base of kernel
-    PCB_offset = (process_number+1) * _8KB;
-    program_kernel_base = kernel_base - PCB_offset;             // find where program stack starts
-    pcb_t* PCB_base_self = (pcb_t*) program_kernel_base;        // cast it to PCB so start
+    pcb_addr = KERNEL_BASE - (process_number+1) * PCB_OFFSET;       // find where program stack starts
+    pcb_t* PCB_base_self = (pcb_t*) pcb_addr;                       // cast it to PCB so start
 
     /* Restore parent's paging */
-    uint32_t parent_user_mem_physical = PCB_base_parent->self_page;
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = parent_user_mem_physical | USER_PAGE_SET_BITS;
+    uint32_t parent_physical_mem = PCB_base_parent->self_page;
+    page_directory[(USER_MEM_V >> ALIGN_4MB)] = parent_physical_mem | USER_PAGE_SET_BITS;
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
     // Flush the TLB (flushing happens whenever we reload CR3)
@@ -105,10 +98,7 @@ int32_t halt(uint8_t status) {
         "movl %0, %%esp;"
         "movl %1, %%ebp;"
         "movl %2, %%eax;"
-        // "jmp SYS_HALT_RETURN_POINT;"
-        // "pushl %%ebp;"
-        "leave;"
-        "ret;"
+        "jmp SYS_HALT_RETURN_POINT;"
         : /*no outputs*/
         : "r" (PCB_base_self->self_esp), "r" (PCB_base_self->self_ebp), "r" (status_32)
         : "esp", "ebp"
@@ -130,7 +120,7 @@ int32_t execute(const uint8_t* command) {
     // printf("System call EXECUTE.\n");
     uint8_t i, j, nbytes, arg_nbytes, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
     uint8_t * data_buf;
-    uint32_t entry_pt_addr, user_mem_physical, kernel_base, PCB_offset, program_kernel_base, new_esp0, self_ebp, self_esp;
+    uint32_t entry_pt_addr, user_prog_physical_mem, pcb_addr, new_esp0, self_ebp, self_esp;
     dentry_t cmd_dentry;
     pcb_t* PCB_base;
     fd_t* fd_array;
@@ -200,8 +190,8 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
     // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
-    user_mem_physical = USER_MEM_P + process_number * USER_PROG_SIZE;
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_mem_physical | USER_PAGE_SET_BITS;
+    user_prog_physical_mem = USER_MEM_P + process_number * USER_PROG_SIZE;
+    page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_prog_physical_mem | USER_PAGE_SET_BITS;
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
     // Flush the TLB (flushing happens whenever we reload CR3)
@@ -222,16 +212,14 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 5: Create PCB / open FDs ***********/
     // TODO: Limit # of processes to 6.
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
-    kernel_base = _8MB;                                     // 8MB is base of kernel
-    PCB_offset = (process_number + 1) * _8KB;   // We do '+1' here as we only increment process_number below
-    program_kernel_base = kernel_base - PCB_offset;         //find where program stack starts
-    PCB_base = (pcb_t*) program_kernel_base;                //cast it to PCB so start of program stack contains PCB.
-    new_esp0 = kernel_base - (process_number * _8KB) - BYTES_4;
+    pcb_addr = KERNEL_BASE - (process_number+1)*PCB_OFFSET;     // find where program stack starts
+    PCB_base = (pcb_t*) pcb_addr;                               // cast it to PCB so start of program stack contains PCB.
+    new_esp0 = KERNEL_BASE - (process_number * PCB_OFFSET) - BYTES_4;
 
     PCB_base->status = TASK_RUNNING;
-    PCB_base->pid = process_number;            // Process ID
-    PCB_base->self_k_stack = new_esp0; // Store it's own kernel stack
-    PCB_base->self_page = user_mem_physical; // Store it's own user stack
+    PCB_base->pid = process_number;                 // Process ID
+    PCB_base->self_k_stack = new_esp0;              // Store it's own kernel stack
+    PCB_base->self_page = user_prog_physical_mem;   // Store it's own user stack
 
     fd_array = PCB_base->fd_arr;
     for (i = 0 ; i < MAX_FILES ; i++) {  // initalize file descriptor array
@@ -345,7 +333,7 @@ int32_t execute(const uint8_t* command) {
         "pushl %3;"
         "pushl %4;"         /* User program/function entry point */
         "iret;"
-        // "SYS_HALT_RETURN_POINT: ;"
+        "SYS_HALT_RETURN_POINT: ;"
 
         : /*no outputs*/
         : "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr32), "r" (entry_pt_addr)
@@ -380,14 +368,11 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
 
     if (PCB_base->fd_arr[fd].fotp != NULL && PCB_base->fd_arr[fd].fotp[FOTP_READ]) {
         return (PCB_base->fd_arr[fd].fotp[FOTP_READ])(fd, buf, nbytes);
-
-
     }
     return -1;
 
     //NOTE: .fileName in the struct is just there so that this function can return 0... filname
-    /// TODO: Remove the above line before demo...
-  }
+}
 
 /*
  * write
@@ -499,7 +484,6 @@ int32_t close (int32_t fd) {
     // set the flag to not in use
     PCB_base->fd_arr[fd].in_use_flag = FILE_NOT_IN_USE;
 
-
     return 0; // return success
 }
 
@@ -535,24 +519,34 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
  *   SIDE EFFECTS: none
  */
 int32_t vidmap (uint8_t** screen_start) {
-    printf("System call VIDMAP.\n");
-    //if (screen_start == NULL || screen_start == USER_PROG_SIZE) return -1;
-    // something related to paging
+    // printf("System call VIDMAP.\n");    
+    // Check for bad pointers
+    uint32_t screen_start_casted = (uint32_t) screen_start;
+    if (screen_start_casted == 0x0) return -1;
+    if (screen_start_casted >= KERNEL_TOP && screen_start_casted < KERNEL_BASE) return -1;
 
-    // user_mem_physical = USER_MEM_P + process_number * USER_PROG_SIZE;
-    // page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_mem_physical | USER_PAGE_SET_BITS;
+    // Set up new user-level paging
+    page_directory[(USER_VIDEO_MEM >> ALIGN_4MB)] = ((uint32_t) vidmap_ptable) | 0x7; // 4 KiB page, user access, r/w access, present
+    
+    uint16_t i;
+    for (i = 0; i < PAGE_SIZE; i++) {
+        vidmap_ptable[i] = 0x6; // 4 KiB page, user access, r/w access, not present
+    }
+    vidmap_ptable[0] = (VIDEO_MEM) | 0x7; // 4 KiB page, user access, r/w access, present
 
-    // Tadas pointed out that we don't need to reload page_directory into CR3
-    // Flush the TLB (flushing happens whenever we reload CR3)
-    // asm volatile(
-        // "movl %%cr3, %%eax;"
-        // "movl %%eax, %%cr3;"
-        //: /* no outputs */
-        // : /* no inputs */
-        // : "eax"
-    // );
+    // Flush the TLB
+    asm volatile(
+        "movl %%cr3, %%eax;"
+        "movl %%eax, %%cr3;"
+        : /*no outputs*/
+        : /*no inputs*/
+        : "eax"
+    );
 
-
+    // Finally: Reassign screen_start to point to the USER_VIDEO_MEMORY
+    // The idea is to assign some address outside the already allocated space to be used as a pointer to video memory
+    // Sean: I choose 136 MiB as a starting point
+    *screen_start = (uint8_t*) (USER_VIDEO_MEM);
     return 0;
 }
 /*
@@ -597,10 +591,9 @@ int32_t sigreturn (void) {
 pcb_t* get_PCB_base(int8_t process_num) {
     if (process_num < 0 || process_num >= MAX_PROCESSES) return NULL;
 
-    uint32_t kernel_base = _8MB; // 8MB is base of kernel
-    uint32_t PCB_offset = process_num * _8KB;
-    uint32_t program_kernel_base = kernel_base - PCB_offset; // find where program stack starts
-    pcb_t* PCB_base = (pcb_t*) program_kernel_base; // cast it to PCB so start of program stack contains PCB.
+    // We don't do -1 here because process_num here represents the # of the NEXT available process
+    uint32_t pcb_addr = KERNEL_BASE - process_num * PCB_OFFSET; // find where program stack starts
+    pcb_t* PCB_base = (pcb_t*) pcb_addr; // cast it to PCB so start of program stack contains PCB.
 
     return PCB_base;
 }
