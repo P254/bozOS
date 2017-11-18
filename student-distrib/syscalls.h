@@ -29,7 +29,7 @@
 #define MAX_FILE_POS 5
 
 #define KERNEL_BASE (8 << ALIGN_1MB)
-#define PCB_OFFSET (8 << ALIGN_1KB)
+#define PCB_OFFSET  (8 << ALIGN_1KB)
 
 // User memory paging
 #define USER_PROG_LOC 0x08048000
@@ -42,13 +42,7 @@
 #define MAX_PROCESSES 6
 
 // 4 MiB page, user & supervisor-access, r/w access, present
-#define USER_PAGE_SET_BITS 0x87 
-
-// Stuff for the vidmap
-#define VIDEO_MEM   0xB8000
-#define NUM_COLS    80
-#define NUM_ROWS    25
-#define KERNEL_TOP  (4 << ALIGN_1MB)
+#define USER_PAGE_SET_BITS  0x87
 
 // Taken from "../syscalls/ece391sysnum.h"
 #define SYS_HALT        1
@@ -70,6 +64,12 @@
 #define _RTC_        0
 #define _DIR_        1
 #define _FILE_       2
+
+// Stuff for the vidmap
+#define KERNEL_TOP          (4 << ALIGN_1MB)
+#define USER_VIDEO_MEM      (136 << ALIGN_1MB)
+#define SYS_VIDEO_MEM       0xB8000
+uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB))); 
 
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();

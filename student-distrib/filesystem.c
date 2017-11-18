@@ -37,7 +37,7 @@ int32_t fopen(const uint8_t *fname) {
  *   SIDE EFFECTS: nothing
  */
 int32_t fclose(uint8_t *fname) {
-    return -1;
+    return 0;
 }
 /*
  * fread
@@ -48,10 +48,18 @@ int32_t fclose(uint8_t *fname) {
  *   RETURN VALUE:
  *   SIDE EFFECTS: changes the buffer
  */
-// int32_t fread(uint8_t* fname, uint32_t offset, uint8_t* buf, uint32_t length)
-int32_t fread(uint8_t *fname, uint8_t *buf, int32_t nbytes)
-{
-    return 0;
+int32_t fread(uint8_t fd, uint8_t *buf, int32_t nbytes) {
+    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t inode_number = PCB_base->fd_arr[fd].inode_number;
+    uint32_t file_position = PCB_base->fd_arr[fd].file_position;
+
+    if (file_position >= inodes[inode_number].length) return 0;
+
+    int status = read_data(inode_number, file_position, buf, nbytes);
+    if (status == -1) return -1;
+    PCB_base->fd_arr[fd].file_position += status;
+
+    return status;
 }
 /*
  * fwrite
@@ -202,7 +210,7 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length
     // Calculate memory location w/ offset
     mem_location_off = offset + length;
     // Update # bytes we need to copy if necessary
-    if (mem_location_off > blocks_used * BLK_SZ) bytes_to_copy -= offset;
+    if (mem_location_off > blocks_used * BLK_SZ) bytes_to_copy =file_length - offset;
 
     // Calculate the index of start and end blocks
     start_block =  offset/BLK_SZ ;
