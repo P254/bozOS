@@ -298,19 +298,20 @@ void add_char_to_buf(unsigned char c) {
         x = get_screen_x(); //get screen coordinates
         y = get_screen_y();
 
-        if (y == NUM_ROWS-1 && buf_len == NUM_COLS-1) { //if we are at bottom of screen
-            video_scroll(); //scroll down
-            set_screen_y(y-1); //set "cursor" to last line
-        }
-
-        else if (c == '\n') { // if new line
+        if (c == '\n') { // if new line
             putc('\n'); //print new line
-            if (buf_len >= NUM_COLS) putc('\n'); //if we have an extended logical string, print another new line
+            if ((buf_len + x) >= NUM_COLS) putc('\n'); //if we have an extended logical string, print another new line
+        }
+        else if (c != '\n') { // if not new line
+            // calculate the index that we should write the character to
+            add_idx = convert_to_vid_idx(x, y, buf_len);   
+            // write the character from the buffer to video mem
+            *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
         }
 
-        else if(c != '\n') { //if not new line
-          add_idx = convert_to_vid_idx(x, y, buf_len); // calculate the index that we should write the character to
-          *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len]; //write the character from the buffer to video mem
+        if (y == NUM_ROWS-1 && (buf_len + x) == NUM_COLS-1) { // if we are at bottom-right of screen
+            video_scroll(); // scroll down
+            set_screen_y(y-1); // set "cursor" to second-last line
         }
     }
     // Deals with the case when the buffer is full
