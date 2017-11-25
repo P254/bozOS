@@ -41,7 +41,8 @@ void rtc_handler(void) {
     rtc_count++;
     #endif
 
-    send_eoi(RTC_IRQ_ADDR); //end 8th IRQ
+    interrupt_flag = 1;     // set the interrupt flag
+    send_eoi(RTC_IRQ_ADDR); // end 8th IRQ
     outb(REG_C, RTC_REG);   // select register C
     inb(RTC_REG + 1);       // just throw away contents, we must do this otherwise IRQ8 will never be called again.
 }
@@ -55,10 +56,8 @@ void rtc_handler(void) {
  *   SIDE EFFECTS: none
  */
 int32_t rtc_read (int32_t fd, void* buf, int32_t nbytes){
-    while(interrupt_flag != 0) {
-      // means interrupt_flag = 1 so do nothing until it changes
-    }
-    interrupt_flag = 0;
+    while (interrupt_flag == 0);    // Wait (block) for flag to be set by rtc_handler
+    interrupt_flag = 0;             // Reset the flag 
     return 0;
 }
 
