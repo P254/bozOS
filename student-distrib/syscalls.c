@@ -9,22 +9,22 @@
 /*
  * ----------- Notes for everyone: -----------
  * It seems like CP4 is (mostly) done. Hooray!
- * Before we start working on scheduling for CP5, I'd like everyone to work on cleaning up the code. 
+ * Before we start working on scheduling for CP5, I'd like everyone to work on cleaning up the code.
  * This would mean adding necessary comments, reducing unnecessary logic, etc.
- * I'll think of a better way to manage the process_number, hopefully we can have a more robust approach. 
- * 
+ * I'll think of a better way to manage the process_number, hopefully we can have a more robust approach.
+ *
  * Some other things that need to be done:
  * 1) Add support for function keys so we can use multiple terminals. Also the 'TAB' key prints weird characters, that needs to be fixed.
- * 2) Redo the FOTP setup as per Andrew's recommendation. 
- * 
- * Have a good break. 
+ * 2) Redo the FOTP setup as per Andrew's recommendation.
+ *
+ * Have a good break.
  * Sean 11/17/17
  * --------------------------------------------
  */
 
 /* File Operations Table Pointers */
 // TODO: Andrew Sun suggested using a struct instead of this array. Kush, you I'd suggest you look into this.
-// Also replace 'NULL' with a generic function that does nothing. 
+// Also replace 'NULL' with a generic function that does nothing.
 generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, NULL, (generic_fp*) terminal_close};
 generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) terminal_write, (generic_fp*) terminal_close};
 
@@ -40,7 +40,21 @@ generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (gene
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t halt(uint8_t status) {
+int32_t halt(uint32_t status) {
+	uint8_t stat= status;
+	wrapper_halt(stat);
+	return status;
+}
+
+/*
+ * wrapper_halt
+ *   DESCRIPTION: Handler for 'halt' system call.
+ *   INPUTS: status -- ???
+ *   OUTPUTS: none
+ *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
+ *   SIDE EFFECTS: none
+ */
+int32_t wrapper_halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
 
@@ -519,7 +533,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
  *   SIDE EFFECTS: none
  */
 int32_t vidmap (uint8_t** screen_start) {
-    // printf("System call VIDMAP.\n");    
+    // printf("System call VIDMAP.\n");
     // Check for bad pointers
     uint32_t screen_start_casted = (uint32_t) screen_start;
     if (screen_start_casted == 0x0) return -1;
@@ -527,7 +541,7 @@ int32_t vidmap (uint8_t** screen_start) {
 
     // Set up new user-level paging
     page_directory[(USER_VIDEO_MEM >> ALIGN_4MB)] = ((uint32_t) vidmap_ptable) | 0x7; // 4 KiB page, user access, r/w access, present
-    
+
     uint16_t i;
     for (i = 0; i < PAGE_SIZE; i++) {
         vidmap_ptable[i] = 0x6; // 4 KiB page, user access, r/w access, not present

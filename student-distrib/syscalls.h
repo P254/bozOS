@@ -74,7 +74,7 @@
 #define KERNEL_TOP          (4 << ALIGN_1MB)
 #define USER_VIDEO_MEM      (136 << ALIGN_1MB)
 #define SYS_VIDEO_MEM       0xB8000
-uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB))); 
+uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB)));
 
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
@@ -92,7 +92,7 @@ typedef struct fd {
 typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
-    fd_t fd_arr[8];         // File descriptor array 
+    fd_t fd_arr[8];         // File descriptor array
     uint32_t self_esp;      // Pointer to own ESP (will be used by child process later)
     uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
     uint32_t self_k_stack;
@@ -101,7 +101,8 @@ typedef struct pcb {
 
 
 /* Forward declarations */
-int32_t halt(uint8_t status);
+int32_t halt(uint32_t status);
+int32_t wrapper_halt(uint8_t status);
 int32_t execute (const uint8_t* command);
 int32_t read (int32_t fd, void* buf, int32_t nbytes);
 int32_t write (int32_t fd, const void* buf, int32_t nbytes);
