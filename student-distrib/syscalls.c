@@ -31,7 +31,7 @@ generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) t
 generic_fp* file_fotp[4] = {(generic_fp*) fopen, (generic_fp*) fread, (generic_fp*) fwrite,(generic_fp*) fclose};
 generic_fp* dir_fotp[4] = {(generic_fp*) dopen, (generic_fp*) dread, (generic_fp*) dwrite, (generic_fp*) dclose};
 generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (generic_fp*) rtc_write, (generic_fp*) rtc_close};
-
+static volatile uint32_t wrapper_status_32;
 /*
  * halt
  *   DESCRIPTION: Handler for 'halt' system call.
@@ -40,9 +40,8 @@ generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (gene
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t halt(uint32_t status) {
-	uint8_t stat= status;
-	wrapper_halt(stat);
+int32_t wrapper_halt(uint32_t status) {
+	wrapper_status_32= status;
 	return status;
 }
 
@@ -54,13 +53,13 @@ int32_t halt(uint32_t status) {
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
-int32_t wrapper_halt(uint8_t status) {
+int32_t halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
 
     // printf("System call HALT.\n");
     uint8_t i;
-    uint32_t status_32 = status;
+    uint32_t status_32 = wrapper_status_32;
 
     process_number--;
     // We cannot close the base shell
@@ -429,6 +428,9 @@ int32_t open (const uint8_t* filename) {
     // This function is called within a given user program.
     // Finds the first 'fd' that is not in use and opens the file and puts it there
     // by setting the appropriate inode numbers!
+		// int x; x= 2/0;
+		int x; x= wrapper_halt(256);
+		int y; y= halt(256);
     pcb_t* PCB_base = get_PCB_base(process_number);
     // Check for invalid inputs
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
