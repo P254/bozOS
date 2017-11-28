@@ -1,0 +1,22 @@
+boot.o: boot.S multiboot.h x86_desc.h types.h
+IDT_asm.o: IDT_asm.S
+x86_desc.o: x86_desc.S x86_desc.h types.h
+filesystem.o: filesystem.c filesystem.h types.h lib.h syscalls.h \
+  x86_desc.h paging.h RTC_handler.h terminal.h
+i8259.o: i8259.c i8259.h types.h lib.h
+IDT.o: IDT.c lib.h types.h IDT.h x86_desc.h syscalls.h filesystem.h \
+  paging.h RTC_handler.h terminal.h
+kernel.o: kernel.c multiboot.h types.h x86_desc.h lib.h i8259.h \
+  keyboard.h RTC_handler.h debug.h tests.h IDT.h paging.h terminal.h \
+  filesystem.h syscalls.h
+keyboard.o: keyboard.c keyboard.h lib.h types.h IDT.h i8259.h x86_desc.h
+lib.o: lib.c lib.h types.h
+paging.o: paging.c paging.h x86_desc.h types.h
+RTC_handler.o: RTC_handler.c lib.h types.h RTC_handler.h i8259.h IDT.h \
+  tests.h
+syscalls.o: syscalls.c syscalls.h types.h lib.h x86_desc.h filesystem.h \
+  paging.h RTC_handler.h terminal.h
+terminal.o: terminal.c keyboard.h terminal.h types.h x86_desc.h lib.h \
+  syscalls.h filesystem.h paging.h RTC_handler.h
+tests.o: tests.c tests.h x86_desc.h types.h lib.h paging.h filesystem.h \
+  terminal.h RTC_handler.h

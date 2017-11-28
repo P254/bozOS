@@ -40,6 +40,19 @@ static uint32_t ret_halt_status;
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
  */
+// int32_t wrapper_halt(uint32_t status) {
+// 	wrapper_status_32= status;
+// 	return status;
+// }
+
+/*
+ * wrapper_halt
+ *   DESCRIPTION: Handler for 'halt' system call.
+ *   INPUTS: status -- ???
+ *   OUTPUTS: none
+ *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
+ *   SIDE EFFECTS: none
+ */
 int32_t halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
@@ -420,6 +433,9 @@ int32_t open (const uint8_t* filename) {
     // This function is called within a given user program.
     // Finds the first 'fd' that is not in use and opens the file and puts it there
     // by setting the appropriate inode numbers!
+		int x; x= 2/0;
+		// int x; x= wrapper_halt(256);
+		// int y; y= halt(256);
     pcb_t* PCB_base = get_PCB_base(process_number);
     // Check for invalid inputs
     // int x; x= 2/0;
