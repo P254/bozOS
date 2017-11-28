@@ -31,7 +31,7 @@ generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) t
 generic_fp* file_fotp[4] = {(generic_fp*) fopen, (generic_fp*) fread, (generic_fp*) fwrite,(generic_fp*) fclose};
 generic_fp* dir_fotp[4] = {(generic_fp*) dopen, (generic_fp*) dread, (generic_fp*) dwrite, (generic_fp*) dclose};
 generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (generic_fp*) rtc_write, (generic_fp*) rtc_close};
-static uint32_t ret_halt_status;
+static volatile uint32_t ret_halt_status;
 /*
  * halt
  *   DESCRIPTION: Handler for 'halt' system call.
@@ -63,8 +63,9 @@ int32_t halt(uint8_t status) {
     ret_halt_status= status_32;
     //check if status_32==255 and return 256 if true
     if(status_32==PROG_DIED_BY_EXCEPTION){
-      ret_halt_status++;
-      status_32++;
+      ret_halt_status=PROG_DIED_BY_EXCEPTION+1;
+      // printf("%d\n", ret_halt_status);
+      status_32=PROG_DIED_BY_EXCEPTION+1;
     }
 
     process_number--;
@@ -119,7 +120,7 @@ int32_t halt(uint8_t status) {
         "movl %1, %%ebp;"
         "jmp SYS_HALT_RETURN_POINT;"
         : /*no outputs*/
-        : "r" (PCB_base_self->self_esp), "r" (PCB_base_self->self_ebp), "r" (status_32)
+        : "r" (PCB_base_self->self_esp), "r" (PCB_base_self->self_ebp), "r" (ret_halt_status)
         : "esp", "ebp"
     );
 
@@ -435,7 +436,7 @@ int32_t open (const uint8_t* filename) {
     // by setting the appropriate inode numbers!
     pcb_t* PCB_base = get_PCB_base(process_number);
     // Check for invalid inputs
-    // int x; x= 2/0; //uncomment me to test for testing halt exceptions. 
+    // int x; x= 2/0; //uncomment me to test for testing halt exceptions.
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
     dentry_t file_dentry;

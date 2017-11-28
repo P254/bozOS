@@ -101,7 +101,7 @@ void print_error_code(uint32_t code) {
 void handle_e0() {
     printf("Interrupt 0 - Divide Error Exception (#DE) \n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -115,7 +115,7 @@ void handle_e0() {
 void handle_e1() {
     printf("Interrupt 1 - Debug Exception (#DB) \n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -129,7 +129,7 @@ void handle_e1() {
 void handle_e2() {
     printf("Interrupt 2 - NMI Interrupt\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -143,7 +143,7 @@ void handle_e2() {
 void handle_e3() {
     printf("Interrupt 3 - Breakpoint Exception (#BP)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -157,7 +157,7 @@ void handle_e3() {
 void handle_e4() {
     printf("Interrupt 4 - Overflow Exception (#OF)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -171,7 +171,7 @@ void handle_e4() {
 void handle_e5() {
     printf("Interrupt 5 - BOUND Range Exceeded Exception (#BR)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -185,7 +185,7 @@ void handle_e5() {
 void handle_e6() {
     printf("Interrupt 6 - Invalid Opcode Exception (#UD)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -199,7 +199,7 @@ void handle_e6() {
 void handle_e7() {
     printf("Interrupt 7 - Device Not Available Exception (#NM)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -214,7 +214,7 @@ void handle_e8(uint32_t error_code) {
     printf("Interrupt 8 - Double Fault Exception (#DF)\n");
     printf("Error code (hex): %x\n", error_code);
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -230,7 +230,7 @@ void handle_e9() {
     // Intel reserved; do not use. Recent IA-32 processors do not generate this exception.
     printf("Interrupt 9 - Coprocessor Segment Overrun\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -244,7 +244,7 @@ void handle_e9() {
 void handle_e10() {
     printf("Interrupt 10 - Invalid TSS Exception (#TS)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -259,7 +259,7 @@ void handle_e11(uint32_t error_code) {
     printf("Interrupt 11 - Segment Not Present (#NP)\n");
     printf("Error code (hex): %x\n", error_code);
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -274,7 +274,7 @@ void handle_e12(uint32_t error_code) {
     printf("Interrupt 12 - Stack Fault Exception (#SS)\n");
     printf("Error code (hex): %x\n", error_code);
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -289,7 +289,7 @@ void handle_e13(uint32_t error_code) {
     printf("Interrupt 13 - General Protection Exception (#GP)\n");
     printf("Error code (hex): %x\n", error_code);
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -311,7 +311,7 @@ void handle_e14(uint32_t error_code) {
     printf("Interrupt 14 - Page-Fault Exception (#PF) at address 0x%x\n", addr);
     printf("Error code (hex): %x\n", error_code);
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -325,7 +325,7 @@ void handle_e14(uint32_t error_code) {
 void handle_e15() {
     printf("Interrupt 15 - Reserved\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -339,7 +339,7 @@ void handle_e15() {
 void handle_e16() {
     printf("Interrupt 16 - x87 FPU Floating-Point Error (#MF)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -354,7 +354,7 @@ void handle_e17(uint32_t error_code) {
     printf("Interrupt 17 - Alignment Check Exception (#AC)\n");
     printf("Error code (hex): %x\n", error_code);
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -368,7 +368,7 @@ void handle_e17(uint32_t error_code) {
 void handle_e18() {
     printf("Interrupt 18 - Machine-Check Exception (#MC)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -382,7 +382,7 @@ void handle_e18() {
 void handle_e19() {
     printf("Interrupt 19 - SIMD Floating-Point Exception (#XF)\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -396,5 +396,5 @@ void handle_e19() {
 void handle_default() {
     printf("Default interrupt handler called. Nothing specified here.\n");
     // wrapper_halt(PROG_DIED_BY_EXCEPTION);
-    halt(PROG_DIED_BY_EXCEPTION-1);
+    halt(PROG_DIED_BY_EXCEPTION);
 }
