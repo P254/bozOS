@@ -32,23 +32,11 @@ generic_fp* file_fotp[4] = {(generic_fp*) fopen, (generic_fp*) fread, (generic_f
 generic_fp* dir_fotp[4] = {(generic_fp*) dopen, (generic_fp*) dread, (generic_fp*) dwrite, (generic_fp*) dclose};
 generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (generic_fp*) rtc_write, (generic_fp*) rtc_close};
 static volatile uint32_t ret_halt_status;
+
 /*
  * halt
  *   DESCRIPTION: Handler for 'halt' system call.
- *   INPUTS: status -- ???
- *   OUTPUTS: none
- *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
- *   SIDE EFFECTS: none
- */
-// int32_t wrapper_halt(uint32_t status) {
-// 	wrapper_status_32= status;
-// 	return status;
-// }
-
-/*
- * wrapper_halt
- *   DESCRIPTION: Handler for 'halt' system call.
- *   INPUTS: status -- ???
+ *   INPUTS: status -- status for halt: 256 for exception, !0 for abnormal exit 
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
@@ -57,14 +45,13 @@ int32_t halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
 
-    // printf("System call HALT.\n");
     uint8_t i;
     uint32_t status_32 = status;
     ret_halt_status= status_32;
+    
     //check if status_32==255 and return 256 if true
     if(status_32==PROG_DIED_BY_EXCEPTION){
       ret_halt_status=PROG_DIED_BY_EXCEPTION+1;
-      // printf("%d\n", ret_halt_status);
       status_32=PROG_DIED_BY_EXCEPTION+1;
     }
 
@@ -510,8 +497,8 @@ int32_t close (int32_t fd) {
 /*
  * getargs
  *   DESCRIPTION: Handler for 'getargs' system call.
- *   INPUTS: buf -- ???
- *           nbytes -- ???
+ *   INPUTS: buf -- buffer to copy args from
+ *           nbytes -- number of bytes to copy
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
@@ -533,7 +520,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
 /*
  * vidmap
  *   DESCRIPTION: Handler for 'vidmap' system call.
- *   INPUTS: screen_start -- ???
+ *   INPUTS: double pointer to the start screen  
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
