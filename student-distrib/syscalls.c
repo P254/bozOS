@@ -9,29 +9,29 @@
 /*
  * ----------- Notes for everyone: -----------
  * It seems like CP4 is (mostly) done. Hooray!
- * Before we start working on scheduling for CP5, I'd like everyone to work on cleaning up the code. 
+ * Before we start working on scheduling for CP5, I'd like everyone to work on cleaning up the code.
  * This would mean adding necessary comments, reducing unnecessary logic, etc.
- * I'll think of a better way to manage the process_number, hopefully we can have a more robust approach. 
- * 
+ * I'll think of a better way to manage the process_number, hopefully we can have a more robust approach.
+ *
  * Some other things that need to be done:
  * 1) Add support for function keys so we can use multiple terminals. Also the 'TAB' key prints weird characters, that needs to be fixed.
- * 2) Redo the FOTP setup as per Andrew's recommendation. 
- * 
- * Have a good break. 
+ * 2) Redo the FOTP setup as per Andrew's recommendation.
+ *
+ * Have a good break.
  * Sean 11/17/17
  * --------------------------------------------
  */
 
 /* File Operations Table Pointers */
 // TODO: Andrew Sun suggested using a struct instead of this array. Kush, you I'd suggest you look into this.
-// Also replace 'NULL' with a generic function that does nothing. 
+// Also replace 'NULL' with a generic function that does nothing.
 generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, NULL, (generic_fp*) terminal_close};
 generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) terminal_write, (generic_fp*) terminal_close};
 
 generic_fp* file_fotp[4] = {(generic_fp*) fopen, (generic_fp*) fread, (generic_fp*) fwrite,(generic_fp*) fclose};
 generic_fp* dir_fotp[4] = {(generic_fp*) dopen, (generic_fp*) dread, (generic_fp*) dwrite, (generic_fp*) dclose};
 generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (generic_fp*) rtc_write, (generic_fp*) rtc_close};
-
+static uint32_t ret_halt_status;
 /*
  * halt
  *   DESCRIPTION: Handler for 'halt' system call.
@@ -47,6 +47,12 @@ int32_t halt(uint8_t status) {
     // printf("System call HALT.\n");
     uint8_t i;
     uint32_t status_32 = status;
+    ret_halt_status= status_32;
+    //check if status_32==255 and return 256 if true
+    if(status_32==PROG_DIED_BY_EXCEPTION){
+      ret_halt_status++;
+      status_32++;
+    }
 
     process_number--;
     // We cannot close the base shell
@@ -95,9 +101,9 @@ int32_t halt(uint8_t status) {
     tss.esp0 = PCB_base_parent->self_k_stack;   // restore to pointer to parent_k_stack
 
     asm volatile(
+        "movl %2, %%eax;"
         "movl %0, %%esp;"
         "movl %1, %%ebp;"
-        "movl %2, %%eax;"
         "jmp SYS_HALT_RETURN_POINT;"
         : /*no outputs*/
         : "r" (PCB_base_self->self_esp), "r" (PCB_base_self->self_ebp), "r" (status_32)
@@ -105,7 +111,7 @@ int32_t halt(uint8_t status) {
     );
 
     // We should never reach here
-    return status;
+    return status_32;
 }
 
 /*
@@ -339,8 +345,7 @@ int32_t execute(const uint8_t* command) {
         : "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr32), "r" (entry_pt_addr)
         : "eax"
     );
-
-    return 0;
+    return ret_halt_status;
 }
 
 /*
@@ -417,6 +422,7 @@ int32_t open (const uint8_t* filename) {
     // by setting the appropriate inode numbers!
     pcb_t* PCB_base = get_PCB_base(process_number);
     // Check for invalid inputs
+    // int x; x= 2/0;
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
     dentry_t file_dentry;
@@ -519,7 +525,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
  *   SIDE EFFECTS: none
  */
 int32_t vidmap (uint8_t** screen_start) {
-    // printf("System call VIDMAP.\n");    
+    // printf("System call VIDMAP.\n");
     // Check for bad pointers
     uint32_t screen_start_casted = (uint32_t) screen_start;
     if (screen_start_casted == 0x0) return -1;
@@ -527,7 +533,7 @@ int32_t vidmap (uint8_t** screen_start) {
 
     // Set up new user-level paging
     page_directory[(USER_VIDEO_MEM >> ALIGN_4MB)] = ((uint32_t) vidmap_ptable) | 0x7; // 4 KiB page, user access, r/w access, present
-    
+
     uint16_t i;
     for (i = 0; i < PAGE_SIZE; i++) {
         vidmap_ptable[i] = 0x6; // 4 KiB page, user access, r/w access, not present

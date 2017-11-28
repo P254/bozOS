@@ -30,7 +30,7 @@
 #define FILE_IN_USE 1
 #define FILE_NOT_IN_USE 0
 #define MAX_FILES 8
-
+#define PROG_DIED_BY_EXCEPTION 255
 #define MAX_FILE_POS 5
 
 #define KERNEL_BASE (8 << ALIGN_1MB)
@@ -74,7 +74,7 @@
 #define KERNEL_TOP          (4 << ALIGN_1MB)
 #define USER_VIDEO_MEM      (136 << ALIGN_1MB)
 #define SYS_VIDEO_MEM       0xB8000
-uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB))); 
+uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB)));
 
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
@@ -92,7 +92,7 @@ typedef struct fd {
 typedef struct pcb {
     uint8_t status;         // Holds the status of the current process
     uint8_t pid;            // Process ID
-    fd_t fd_arr[8];         // File descriptor array 
+    fd_t fd_arr[8];         // File descriptor array
     uint32_t self_esp;      // Pointer to own ESP (will be used by child process later)
     uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
     uint32_t self_k_stack;
