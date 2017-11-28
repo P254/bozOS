@@ -31,7 +31,7 @@ generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) t
 generic_fp* file_fotp[4] = {(generic_fp*) fopen, (generic_fp*) fread, (generic_fp*) fwrite,(generic_fp*) fclose};
 generic_fp* dir_fotp[4] = {(generic_fp*) dopen, (generic_fp*) dread, (generic_fp*) dwrite, (generic_fp*) dclose};
 generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (generic_fp*) rtc_write, (generic_fp*) rtc_close};
-static uint32_t wrapper_status_32;
+static uint32_t ret_halt_status;
 /*
  * halt
  *   DESCRIPTION: Handler for 'halt' system call.
@@ -60,9 +60,13 @@ int32_t halt(uint8_t status) {
     // printf("System call HALT.\n");
     uint8_t i;
     uint32_t status_32 = status;
-		if (status_32==PROG_DIED_BY_EXCEPTION-1)
-			status_32++;
-		wrapper_status_32= status_32;
+    ret_halt_status= status_32;
+    //check if status_32==255 and return 256 if true
+    if(status_32==PROG_DIED_BY_EXCEPTION){
+      ret_halt_status++;
+      status_32++;
+    }
+
     process_number--;
     // We cannot close the base shell
     if (process_number <= 0) {
@@ -110,9 +114,9 @@ int32_t halt(uint8_t status) {
     tss.esp0 = PCB_base_parent->self_k_stack;   // restore to pointer to parent_k_stack
 
     asm volatile(
+        "movl %2, %%eax;"
         "movl %0, %%esp;"
         "movl %1, %%ebp;"
-        "movl %2, %%eax;"
         "jmp SYS_HALT_RETURN_POINT;"
         : /*no outputs*/
         : "r" (PCB_base_self->self_esp), "r" (PCB_base_self->self_ebp), "r" (status_32)
@@ -120,7 +124,7 @@ int32_t halt(uint8_t status) {
     );
 
     // We should never reach here
-    return status;
+    return status_32;
 }
 
 /*
@@ -354,8 +358,7 @@ int32_t execute(const uint8_t* command) {
         : "r" (user_ds_addr32), "r" (user_stack_addr), "r" (int_flag_bitmask), "r" (user_cs_addr32), "r" (entry_pt_addr)
         : "eax"
     );
-
-    return wrapper_status_32;
+    return ret_halt_status;
 }
 
 /*
@@ -435,6 +438,7 @@ int32_t open (const uint8_t* filename) {
 		// int y; y= halt(256);
     pcb_t* PCB_base = get_PCB_base(process_number);
     // Check for invalid inputs
+    // int x; x= 2/0;
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
     dentry_t file_dentry;

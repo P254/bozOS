@@ -30,7 +30,7 @@
 #define FILE_IN_USE 1
 #define FILE_NOT_IN_USE 0
 #define MAX_FILES 8
-#define PROG_DIED_BY_EXCEPTION 256
+#define PROG_DIED_BY_EXCEPTION 255
 #define MAX_FILE_POS 5
 
 #define KERNEL_BASE (8 << ALIGN_1MB)
