@@ -433,12 +433,9 @@ int32_t open (const uint8_t* filename) {
     // This function is called within a given user program.
     // Finds the first 'fd' that is not in use and opens the file and puts it there
     // by setting the appropriate inode numbers!
-		int x; x= 2/0;
-		// int x; x= wrapper_halt(256);
-		// int y; y= halt(256);
     pcb_t* PCB_base = get_PCB_base(process_number);
     // Check for invalid inputs
-    // int x; x= 2/0;
+    // int x; x= 2/0; //uncomment me to test for testing halt exceptions. 
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
     dentry_t file_dentry;
