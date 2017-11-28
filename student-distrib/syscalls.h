@@ -30,7 +30,7 @@
 #define FILE_IN_USE 1
 #define FILE_NOT_IN_USE 0
 #define MAX_FILES 8
-
+#define PROG_DIED_BY_EXCEPTION 256
 #define MAX_FILE_POS 5
 
 #define KERNEL_BASE (8 << ALIGN_1MB)
@@ -102,7 +102,7 @@ typedef struct pcb {
 
 /* Forward declarations */
 int32_t halt(uint8_t status);
-int32_t wrapper_halt(uint32_t status);
+// int32_t wrapper_halt(uint32_t status);
 int32_t execute (const uint8_t* command);
 int32_t read (int32_t fd, void* buf, int32_t nbytes);
 int32_t write (int32_t fd, const void* buf, int32_t nbytes);
