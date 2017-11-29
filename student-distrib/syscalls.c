@@ -496,7 +496,7 @@ int32_t close (int32_t fd) {
 /*
  * getargs
  *   DESCRIPTION: Handler for 'getargs' system call.
- *   INPUTS: buf -- buffer to copy args from
+ *   INPUTS: buf -- buffer to copy args to
  *           nbytes -- number of bytes to copy
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
@@ -509,7 +509,10 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
     pcb_t* PCB_base = get_PCB_base(process_number);
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
-    if (PCB_base->fd_arr[0].arg == NULL) return -1;
+    // check for empty argument
+    int8_t* input_arg = (int8_t*) PCB_base->fd_arr[0].arg;
+    if (input_arg == NULL || strlen(input_arg) == 0) return -1;
+
     // clear the buffer
     memset(buf,'\0',BUF_SIZE);
     memcpy(buf,PCB_base->fd_arr[0].arg,nbytes);
