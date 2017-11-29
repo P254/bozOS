@@ -69,18 +69,18 @@ void init_IDT() {
 
         if (i == SYS_CALL_ADDR) {
             // System call
-            set_IDT_wrapper(i, handle_syscall_asm); 
+            set_IDT_wrapper(i, handle_syscall_asm);
             idt[i].dpl = 3; // System call should have its DPL set to 3 so that it is accessible from user space via the 'int' instruction
-            idt[i].seg_selector = KERNEL_CS; 
+            idt[i].seg_selector = KERNEL_CS;
         }
     }
 }
 
-/* 
+/*
  * print_error_code
- *   DESCRIPTION: Prints the error code to the screen. 
+ *   DESCRIPTION: Prints the error code to the screen.
  *                Used only by exceptions  #8, #11, #12, #13, #14, #17, #30
- *   INPUTS: code -- error code 
+ *   INPUTS: code -- error code
  *   OUTPUTS: none
  *   RETURN VALUE: void
  *   SIDE EFFECTS: prints error code to the screen
@@ -289,10 +289,9 @@ void handle_e13(uint32_t error_code) {
 void handle_e14(uint32_t error_code) {
     // Grab CR2 register (tells us the page fault linear address)
     uint32_t addr;
-    asm volatile( 
+    asm volatile(
         "movl %%cr2, %0"
         : "=r" (addr)
-        : /* no inputs */
     );
     printf("Interrupt 14 - Page-Fault Exception (#PF) at address 0x%x\n", addr);
     printf("Error code (hex): %x\n", error_code);
@@ -336,7 +335,7 @@ void handle_e16() {
 void handle_e17(uint32_t error_code) {
     printf("Interrupt 17 - Alignment Check Exception (#AC)\n");
     printf("Error code (hex): %x\n", error_code);
-    halt(PROG_DIED_BY_EXCEPTION);    
+    halt(PROG_DIED_BY_EXCEPTION);
 }
 
 /*
@@ -377,4 +376,3 @@ void handle_default() {
     printf("Default interrupt handler called. Nothing specified here.\n");
     halt(PROG_DIED_BY_EXCEPTION);
 }
-
