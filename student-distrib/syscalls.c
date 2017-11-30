@@ -2,24 +2,9 @@
 #include "lib.h"
 #include "x86_desc.h"
 #include "filesystem.h"
-#include "paging.h"
 #include "RTC_handler.h"
 #include "terminal.h"
-
-/*
- * ----------- Notes for everyone: -----------
- * It seems like CP4 is (mostly) done. Hooray!
- * Before we start working on scheduling for CP5, I'd like everyone to work on cleaning up the code.
- * This would mean adding necessary comments, reducing unnecessary logic, etc.
- * I'll think of a better way to manage the process_number, hopefully we can have a more robust approach.
- *
- * Some other things that need to be done:
- * 1) Add support for function keys so we can use multiple terminals. Also the 'TAB' key prints weird characters, that needs to be fixed.
- *
- * Have a good break.
- * Sean 11/17/17
- * --------------------------------------------
- */
+#include "multi_term.h"
 
 /* File Operations Table Pointers */
 generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, NULL, (generic_fp*) terminal_close};

@@ -16,6 +16,7 @@
 #include "filesystem.h"
 #include "syscalls.h"
 #include "scheduling.h"
+#include "multi_term.h"
 
 #define RUN_TESTS       0
 
@@ -173,7 +174,7 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
-    execute((uint8_t*) "shell");
+    execute((uint8_t*) "shell"); // TODO: Replace with multi_term_init();
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

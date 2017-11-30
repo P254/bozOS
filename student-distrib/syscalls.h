@@ -2,14 +2,9 @@
 #define SYS_CALL_H
 
 #include "types.h"
-#include "syscalls.h"
-#include "lib.h"
-#include "x86_desc.h"
-#include "filesystem.h"
 #include "paging.h"
-#include "RTC_handler.h"
-#include "terminal.h"
 
+#define KB_BUF_SIZE 128
 #define BUF_SIZE 1024
 #define MIN_NAME_TEXT 4
 #define TXT ".txt"

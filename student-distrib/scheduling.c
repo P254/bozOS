@@ -6,6 +6,9 @@
 #include "IDT.h"
 #include "terminal.h"
 #include "lib.h"
+#include "syscalls.h"
+
+static uint8_t active_task_n;   // Global variable that holds the terminal # where the task is active
 
 /*
  * pit_init
@@ -17,12 +20,13 @@
  */
 void pit_init() {
     // Source: http://www.osdever.net/bkerndev/Docs/pit.htm
-    outb(0x36, CMD_REG);        // 0x36: channel 0 output, lobyte/hibyte access, operating mode 3, binary
+    outb(PIT_INIT_CMD, CMD_REG);        
     outb(SET_FREQ_L, CH0_PORT); // send low byte
     outb(SET_FREQ_H, CH0_PORT); // send high byte
     
     enable_irq(PIT_IRQ_NUM);    // enable IRQ line for PIT
     set_IDT_wrapper(SOFT_INT_START + PIT_IRQ_NUM, pit_handler_asm);
+    active_task_n = 0;
 }
 
 /*
@@ -34,13 +38,14 @@ void pit_init() {
  *   SIDE EFFECTS: Modifies the ESP, EBP, TSS and paging structure
  */
 void task_switch() {
-    uint8_t curr_term = 1; // TODO: Change this
-    uint8_t new_term = (curr_term % MAX_TERM_N) + MIN_TERM_N;
+    uint8_t new_task_n = (active_task_n % MAX_TERM_N) + MIN_TERM_N;
 
     // TODO: Complete this function
-    // printf("If this prints continuously, then we have the PIT set up right. Yay!\n");
-
+    
+    // pcb_t* active_task_pcb = 
+    // pcb_t* new_task_pcb = 
 
     // We want to block all other interrupts so that our task switch process is atomic
+    active_task_n = new_task_n;
     send_eoi(PIT_IRQ_NUM);  
 }

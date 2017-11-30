@@ -41,11 +41,10 @@
 #define ENTER_PRESSED 0x1C
 #define FN_PRESSED 0x63
 #define FN_RELEASE 0xE3
-#define F_ONE 0x3B
-#define F_TWO 0x3C
-#define F_THREE 0x3D
 
-
+#define FN_1 0x3B
+#define FN_2 0x3C
+#define FN_3 0x3D
 
 #define VIDEO       0xB8000
 #define NUM_COLS    80
