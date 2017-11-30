@@ -65,5 +65,6 @@ extern void handle_default_asm();
 extern void rtc_handler_asm();
 extern void keyboard_handler_asm();
 extern void handle_syscall_asm();
+extern void pit_handler_asm();
 
 #endif /* IDT_H */

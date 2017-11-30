@@ -15,6 +15,7 @@
 #include "terminal.h"
 #include "filesystem.h"
 #include "syscalls.h"
+#include "scheduling.h"
 
 #define RUN_TESTS       0
 
@@ -149,13 +150,14 @@ void entry(unsigned long magic, unsigned long addr) {
     module_t* mod = (module_t*)mbi->mods_addr;
     fs_init((uint32_t)mod->mod_start); /* Init filesystem */
 
-    i8259_init(); /* Init the PIC */
-    kb_init(); /* Init the keyboard */
-    rtc_init(); /* Init the RTC */
-    paging_init(); /* Init the paging */
-
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
+
+    i8259_init();   // PIC
+    kb_init();      // Keyboard
+    rtc_init();     // RTC
+    pit_init();     // PIT
+    paging_init();  // Paging
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
