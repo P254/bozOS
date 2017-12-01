@@ -4,7 +4,7 @@
 
 /* Global Variables */
 static uint8_t active_terminal;
-static term_t* terminal_table[TERM_3];
+static term_t terminal_table[TERM_3];
 
 /*
  * multi_term_init
@@ -45,8 +45,7 @@ pcb_t* get_PCB_tail(uint8_t terminal_n) {
  *   SIDE EFFECTS: none
  */
 term_t* get_active_terminal() {
-    // term_t* terminal_table[3] = {*term_1_struct, *term_2_struct, *term_3_struct};
-    return terminal_table[active_terminal];
+    return &terminal_table[active_terminal];
 }
 
 /*
