@@ -159,6 +159,7 @@ void entry(unsigned long magic, unsigned long addr) {
     rtc_init();     // RTC
     pit_init();     // PIT
     paging_init();  // Paging
+    multi_term_init(); // Multiple Terminals
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your

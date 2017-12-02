@@ -4,7 +4,7 @@
 
 /* Global Variables */
 static uint8_t active_terminal;
-static term_t terminal_table[TERM_3];
+static term_t terminal_table[TERM_SIZE];
 static enum pu_t process_usage[MAX_PROCESSES];
 
 /*
@@ -23,9 +23,8 @@ void multi_term_init() {
 
     // Hacky solution to get one terminal to work
     // TODO: Change this later
-    terminal_table[TERM_1 - 1].pcb_head = NULL;
+    terminal_table[TERM_1].pcb_head = NULL;
     
-    active_terminal = 1;
     // I find this to be a slight challenge
     switch_terminal(TERM_1);
 }
@@ -40,7 +39,7 @@ void multi_term_init() {
  */
 void switch_terminal(uint8_t new_term_n) {
     // Check for bad inputs
-    if (new_term_n < TERM_1 || new_term_n > TERM_3) return;
+    if (new_term_n > TERM_3) return;
     // Switch terminals only if we're not already in the same terminal
     if (new_term_n == active_terminal) return;
     
@@ -63,7 +62,7 @@ term_t* get_terminal(uint8_t terminal_n) {
     uint8_t n = (terminal_n == 0) ? active_terminal : terminal_n;
     
     // NOTE: This pointer is read-only
-    return &terminal_table[n-1]; // Indexing the terminal table is (0,1,2)
+    return &terminal_table[n]; 
 }
 
 /*
@@ -76,8 +75,8 @@ term_t* get_terminal(uint8_t terminal_n) {
  *   SIDE EFFECTS: none
  */
 void reset_pcb_head(uint8_t terminal_n) {
-    if (terminal_n < TERM_1 || terminal_n > TERM_3) return;
-    else terminal_table[terminal_n-1].pcb_head = NULL;
+    if (terminal_n > TERM_3) return;
+    else terminal_table[terminal_n].pcb_head = NULL;
 }
 
 /*
@@ -106,7 +105,7 @@ pcb_t* get_PCB_tail(uint8_t terminal_n) {
     if (terminal_n > TERM_3) return NULL;
     uint8_t n = (terminal_n == 0) ? active_terminal : terminal_n;
     
-    pcb_t* PCB_base = terminal_table[n-1].pcb_head; // Indexing the terminal table is (0,1,2)
+    pcb_t* PCB_base = terminal_table[n].pcb_head; 
     while (PCB_base->child_pcb != NULL) {
         PCB_base = PCB_base->child_pcb;
     }

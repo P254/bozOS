@@ -39,7 +39,7 @@ void pit_init() {
  *   SIDE EFFECTS: Modifies the ESP, EBP, TSS and paging structure
  */
 void task_switch() {
-    uint8_t new_task_n = 1; // TODO: Replace with (active_task_n % MAX_TERM_N) + MIN_TERM_N;
+    uint8_t new_task_n = 0; // TODO: Replace with (active_task_n % MAX_TERM_N);
 
     // TODO: Complete this function
     

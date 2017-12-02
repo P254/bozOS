@@ -5,9 +5,10 @@
 #include "syscalls.h"
 
 /*Magic Numbers*/
-#define TERM_1  1
-#define TERM_2  2
-#define TERM_3  3
+#define TERM_1      0
+#define TERM_2      1
+#define TERM_3      2
+#define TERM_SIZE   3
 
 enum pu_t {NOT_USED, IN_USE};
 

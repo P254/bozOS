@@ -4,9 +4,7 @@
 #define SCHEDULING_H
 
 /*Magic Numbers*/
-#define MIN_TERM_N      1
-#define MAX_TERM_N      3
-
+#define MAX_TERM_N      2
 #define CLOCK_RATE      100     // 100 Hz <--> 10 ms
 #define DEFAULT_FREQ    1193182 // From the documentation
 #define SET_FREQ_L      ((DEFAULT_FREQ / CLOCK_RATE) & 0xFF)
