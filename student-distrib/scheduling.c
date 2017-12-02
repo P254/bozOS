@@ -41,7 +41,15 @@ void pit_init() {
  */
 void task_switch() {
     // TODO: Complete this function
-    uint8_t new_task_n = (active_task_n+1) % MAX_TERM_N; 
+
+    // For use with mono-tasking
+    uint8_t new_task_n = get_active_terminal(); 
+    if (new_task_n == active_task_n) {
+        send_eoi(PIT_IRQ_NUM);
+        return;
+    }
+    // For use with multi-tasking
+    // uint8_t new_task_n = (active_task_n+1) % MAX_TERM_N; 
 
     // We want to block all other interrupts so that our task switch process is atomic
     /******* TASK SWITCH CODE BEGINS HERE ******/

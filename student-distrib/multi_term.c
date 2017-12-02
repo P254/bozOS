@@ -74,6 +74,12 @@ void switch_terminal(uint8_t new_terminal) {
     set_screen_y(terminal_table[new_terminal].y);
 
     active_terminal = new_terminal;
+
+    // Check if our terminal is empty - if yes, launch a new shell
+    pcb_t* pcb_head_ptr = get_PCB_tail(active_terminal);
+    if (pcb_head_ptr == NULL) {
+        execute((uint8_t*) "shell");
+    }
 }
 
 /*
@@ -120,6 +126,18 @@ void unset_process_usage(uint8_t pid) {
     process_usage[pid] = NOT_USED;
 }
 
+/*
+ * get_active_terminal
+ *   DESCRIPTION: Returns the # of the active terminal, for use as a mono-tasking synchronisation mechanism with scheduling.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: uint8_t -- # of the active terminal
+ *   SIDE EFFECTS: none
+ */
+uint8_t get_active_terminal() {
+    return active_terminal;
+}
+
 // TODO: Move all PCB-related things to a PCB.c file
 /*
  * get_PCB_tail
@@ -134,6 +152,8 @@ pcb_t* get_PCB_tail(uint8_t terminal_n) {
     uint8_t n = (terminal_n == 0) ? active_terminal : terminal_n;
     
     pcb_t* PCB_base = terminal_table[n].pcb_head; 
+    if (PCB_base == NULL) return NULL;
+    
     while (PCB_base->child_pcb != NULL) {
         PCB_base = PCB_base->child_pcb;
     }

@@ -30,6 +30,7 @@ void switch_terminal(uint8_t new_terminal);
 void multi_term_init();
 void reset_pcb_head(uint8_t terminal_n);
 void unset_process_usage(uint8_t pid);
+uint8_t get_active_terminal();
 
 int8_t add_PCB();
 pcb_t* get_PCB_base(int8_t process_num);
