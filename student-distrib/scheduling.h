@@ -19,5 +19,6 @@
 /*Forward declarations*/
 void pit_init();
 void task_switch();
+uint8_t get_active_task();
 
 #endif /*SCHEDULING_H*/

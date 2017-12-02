@@ -8,7 +8,8 @@
 #include "lib.h"
 #include "syscalls.h"
 
-static uint8_t active_task_n;   // Global variable that holds the terminal # where the task is active
+// Global variable that holds the terminal # where the task is active (1,2,3)
+static uint8_t active_task_n;   
 
 /*
  * pit_init
@@ -38,7 +39,7 @@ void pit_init() {
  *   SIDE EFFECTS: Modifies the ESP, EBP, TSS and paging structure
  */
 void task_switch() {
-    uint8_t new_task_n = (active_task_n % MAX_TERM_N) + MIN_TERM_N;
+    uint8_t new_task_n = 1; // TODO: Replace with (active_task_n % MAX_TERM_N) + MIN_TERM_N;
 
     // TODO: Complete this function
     
@@ -48,4 +49,16 @@ void task_switch() {
     // We want to block all other interrupts so that our task switch process is atomic
     active_task_n = new_task_n;
     send_eoi(PIT_IRQ_NUM);  
+}
+/*
+ * get_active_task
+ *   DESCRIPTION: Returns the terminal that the current active task resides in.
+ *                To be called by external functions. 
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: uint8_t -- the terminal of the current active task
+ *   SIDE EFFECTS: none
+ */
+uint8_t get_active_task() {
+    return active_task_n;
 }

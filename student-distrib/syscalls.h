@@ -73,7 +73,6 @@ uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB)));
 
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
-volatile int process_number;
 
 typedef struct fd {
     generic_fp* fotp; //file operations table Pointer
@@ -92,6 +91,7 @@ typedef struct pcb {
     uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
     uint32_t self_k_stack;
     uint32_t self_page;
+    struct pcb* child_pcb;       // Pointer to child process
 } pcb_t;
 
 

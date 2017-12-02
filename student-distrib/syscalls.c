@@ -5,6 +5,7 @@
 #include "RTC_handler.h"
 #include "terminal.h"
 #include "multi_term.h"
+#include "scheduling.h"
 
 /* File Operations Table Pointers */
 generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, NULL, (generic_fp*) terminal_close};
@@ -33,22 +34,28 @@ int32_t halt(uint8_t status) {
         status_32 = PROG_DIED_BY_EXCEPTION + 1;
     }
 
-    process_number--;
+    uint8_t term_num = get_active_task();
+    term_t* term_ptr = get_terminal(term_num);
+    pcb_t* PCB_base_parent = term_ptr->pcb_head;
+    pcb_t* PCB_base_self = get_PCB_tail(term_num);
+
+    // Mark self process as 'not in use'
+    unset_process_usage(PCB_base_self->pid);
+
     // We cannot close the base shell
-    if (process_number <= 0) {
-        process_number = 0;
-        // Call execute again with all values reinitialized
+    if (term_ptr->pcb_head == PCB_base_self) {
+        reset_pcb_head(term_num);// We set it to NULL so we can call add_PCB in EXECUTE
+
+        // Call execute again
         clear();
         execute((uint8_t*) "shell");
     }
 
-    // We subtract -1 to get the parent process.
-    // This will need to be changed for subsequent checkpoints when we use an array/struct to keep track of our processes.
-    uint32_t pcb_addr = KERNEL_BASE - process_number * PCB_OFFSET;  // find where program stack starts
-    pcb_t* PCB_base_parent = (pcb_t*) pcb_addr;                     // cast it to PCB so start
-
-    pcb_addr = KERNEL_BASE - (process_number+1) * PCB_OFFSET;       // find where program stack starts
-    pcb_t* PCB_base_self = (pcb_t*) pcb_addr;                       // cast it to PCB so start
+    // Traverse the linked list to find the parent pointer
+    while (PCB_base_parent->child_pcb != PCB_base_self) {
+        PCB_base_parent = PCB_base_parent->child_pcb;
+    }
+    PCB_base_parent->child_pcb = NULL; // Remove reference to child pcb
 
     /* Restore parent's paging */
     uint32_t parent_physical_mem = PCB_base_parent->self_page;
@@ -105,10 +112,11 @@ int32_t execute(const uint8_t* command) {
     // printf("System call EXECUTE.\n");
     uint8_t i, j, nbytes, arg_nbytes, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
     uint8_t * data_buf;
-    uint32_t entry_pt_addr, user_prog_physical_mem, pcb_addr, new_esp0, self_ebp, self_esp, ret_halt_status;
+    uint32_t entry_pt_addr, user_prog_physical_mem, new_esp0, self_ebp, self_esp, ret_halt_status;
     dentry_t cmd_dentry;
     pcb_t* PCB_base;
     fd_t* fd_array;
+    int process_num;
 
     uint16_t user_ds_addr16 = USER_DS;
     uint32_t user_ds_addr32 = USER_DS;
@@ -175,7 +183,12 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
     // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
-    user_prog_physical_mem = USER_MEM_P + process_number * USER_PROG_SIZE;
+    process_num = add_PCB();
+    if (process_num == -1) {
+        printf("Maximum number of processes exceeded.\n");
+        return PROG_DIED_BY_EXCEPTION + 1;
+    }
+    user_prog_physical_mem = USER_MEM_P + process_num * USER_PROG_SIZE; 
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_prog_physical_mem | USER_PAGE_SET_BITS;
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
@@ -196,12 +209,11 @@ int32_t execute(const uint8_t* command) {
 
     /*********** Step 5: Create PCB / open FDs ***********/
     // We can simply cast the address of the program's kernel stack to be a pcb_t pointer. No need to use memcpy.
-    pcb_addr = KERNEL_BASE - (process_number+1)*PCB_OFFSET;     // find where program stack starts
-    PCB_base = (pcb_t*) pcb_addr;                               // cast it to PCB so start of program stack contains PCB.
-    new_esp0 = KERNEL_BASE - (process_number * PCB_OFFSET) - BYTES_4;
+    PCB_base = get_PCB_base(process_num);                               // cast it to PCB so start of program stack contains PCB.
+    new_esp0 = KERNEL_BASE - (process_num * PCB_OFFSET) - BYTES_4;
 
     PCB_base->status = TASK_RUNNING;
-    PCB_base->pid = process_number;                 // Process ID
+    PCB_base->pid = process_num;                    // Process ID
     PCB_base->self_k_stack = new_esp0;              // Store it's own kernel stack
     PCB_base->self_page = user_prog_physical_mem;   // Store it's own user stack
 
@@ -251,8 +263,6 @@ int32_t execute(const uint8_t* command) {
     PCB_base->fd_arr[1].inode_number = 0; // NOT A DATA File
     PCB_base->fd_arr[1].file_position = 0;
     PCB_base->fd_arr[1].in_use_flag = FILE_IN_USE;
-
-    process_number++;
 
     /*********** Step 6: Set up IRET context ***********/
     /* The only things that really change here upon each syscall are: 1) tss.esp0, 2) ESP-on-stack (in IRET context), 3) page table
@@ -351,7 +361,8 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
 
     // printf("SYSCALL READ \n");
     // Check for invalid inputs
-    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t term_num = get_active_task();
+    pcb_t* PCB_base = get_PCB_tail(term_num);
 
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
     if (buf == NULL || fd < 0 || fd > MAX_FILES-1 || nbytes < 0) return -1;
@@ -378,7 +389,8 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
 int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
     // printf("System call WRITE.\n");
     // if file's buffer is NULLL or fd is nto in range then we return -1
-    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t term_num = get_active_task();
+    pcb_t* PCB_base = get_PCB_tail(term_num);
 
     // Check for invalid inputs
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
@@ -406,7 +418,8 @@ int32_t open (const uint8_t* filename) {
     // This function is called within a given user program.
     // Finds the first 'fd' that is not in use and opens the file and puts it there
     // by setting the appropriate inode numbers!
-    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t term_num = get_active_task();
+    pcb_t* PCB_base = get_PCB_tail(term_num);
     // Check for invalid inputs
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
@@ -462,7 +475,8 @@ int32_t close (int32_t fd) {
     // printf("System call CLOSE.\n");
     // This function is called within a given user program.
     // Finds the corredsponding fd and sets all its elements in the struct equal to nothing
-    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t term_num = get_active_task();
+    pcb_t* PCB_base = get_PCB_tail(term_num);
     // Check for invalid inputs
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
     if (fd == 0 || fd == 1 || fd < 0 || fd > MAX_FILES-1) return -1;
@@ -491,7 +505,8 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
     // printf("System call GETARGS.\n");
 
     // get the stdin argument which is fd_0
-    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t term_num = get_active_task();
+    pcb_t* PCB_base = get_PCB_tail(term_num);
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
     // check for empty argument
@@ -541,7 +556,7 @@ int32_t vidmap (uint8_t** screen_start) {
     // Finally: Reassign screen_start to point to the USER_VIDEO_MEMORY
     // The idea is to assign some address outside the already allocated space to be used as a pointer to video memory
     // Sean: I choose 136 MiB as a starting point
-    *screen_start = (uint8_t*) (USER_VIDEO_MEM);
+    *screen_start = (uint8_t*) (USER_VIDEO_MEM); // TODO: USER_VIDEO_MEM will have to change depending on active terminal
     return 0;
 }
 /*
@@ -575,20 +590,3 @@ int32_t sigreturn (void) {
     return 0;
 }
 
-/*
- * get_PCB_base
- *   DESCRIPTION: Returns the CURRENT PCB base pointer
- *   INPUTS: none
- *   OUTPUTS: none
- *   RETURN VALUE: pcb_t -- pointer to the topmost PCB on the kernel stack
- *   SIDE EFFECTS: none
- */
-pcb_t* get_PCB_base(int8_t process_num) {
-    if (process_num < 0 || process_num >= MAX_PROCESSES) return NULL;
-
-    // We don't do -1 here because process_num here represents the # of the NEXT available process
-    uint32_t pcb_addr = KERNEL_BASE - process_num * PCB_OFFSET; // find where program stack starts
-    pcb_t* PCB_base = (pcb_t*) pcb_addr; // cast it to PCB so start of program stack contains PCB.
-
-    return PCB_base;
-}
