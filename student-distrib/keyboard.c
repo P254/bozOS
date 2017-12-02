@@ -382,14 +382,27 @@ int* kb_read_release() {
 
 /*
  * get_kb_buffer
- *   DESCRIPTION: Returns the pointer of terminal_read_release. For use by terminal driver.
+ *   DESCRIPTION: Returns the pointer of the keyboard buffer. Used for terminal-switching.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: unsigned char -- pointer to keyboard buffer
+ *   SIDE EFFECTS: none
+ */
+unsigned char* get_kb_buffer() {
+    return (unsigned char*) kb_buf;
+}
+
+
+/*
+ * get_int_buffer
+ *   DESCRIPTION: Returns the pointer of the intermediate buffer. For use by terminal driver.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: unsigned char -- pointer to intermediate buffer
  *   SIDE EFFECTS: none
  */
-unsigned char* get_kb_buffer() {
-  return (unsigned char*) int_buf;
+unsigned char* get_int_buffer() {
+    return (unsigned char*) int_buf;
 }
 
 /*
@@ -401,14 +414,14 @@ unsigned char* get_kb_buffer() {
  *   SIDE EFFECTS: modifies int_buf
  */
 void copy_kb_buf() {
-      int i = 0;
-      for (i = 0; i < KB_SIZE; i++) { //max copy length is kb size
+    int i = 0;
+    for (i = 0; i < KB_SIZE; i++) { //max copy length is kb size
         int_buf[i] = kb_buf[i]; //copy char by char
         if (kb_buf[i] == '\n') {
             kb_buf[i] = '\0'; //we must also remove the new line from the kb  buffer
             break; //if we encounter a new line, we stop copying
         }
         else kb_buf[i] = '\0'; // Flush-as-you-go
-      }
+    }
   return;
 }

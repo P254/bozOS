@@ -7,6 +7,10 @@
 
 #include "types.h"
 
+#define VIDEO       0xB8000
+#define NUM_COLS    80
+#define NUM_ROWS    25
+#define VIDEO_SIZE  (NUM_COLS * NUM_ROWS) * 2
 /* Define constants. Added by Sean */
 #define VIDEO_MEM_ROW1  (VIDEO + 2*NUM_COLS)
 #define SCROLL_SIZE ((NUM_ROWS-1) * NUM_COLS * 2)

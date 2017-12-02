@@ -1,6 +1,9 @@
 #include "multi_term.h"
 #include "syscalls.h"
 #include "lib.h"
+#include "paging.h"
+#include "terminal.h"
+#include "keyboard.h"
 
 /* Global Variables */
 static uint8_t active_terminal;
@@ -21,31 +24,56 @@ void multi_term_init() {
         process_usage[i] = NOT_USED;
     }
 
-    // Hacky solution to get one terminal to work
-    // TODO: Change this later
     terminal_table[TERM_1].pcb_head = NULL;
-    
-    // I find this to be a slight challenge
-    switch_terminal(TERM_1);
+    terminal_table[TERM_2].pcb_head = NULL;
+    terminal_table[TERM_3].pcb_head = NULL;
+
+    terminal_table[TERM_1].video = (char*) TERM_1_VIDEO;
+    terminal_table[TERM_2].video = (char*) TERM_2_VIDEO;
+    terminal_table[TERM_3].video = (char*) TERM_3_VIDEO;
+
+    terminal_table[TERM_1].x = 0;
+    terminal_table[TERM_2].x = 0;
+    terminal_table[TERM_3].x = 0;
+    terminal_table[TERM_1].y = 0;
+    terminal_table[TERM_2].y = 0;
+    terminal_table[TERM_3].y = 0;
 }
 
 /*
  * switch_terminal
  *   DESCRIPTION: Performs switching of acive terminal. Called by keyboard.c
- *   INPUTS: new_term_n -- new terminal number to switch to
+ *   INPUTS: new_terminal -- new terminal number to switch to
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: Clears video memory to load new terminal
  */
-void switch_terminal(uint8_t new_term_n) {
+void switch_terminal(uint8_t new_terminal) {
     // Check for bad inputs
-    if (new_term_n > TERM_3) return;
+    if (new_terminal > TERM_3) return;
     // Switch terminals only if we're not already in the same terminal
-    if (new_term_n == active_terminal) return;
+    if (new_terminal == active_terminal) return;
     
-    // TODO: Complete this function
-    printf("Switching to terminal %u\n", new_term_n);
-    active_terminal = new_term_n;
+    // Copy active terminal data to the terminal table 
+    char* active_video = (char*) VIDEO;
+    uint8_t* active_kb_buf = get_kb_buffer();
+
+    memcpy(terminal_table[active_terminal].video, active_video, VIDEO_SIZE);
+    memcpy(terminal_table[active_terminal].kb_buf, active_kb_buf, KB_SIZE);
+    terminal_table[active_terminal].x = get_screen_x();
+    terminal_table[active_terminal].y = get_screen_y();
+
+    // Clear keyboard buffer and screen
+    memset(active_kb_buf, '\0', KB_SIZE);
+    clear();
+
+    // Copy new terminal data from the terminal table 
+    memcpy(active_video, terminal_table[new_terminal].video, VIDEO_SIZE);
+    memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
+    set_screen_x(terminal_table[new_terminal].x);
+    set_screen_y(terminal_table[new_terminal].y);
+
+    active_terminal = new_terminal;
 }
 
 /*

@@ -44,7 +44,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
     // Check for bad inputs
     if (buf == NULL || nbytes < 0) return -1; //check invalid input
 
-    unsigned char* source = get_kb_buffer(); //get intermidate buffer
+    unsigned char* source = get_int_buffer(); //get intermediate buffer
     unsigned char* dest = (unsigned char*) buf; //set system buffer as dest
 
     int32_t i, bytes_copied, bytes_to_copy, c = 0;

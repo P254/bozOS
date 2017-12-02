@@ -157,7 +157,7 @@ void entry(unsigned long magic, unsigned long addr) {
     i8259_init();   // PIC
     kb_init();      // Keyboard
     rtc_init();     // RTC
-    pit_init();     // PIT
+    // pit_init();     // PIT 
     paging_init();  // Paging
     multi_term_init(); // Multiple Terminals
 
@@ -175,7 +175,8 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
-    execute((uint8_t*) "shell"); // TODO: Replace with multi_term_init();
+    switch_terminal(TERM_1);
+    execute((uint8_t*) "shell"); 
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

@@ -4,9 +4,10 @@
 #include "i8259.h"
 #include "scheduling.h"
 #include "IDT.h"
-#include "terminal.h"
-#include "lib.h"
 #include "syscalls.h"
+#include "lib.h"
+#include "x86_desc.h"
+#include "multi_term.h"
 
 // Global variable that holds the terminal # where the task is active (1,2,3)
 static uint8_t active_task_n;   
@@ -39,17 +40,40 @@ void pit_init() {
  *   SIDE EFFECTS: Modifies the ESP, EBP, TSS and paging structure
  */
 void task_switch() {
-    uint8_t new_task_n = 0; // TODO: Replace with (active_task_n % MAX_TERM_N);
-
     // TODO: Complete this function
-    
-    // pcb_t* active_task_pcb = 
-    // pcb_t* new_task_pcb = 
+    uint8_t new_task_n = (active_task_n+1) % MAX_TERM_N; 
 
     // We want to block all other interrupts so that our task switch process is atomic
+    /******* TASK SWITCH CODE BEGINS HERE ******/
+    pcb_t* new_task_pcb = get_PCB_tail(new_task_n);
+    if (new_task_pcb == NULL) {
+        send_eoi(PIT_IRQ_NUM);
+        return;
+    }
+
+    uint32_t new_task_physical_mem = new_task_pcb->self_page;
+    page_directory[(USER_MEM_V >> ALIGN_4MB)] = new_task_physical_mem | USER_PAGE_SET_BITS;
+
+    asm volatile(
+        "movl %%cr3, %%eax;"
+        "movl %%eax, %%cr3;"
+        : /* no outputs */
+        : /* no inputs */
+        : "eax"
+    );
+
+    tss.esp0 = new_task_pcb->self_k_stack;
+    asm volatile(
+        "movl %0, %%esp;"
+        "movl %1, %%ebp;"
+        : /* no outputs */
+        : "r" (new_task_pcb->self_esp), "r" (new_task_pcb->self_ebp)
+        : "esp", "ebp"
+    );
     active_task_n = new_task_n;
-    send_eoi(PIT_IRQ_NUM);  
+    send_eoi(PIT_IRQ_NUM);
 }
+
 /*
  * get_active_task
  *   DESCRIPTION: Returns the terminal that the current active task resides in.

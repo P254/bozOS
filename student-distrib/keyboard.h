@@ -46,10 +46,6 @@
 #define FN_2 0x3C
 #define FN_3 0x3D
 
-#define VIDEO       0xB8000
-#define NUM_COLS    80
-#define NUM_ROWS    25
-
 /* Forward Declarations */
 void kb_init(void);
 unsigned int get_scan_code(void);
@@ -59,4 +55,5 @@ void del_char_from_buf(void);
 int convert_to_vid_idx(int x, int y, int buf_len);
 int* kb_read_release();
 unsigned char* get_kb_buffer();
+unsigned char* get_int_buffer();
 void copy_kb_buf();

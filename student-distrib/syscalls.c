@@ -186,7 +186,7 @@ int32_t execute(const uint8_t* command) {
     process_num = add_PCB();
     if (process_num == -1) {
         printf("Maximum number of processes exceeded.\n");
-        return PROG_DIED_BY_EXCEPTION + 1;
+        return (PROG_DIED_BY_EXCEPTION + 1);
     }
     user_prog_physical_mem = USER_MEM_P + process_num * USER_PROG_SIZE; 
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_prog_physical_mem | USER_PAGE_SET_BITS;
