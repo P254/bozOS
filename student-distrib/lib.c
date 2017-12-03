@@ -9,11 +9,11 @@ static int screen_y;
 volatile char* video_mem = (char *)VIDEO;
 volatile char* video_mem_r1 = (char *) VIDEO_MEM_ROW1;
 
-/* void clear(void);
- * Inputs: void
+/* clear_screen
+ * Inputs: none
  * Return Value: none
  * Function: Clears video memory */
-void clear(void) {
+void clear_screen() {
     int32_t i;
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';

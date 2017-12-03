@@ -57,15 +57,16 @@ void switch_terminal(uint8_t new_terminal) {
     if (new_terminal == active_terminal) return;
     
     copy_terminal(new_terminal);
-    disable_irq(PIT_IRQ_NUM);    // We don't want scheduling to happen while we attempt to launch a new shell
     active_terminal = new_terminal;
+    set_active_task(new_terminal); // TODO: Remove this for multi-tasking
 
     // Check if our terminal is empty - if yes, launch a new shell
     pcb_t* pcb_head_ptr = get_PCB_tail(new_terminal);
     if (pcb_head_ptr == NULL) {
+        disable_irq(PIT_IRQ_NUM);
         execute((uint8_t*) "shell");
+        enable_irq(PIT_IRQ_NUM);
     }
-    enable_irq(PIT_IRQ_NUM);
 }
 
 /*
@@ -88,7 +89,7 @@ void copy_terminal(uint8_t new_terminal) {
 
     // Clear keyboard buffer and screen
     memset(active_kb_buf, '\0', KB_SIZE);
-    clear();
+    clear_screen();
 
     // Copy new terminal data from the terminal table 
     memcpy(active_video, terminal_table[new_terminal].video, VIDEO_SIZE);

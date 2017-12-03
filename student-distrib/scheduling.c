@@ -10,7 +10,7 @@
 #include "multi_term.h"
 
 // Global variable that holds the terminal # where the task is active (1,2,3)
-static uint8_t active_task_n;   
+static uint8_t active_task;   
 
 /*
  * pit_init
@@ -28,7 +28,7 @@ void pit_init() {
     
     enable_irq(PIT_IRQ_NUM);    // enable IRQ line for PIT
     set_IDT_wrapper(SOFT_INT_START + PIT_IRQ_NUM, pit_handler_asm);
-    active_task_n = 0;
+    active_task = 0;
 }
 
 /*
@@ -43,17 +43,17 @@ void task_switch() {
     // TODO: Complete this function
 
     // For use with mono-tasking
-    uint8_t new_task_n = get_active_terminal(); 
-    if (new_task_n == active_task_n) {
+    uint8_t new_task = get_active_terminal(); 
+    if (new_task == active_task) {
         send_eoi(PIT_IRQ_NUM);
         return;
     }
     // For use with multi-tasking
-    // uint8_t new_task_n = (active_task_n+1) % MAX_TERM_N; 
+    // uint8_t new_task = (active_task+1) % MAX_TERM_N; 
 
     // We want to block all other interrupts so that our task switch process is atomic
     /******* TASK SWITCH CODE BEGINS HERE ******/
-    pcb_t* new_task_pcb = get_PCB_tail(new_task_n);
+    pcb_t* new_task_pcb = get_PCB_tail(new_task);
     if (new_task_pcb == NULL) {
         send_eoi(PIT_IRQ_NUM);
         return;
@@ -78,7 +78,7 @@ void task_switch() {
         : "r" (new_task_pcb->self_esp), "r" (new_task_pcb->self_ebp)
         : "esp", "ebp"
     );
-    active_task_n = new_task_n;
+    active_task = new_task;
     send_eoi(PIT_IRQ_NUM);
 }
 
@@ -92,5 +92,43 @@ void task_switch() {
  *   SIDE EFFECTS: none
  */
 uint8_t get_active_task() {
-    return active_task_n;
+    return active_task;
+}
+
+/*
+ * set_active_task
+ *   DESCRIPTION: Sets the active task. For use with mono-tasking only.
+ *                To be called by external functions. 
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: uint8_t -- the terminal of the current active task
+ *   SIDE EFFECTS: none
+ */
+void set_active_task(uint8_t new_task) {
+    pcb_t* new_task_pcb = get_PCB_tail(new_task);
+    active_task = new_task;
+    if (new_task_pcb == NULL) {
+        send_eoi(PIT_IRQ_NUM);
+        return;
+    }
+
+    uint32_t new_task_physical_mem = new_task_pcb->self_page;
+    page_directory[(USER_MEM_V >> ALIGN_4MB)] = new_task_physical_mem | USER_PAGE_SET_BITS;
+
+    asm volatile(
+        "movl %%cr3, %%eax;"
+        "movl %%eax, %%cr3;"
+        : /* no outputs */
+        : /* no inputs */
+        : "eax"
+    );
+
+    tss.esp0 = new_task_pcb->self_k_stack;
+    asm volatile(
+        "movl %0, %%esp;"
+        "movl %1, %%ebp;"
+        : /* no outputs */
+        : "r" (new_task_pcb->self_esp), "r" (new_task_pcb->self_ebp)
+        : "esp", "ebp"
+    );
 }

@@ -33,7 +33,7 @@ void entry(unsigned long magic, unsigned long addr) {
     multiboot_info_t *mbi;
 
     /* Clear the screen. */
-    clear();
+    clear_screen();
 
     /* Am I booted by a Multiboot-compliant boot loader? */
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -157,7 +157,7 @@ void entry(unsigned long magic, unsigned long addr) {
     i8259_init();   // PIC
     kb_init();      // Keyboard
     rtc_init();     // RTC
-    pit_init();     // PIT 
+    // pit_init();     // PIT 
     paging_init();  // Paging
     multi_term_init(); // Multiple Terminals
 
