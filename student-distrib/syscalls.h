@@ -89,8 +89,10 @@ typedef struct pcb {
     fd_t fd_arr[8];         // File descriptor array
     uint32_t self_esp;      // Pointer to own ESP (will be used by child process later)
     uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
-    uint32_t self_k_stack;
-    uint32_t self_page;
+    uint32_t self_k_stack;  // Pointer to own kernel stack
+    uint32_t self_page;     // Pointer for own paging information
+    uint32_t esp_switch;    // Pointer to own ESP (for use by task-switching)
+    uint32_t ebp_switch;    // Pointer to own EBP (for use by task-switching)
     struct pcb* child_pcb;       // Pointer to child process
 } pcb_t;
 

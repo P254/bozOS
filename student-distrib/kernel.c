@@ -157,7 +157,7 @@ void entry(unsigned long magic, unsigned long addr) {
     i8259_init();   // PIC
     kb_init();      // Keyboard
     rtc_init();     // RTC
-    // pit_init();     // PIT 
+    pit_init();     // PIT 
     paging_init();  // Paging
     multi_term_init(); // Multiple Terminals
 

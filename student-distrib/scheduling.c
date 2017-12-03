@@ -40,9 +40,9 @@ void pit_init() {
  *   SIDE EFFECTS: Modifies the ESP, EBP, TSS and paging structure
  */
 void task_switch() {
-    // TODO: Complete this function
-
     // For use with mono-tasking
+    pcb_t* incoming_pcb;
+    pcb_t* outgoing_pcb;
     uint8_t new_task = get_active_terminal(); 
     if (new_task == active_task) {
         send_eoi(PIT_IRQ_NUM);
@@ -51,17 +51,19 @@ void task_switch() {
     // For use with multi-tasking
     // uint8_t new_task = (active_task+1) % MAX_TERM_N; 
 
-    // We want to block all other interrupts so that our task switch process is atomic
     /******* TASK SWITCH CODE BEGINS HERE ******/
-    pcb_t* new_task_pcb = get_PCB_tail(new_task);
-    if (new_task_pcb == NULL) {
+    // We want to block all other interrupts so that our task switch process is atomic
+    incoming_pcb = get_PCB_tail(new_task);
+    outgoing_pcb = get_PCB_tail(active_task);
+
+    if (incoming_pcb == NULL) {
         send_eoi(PIT_IRQ_NUM);
         return;
     }
 
-    uint32_t new_task_physical_mem = new_task_pcb->self_page;
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = new_task_physical_mem | USER_PAGE_SET_BITS;
-
+    // Set up incoming paging and tss.esp0
+    tss.esp0 = incoming_pcb->self_k_stack;
+    page_directory[(USER_MEM_V >> ALIGN_4MB)] = (incoming_pcb->self_page) | USER_PAGE_SET_BITS;
     asm volatile(
         "movl %%cr3, %%eax;"
         "movl %%eax, %%cr3;"
@@ -70,12 +72,19 @@ void task_switch() {
         : "eax"
     );
 
-    tss.esp0 = new_task_pcb->self_k_stack;
+    // Save outgoing esp/ebp
+    asm volatile(
+        "movl %%esp, %0;"
+        "movl %%ebp, %1;"
+        : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
+    );
+
+    // Load incoming esp/ebp
     asm volatile(
         "movl %0, %%esp;"
         "movl %1, %%ebp;"
         : /* no outputs */
-        : "r" (new_task_pcb->self_esp), "r" (new_task_pcb->self_ebp)
+        : "r" (incoming_pcb->esp_switch), "r" (incoming_pcb->ebp_switch)
         : "esp", "ebp"
     );
     active_task = new_task;
@@ -105,30 +114,5 @@ uint8_t get_active_task() {
  *   SIDE EFFECTS: none
  */
 void set_active_task(uint8_t new_task) {
-    pcb_t* new_task_pcb = get_PCB_tail(new_task);
-    active_task = new_task;
-    if (new_task_pcb == NULL) {
-        send_eoi(PIT_IRQ_NUM);
-        return;
-    }
-
-    uint32_t new_task_physical_mem = new_task_pcb->self_page;
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = new_task_physical_mem | USER_PAGE_SET_BITS;
-
-    asm volatile(
-        "movl %%cr3, %%eax;"
-        "movl %%eax, %%cr3;"
-        : /* no outputs */
-        : /* no inputs */
-        : "eax"
-    );
-
-    tss.esp0 = new_task_pcb->self_k_stack;
-    asm volatile(
-        "movl %0, %%esp;"
-        "movl %1, %%ebp;"
-        : /* no outputs */
-        : "r" (new_task_pcb->self_esp), "r" (new_task_pcb->self_ebp)
-        : "esp", "ebp"
-    );
+    return; // TODO: Remove this function that does nothing
 }

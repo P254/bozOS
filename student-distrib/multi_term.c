@@ -51,21 +51,31 @@ void multi_term_init() {
  *   SIDE EFFECTS: Clears video memory to load new terminal
  */
 void switch_terminal(uint8_t new_terminal) {
+    pcb_t* incoming_pcb;
+    pcb_t* outgoing_pcb;
     // Check for bad inputs
     if (new_terminal > TERM_3) return;
     // Switch terminals only if we're not already in the same terminal
     if (new_terminal == active_terminal) return;
     
+    incoming_pcb = get_PCB_tail(new_terminal);
+    outgoing_pcb = get_PCB_tail(active_terminal);
+
     copy_terminal(new_terminal);
     active_terminal = new_terminal;
+    
     set_active_task(new_terminal); // TODO: Remove this for multi-tasking
 
     // Check if our terminal is empty - if yes, launch a new shell
-    pcb_t* pcb_head_ptr = get_PCB_tail(new_terminal);
-    if (pcb_head_ptr == NULL) {
-        disable_irq(PIT_IRQ_NUM);
+    if (incoming_pcb == NULL) {
+        // Save outgoing esp/ebp first
+        asm volatile(
+            "movl %%esp, %0;"
+            "movl %%ebp, %1;"
+            : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
+        );
+        // Execute new user program
         execute((uint8_t*) "shell");
-        enable_irq(PIT_IRQ_NUM);
     }
 }
 
@@ -165,9 +175,8 @@ uint8_t get_active_terminal() {
  */
 pcb_t* get_PCB_tail(uint8_t terminal_n) {
     if (terminal_n > TERM_3) return NULL;
-    uint8_t n = (terminal_n == 0) ? active_terminal : terminal_n;
     
-    pcb_t* PCB_base = terminal_table[n].pcb_head; 
+    pcb_t* PCB_base = terminal_table[terminal_n].pcb_head; 
     if (PCB_base == NULL) return NULL;
     
     while (PCB_base->child_pcb != NULL) {

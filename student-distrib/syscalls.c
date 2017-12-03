@@ -114,7 +114,7 @@ int32_t execute(const uint8_t* command) {
     // printf("System call EXECUTE.\n");
     uint8_t i, j, nbytes, arg_nbytes, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
     uint8_t * data_buf;
-    uint32_t entry_pt_addr, user_prog_physical_mem, new_esp0, self_ebp, self_esp, ret_halt_status;
+    uint32_t entry_pt_addr, user_prog_physical_mem, new_esp0, ret_halt_status;
     dentry_t cmd_dentry;
     pcb_t* PCB_base;
     fd_t* fd_array;
@@ -231,10 +231,10 @@ int32_t execute(const uint8_t* command) {
     asm volatile(
         "movl %%esp, %0;"
         "movl %%ebp, %1;"
-        : "=r" (self_esp), "=r" (self_ebp)
+        : "=r" (PCB_base->self_esp), "=r" (PCB_base->self_ebp)
     );
-    PCB_base->self_esp = self_esp;
-    PCB_base->self_ebp = self_ebp;
+    PCB_base->esp_switch = PCB_base->self_esp;
+    PCB_base->ebp_switch = PCB_base->self_ebp;
 
     // flush the argument buffer in stdin
     memset((int8_t*) PCB_base->fd_arr[0].arg, '\0' ,KB_BUF_SIZE);
@@ -306,8 +306,6 @@ int32_t execute(const uint8_t* command) {
 
     // Push IRET context to stack
     asm volatile(
-        "cli;"                  /* Context-switch is critical, so we suppress interrupts */
-
         // "movw %1, %%ss;"      /* Code-segment */ The IRET below will update %ss for us
         "movw %0, %%ds;"      /* Data-segment */
         "movw %0, %%es;"      /* Additional data-segment register */

@@ -39,6 +39,7 @@ int get_screen_y(); // Used by terminal driver
 void set_screen_x(int val); // Used by terminal driver
 void set_screen_y(int val); // Used by terminal and keyboard driver 
 void video_scroll(); // Performs scrolling
+int8_t terminal_color(); 
 
 /* Userspace address-check functions */
 int32_t bad_userspace_addr(const void* addr, int32_t len);
