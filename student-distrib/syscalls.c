@@ -109,6 +109,8 @@ int32_t halt(uint8_t status) {
  *   SIDE EFFECTS: executes the user program given by 'command' input
  */
 int32_t execute(const uint8_t* command) {
+    cli(); // We want to supppress interrupts until our syscall is complete. IF is restored below
+
     // printf("System call EXECUTE.\n");
     uint8_t i, j, nbytes, arg_nbytes, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
     uint8_t * data_buf;
