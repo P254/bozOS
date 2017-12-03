@@ -27,6 +27,7 @@ typedef struct term {
 pcb_t* get_PCB_tail(uint8_t terminal_n);
 term_t* get_terminal(uint8_t terminal_n);
 void switch_terminal(uint8_t new_terminal);
+void copy_terminal(uint8_t new_terminal);
 void multi_term_init();
 void reset_pcb_head(uint8_t terminal_n);
 void unset_process_usage(uint8_t pid);

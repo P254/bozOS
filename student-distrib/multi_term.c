@@ -4,6 +4,8 @@
 #include "paging.h"
 #include "terminal.h"
 #include "keyboard.h"
+#include "scheduling.h"
+#include "i8259.h"
 
 /* Global Variables */
 static uint8_t active_terminal;
@@ -33,10 +35,10 @@ void multi_term_init() {
     terminal_table[TERM_3].video = (char*) TERM_3_VIDEO;
 
     terminal_table[TERM_1].x = 0;
-    terminal_table[TERM_2].x = 0;
-    terminal_table[TERM_3].x = 0;
     terminal_table[TERM_1].y = 0;
+    terminal_table[TERM_2].x = 0;
     terminal_table[TERM_2].y = 0;
+    terminal_table[TERM_3].x = 0;
     terminal_table[TERM_3].y = 0;
 }
 
@@ -54,6 +56,27 @@ void switch_terminal(uint8_t new_terminal) {
     // Switch terminals only if we're not already in the same terminal
     if (new_terminal == active_terminal) return;
     
+    copy_terminal(new_terminal);
+    disable_irq(PIT_IRQ_NUM);    // We don't want scheduling to happen while we attempt to launch a new shell
+    active_terminal = new_terminal;
+
+    // Check if our terminal is empty - if yes, launch a new shell
+    pcb_t* pcb_head_ptr = get_PCB_tail(new_terminal);
+    if (pcb_head_ptr == NULL) {
+        execute((uint8_t*) "shell");
+    }
+    enable_irq(PIT_IRQ_NUM);
+}
+
+/*
+ * copy_terminal
+ *   DESCRIPTION: Helper function for copy_terminal
+ *   INPUTS: new_terminal -- new terminal number to switch to
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: Clears video memory to load new terminal
+ */
+void copy_terminal(uint8_t new_terminal) {
     // Copy active terminal data to the terminal table 
     char* active_video = (char*) VIDEO;
     uint8_t* active_kb_buf = get_kb_buffer();
@@ -72,14 +95,6 @@ void switch_terminal(uint8_t new_terminal) {
     memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
     set_screen_x(terminal_table[new_terminal].x);
     set_screen_y(terminal_table[new_terminal].y);
-
-    active_terminal = new_terminal;
-
-    // Check if our terminal is empty - if yes, launch a new shell
-    pcb_t* pcb_head_ptr = get_PCB_tail(active_terminal);
-    if (pcb_head_ptr == NULL) {
-        execute((uint8_t*) "shell");
-    }
 }
 
 /*
