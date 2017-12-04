@@ -17,6 +17,7 @@
 #include "syscalls.h"
 #include "scheduling.h"
 #include "multi_term.h"
+#include "pcb.h"
 
 #define RUN_TESTS       0
 
@@ -157,7 +158,7 @@ void entry(unsigned long magic, unsigned long addr) {
     i8259_init();   // PIC
     kb_init();      // Keyboard
     rtc_init();     // RTC
-    pit_init();     // PIT 
+    pit_init();     // PIT
     paging_init();  // Paging
     multi_term_init(); // Multiple Terminals
 
@@ -176,7 +177,7 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
     switch_terminal(TERM_1);
-    execute((uint8_t*) "shell"); 
+    execute((uint8_t*) "shell");
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

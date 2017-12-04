@@ -5,6 +5,7 @@
 #include "syscalls.h"
 #include "scheduling.h"
 #include "multi_term.h"
+#include "pcb.h"
 
 /*
  * terminal_open
