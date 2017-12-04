@@ -2,26 +2,26 @@
  * vim:ts=4 noexpandtab */
 
 #include "lib.h"
-
-#define VIDEO       0xB8000
-#define NUM_COLS    80
-#define NUM_ROWS    25
-#define ATTRIB      0x7
+#include "scheduling.h"
+#define ATTRIB      0x7 
+#define ATTRIB_1    0x7
+#define ATTRIB_2    0xA 
+#define ATTRIB_3    0xC 
 
 static int screen_x;
 static int screen_y;
 volatile char* video_mem = (char *)VIDEO;
 volatile char* video_mem_r1 = (char *) VIDEO_MEM_ROW1;
 
-/* void clear(void);
- * Inputs: void
+/* clear_screen
+ * Inputs: none
  * Return Value: none
  * Function: Clears video memory */
-void clear(void) {
+void clear_screen() {
     int32_t i;
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
-        *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+        *(uint8_t *)(video_mem + (i << 1) + 1) = terminal_color();
     }
     set_screen_y(0);
     set_screen_x(0);
@@ -182,7 +182,7 @@ void putc(uint8_t c) {
         }
     } else {
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
-        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
+        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = terminal_color();
 
         // Sean: Check if we have reached the bottom-right corner of the screen out-of-bounds, if yes, perform scrolling
         if (screen_y == NUM_ROWS-1 && screen_x == NUM_COLS-1) {
@@ -566,6 +566,28 @@ void video_scroll() {
     for (i = 0; i < NUM_COLS; i++) {
         vid_idx = NUM_COLS*(NUM_ROWS-1) + i;
         *(uint8_t *)(video_mem + (vid_idx << 1)) = ' ';
-        *(uint8_t *)(video_mem + (vid_idx << 1) + 1) = ATTRIB;
+        *(uint8_t *)(video_mem + (vid_idx << 1) + 1) = terminal_color();
+    }
+}
+
+/*
+ * terminal_color
+ *   DESCRIPTION: Sets the text color depending on the terminal #
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: int8_t -- the color of the text we want to set
+ *   SIDE EFFECTS: none
+ */
+int8_t terminal_color() {
+    uint8_t task = get_active_task();
+    switch (task) {
+        case 0:
+            return ATTRIB_1;
+        case 1: 
+            return ATTRIB_2;
+        case 2:
+            return ATTRIB_3;
+        default:
+            return ATTRIB;
     }
 }

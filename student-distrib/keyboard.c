@@ -4,6 +4,7 @@
 #include "IDT.h"
 #include "i8259.h"
 #include "x86_desc.h"
+#include "multi_term.h"
 
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
 static unsigned char int_buf[KB_SIZE]; // Intermediate buffer for copying to terminal buffer
@@ -241,14 +242,15 @@ unsigned int get_scan_code() {
         else if (scanCode == CTRL_PRESSED) { key_status += CTRL_FLAG; }
         //if ctrl is pressed, set ctrl status
         else if (scanCode == L_PRESSED && (key_status & CTRL_FLAG)) { //if CTRL+L is pressed
-            clear(); //clear screen
+            clear_screen(); //clear screen
             kb_buf[0] = '\0'; //reset keyboard buffer
+            printf("391OS> ");
         }
-        else if(scanCode == F_ONE && (key_status & ALT_FLAG) ) {/*TERM1*/}
-        else if(scanCode == F_TWO && (key_status & ALT_FLAG) ) {/*TERM2*/}
-        else if(scanCode == F_THREE && (key_status & ALT_FLAG) ) {/*TERM3*/}
-
         else if (scanCode == ALT_PRESSED) {key_status += ALT_FLAG;}
+        else if (scanCode == FN_1 && (key_status & ALT_FLAG)) { switch_terminal(TERM_1); }
+        else if (scanCode == FN_2 && (key_status & ALT_FLAG)) { switch_terminal(TERM_2); }
+        else if (scanCode == FN_3 && (key_status & ALT_FLAG)) { switch_terminal(TERM_3); }
+
 
         else if (scanCode == ENTER_PRESSED) { //if \n is pressed
             terminal_read_release = 1; //allow terminal to be read if we are calling that function
@@ -381,14 +383,27 @@ int* kb_read_release() {
 
 /*
  * get_kb_buffer
- *   DESCRIPTION: Returns the pointer of terminal_read_release. For use by terminal driver.
+ *   DESCRIPTION: Returns the pointer of the keyboard buffer. Used for terminal-switching.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: unsigned char -- pointer to keyboard buffer
+ *   SIDE EFFECTS: none
+ */
+unsigned char* get_kb_buffer() {
+    return (unsigned char*) kb_buf;
+}
+
+
+/*
+ * get_int_buffer
+ *   DESCRIPTION: Returns the pointer of the intermediate buffer. For use by terminal driver.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: unsigned char -- pointer to intermediate buffer
  *   SIDE EFFECTS: none
  */
-unsigned char* get_kb_buffer() {
-  return (unsigned char*) int_buf;
+unsigned char* get_int_buffer() {
+    return (unsigned char*) int_buf;
 }
 
 /*
@@ -400,14 +415,14 @@ unsigned char* get_kb_buffer() {
  *   SIDE EFFECTS: modifies int_buf
  */
 void copy_kb_buf() {
-      int i = 0;
-      for (i = 0; i < KB_SIZE; i++) { //max copy length is kb size
+    int i = 0;
+    for (i = 0; i < KB_SIZE; i++) { //max copy length is kb size
         int_buf[i] = kb_buf[i]; //copy char by char
         if (kb_buf[i] == '\n') {
             kb_buf[i] = '\0'; //we must also remove the new line from the kb  buffer
             break; //if we encounter a new line, we stop copying
         }
         else kb_buf[i] = '\0'; // Flush-as-you-go
-      }
+    }
   return;
 }
