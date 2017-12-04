@@ -2,14 +2,9 @@
 #define SYS_CALL_H
 
 #include "types.h"
-#include "syscalls.h"
-#include "lib.h"
-#include "x86_desc.h"
-#include "filesystem.h"
 #include "paging.h"
-#include "RTC_handler.h"
-#include "terminal.h"
 
+#define KB_BUF_SIZE 128
 #define BUF_SIZE 1024
 #define MIN_NAME_TEXT 4
 #define TXT ".txt"
@@ -78,7 +73,6 @@ uint32_t vidmap_ptable[PAGE_SIZE] __attribute__((aligned(1 << ALIGN_4KB)));
 
 /* Declaring Global Variables and arrays */
 typedef int (*generic_fp)();
-volatile int process_number;
 
 typedef struct fd {
     generic_fp* fotp; //file operations table Pointer
@@ -95,14 +89,16 @@ typedef struct pcb {
     fd_t fd_arr[8];         // File descriptor array
     uint32_t self_esp;      // Pointer to own ESP (will be used by child process later)
     uint32_t self_ebp;      // Pointer to own EBP (will be used by child process later)
-    uint32_t self_k_stack;
-    uint32_t self_page;
+    uint32_t self_k_stack;  // Pointer to own kernel stack
+    uint32_t self_page;     // Pointer for own paging information
+    uint32_t esp_switch;    // Pointer to own ESP (for use by task-switching)
+    uint32_t ebp_switch;    // Pointer to own EBP (for use by task-switching)
+    struct pcb* child_pcb;       // Pointer to child process
 } pcb_t;
 
 
 /* Forward declarations */
 int32_t halt(uint8_t status);
-// int32_t wrapper_halt(uint32_t status);
 int32_t execute (const uint8_t* command);
 int32_t read (int32_t fd, void* buf, int32_t nbytes);
 int32_t write (int32_t fd, const void* buf, int32_t nbytes);
@@ -112,7 +108,5 @@ int32_t getargs (uint8_t* buf, int32_t nbytes);
 int32_t vidmap (uint8_t** screen_start);
 int32_t set_handler (int32_t signum, void* handler);
 int32_t sigreturn (void);
-
-pcb_t* get_PCB_base(int8_t process_num);
 
 #endif /* SYS_CALL_H */
