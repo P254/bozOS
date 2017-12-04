@@ -44,17 +44,30 @@ void task_switch() {
     pcb_t* incoming_pcb;
     pcb_t* outgoing_pcb;
     
-    // For use with mono-tasking
-    // outgoing_task = get_active_task();
-    // incoming_task = get_active_terminal(); 
-    // if (incoming_task == outgoing_task) {
-    //     send_eoi(PIT_IRQ_NUM);
-    //     return;
+    // Initialize a shell for each terminal if we haven't done so already
+    // int init;
+    // term_t* init_term;
+    // for (init = MAX_TERM_N-1; init >= 0; init--) {
+    //     init_term = get_terminal_ptr(init);
+    //     if (init_term->pcb_head == NULL) {
+    //         set_active_terminal(init);
+    //         send_eoi(PIT_IRQ_NUM);
+    //         execute((uint8_t*) "shell");
+    //         return;
+    //     }
     // }
+    
+    // For use with mono-tasking
+    outgoing_task = get_active_task();
+    incoming_task = get_active_terminal(); 
+    if (incoming_task == outgoing_task) {
+        send_eoi(PIT_IRQ_NUM);
+        return;
+    }
 
     // For use with multi-tasking
-    outgoing_task = get_active_task();
-    incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
+    // outgoing_task = get_active_task();
+    // incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
 
     /******* TASK SWITCH CODE BEGINS HERE ******/
     // We want to block all other interrupts so that our task switch process is atomic

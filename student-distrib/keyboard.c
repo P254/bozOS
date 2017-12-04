@@ -321,6 +321,7 @@ void add_char_to_buf(unsigned char c) {
             add_idx = convert_to_vid_idx(x, y, buf_len);   
             // write the character from the buffer to video mem
             *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+            *(uint8_t *)(video_mem + (add_idx << 1) + 1) = get_terminal_color();
         }
 
         if (y == NUM_ROWS-1 && (buf_len + x) == NUM_COLS-1) { // if we are at bottom-right of screen

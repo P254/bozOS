@@ -47,7 +47,7 @@ int32_t halt(uint8_t status) {
         reset_pcb_head(term_num);// We set it to NULL so we can call add_PCB in EXECUTE
 
         // Call execute again
-        clear_screen();
+        // clear_screen();
         execute((uint8_t*) "shell");
     }
 

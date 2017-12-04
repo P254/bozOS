@@ -3,15 +3,12 @@
 
 #include "lib.h"
 #include "scheduling.h"
+#include "multi_term.h"
+
 #define ATTRIB      0x7 
-#define ATTRIB_1    0x7
-#define ATTRIB_2    0xA 
-#define ATTRIB_3    0xC 
 
 static int screen_x;
 static int screen_y;
-volatile char* video_mem = (char *)VIDEO;
-volatile char* video_mem_r1 = (char *) VIDEO_MEM_ROW1;
 
 /* clear_screen
  * Inputs: none
@@ -19,9 +16,11 @@ volatile char* video_mem_r1 = (char *) VIDEO_MEM_ROW1;
  * Function: Clears video memory */
 void clear_screen() {
     int32_t i;
+    char* video_mem = get_video_mem();
+
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
-        *(uint8_t *)(video_mem + (i << 1) + 1) = terminal_color();
+        *(uint8_t *)(video_mem + (i << 1) + 1) = get_terminal_color();
     }
     set_screen_y(0);
     set_screen_x(0);
@@ -171,6 +170,7 @@ int32_t puts(int8_t* s) {
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(uint8_t c) {
+    char* video_mem = get_video_mem();    
     if(c == '\n' || c == '\r') {
         if (screen_y == NUM_ROWS-1) {
             video_scroll();
@@ -182,7 +182,7 @@ void putc(uint8_t c) {
         }
     } else {
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
-        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = terminal_color();
+        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = get_terminal_color();
 
         // Sean: Check if we have reached the bottom-right corner of the screen out-of-bounds, if yes, perform scrolling
         if (screen_y == NUM_ROWS-1 && screen_x == NUM_COLS-1) {
@@ -489,6 +489,7 @@ int8_t* strncpy(int8_t* dest, const int8_t* src, uint32_t n) {
  * Function: increments video memory. To be used to test rtc */
 void test_interrupts(void) {
     int32_t i;
+    char* video_mem = get_video_mem();
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         video_mem[i << 1]++;
     }
@@ -560,34 +561,47 @@ void set_screen_y(int val) {
  *   SIDE EFFECTS: scrolls the main terminal window by one line
  */
 void video_scroll() {
+    char* video_mem = get_video_mem();
+    char* video_mem_r1 = video_mem + VIDEO_MEM_ROW1;
+
     memcpy((void*) video_mem, (void*) video_mem_r1, SCROLL_SIZE);
     // Clear the botttommost line
     uint16_t i, vid_idx;
     for (i = 0; i < NUM_COLS; i++) {
         vid_idx = NUM_COLS*(NUM_ROWS-1) + i;
         *(uint8_t *)(video_mem + (vid_idx << 1)) = ' ';
-        *(uint8_t *)(video_mem + (vid_idx << 1) + 1) = terminal_color();
+        *(uint8_t *)(video_mem + (vid_idx << 1) + 1) = get_terminal_color();
     }
 }
 
 /*
- * terminal_color
+ * get_terminal_color
  *   DESCRIPTION: Sets the text color depending on the terminal #
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int8_t -- the color of the text we want to set
  *   SIDE EFFECTS: none
  */
-int8_t terminal_color() {
-    uint8_t task = get_active_task();
-    switch (task) {
-        case 0:
-            return ATTRIB_1;
-        case 1: 
-            return ATTRIB_2;
-        case 2:
-            return ATTRIB_3;
-        default:
-            return ATTRIB;
-    }
+int8_t get_terminal_color() {
+    uint8_t task_n = get_active_task();
+    term_t* term_ptr = get_terminal_ptr(task_n);
+    if (term_ptr->color == 0) return ATTRIB;
+    else return (term_ptr->color);
+}
+
+/*
+ * get_video_mem
+ *   DESCRIPTION: Returns the video memory pointer to write to, depending on the active task.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: char* -- pointer to the video page we want to write to
+ *   SIDE EFFECTS: none
+ */
+char* get_video_mem() {
+    uint8_t task_n = get_active_task();
+    uint8_t terminal_n = get_active_terminal();
+    term_t* term_ptr = get_terminal_ptr(task_n);
+    
+    if (task_n == terminal_n) return (char*) VIDEO;
+    else return (char*) term_ptr->video;   
 }

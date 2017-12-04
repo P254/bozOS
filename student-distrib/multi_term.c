@@ -40,6 +40,10 @@ void multi_term_init() {
     terminal_table[TERM_2].y = 0;
     terminal_table[TERM_3].x = 0;
     terminal_table[TERM_3].y = 0;
+
+    terminal_table[TERM_1].color = ATTRIB_1;
+    terminal_table[TERM_2].color = ATTRIB_2;
+    terminal_table[TERM_3].color = ATTRIB_3;
 }
 
 /*

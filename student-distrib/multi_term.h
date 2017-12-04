@@ -10,6 +10,10 @@
 #define TERM_3      2
 #define TERM_SIZE   3
 
+#define ATTRIB_1    0x7
+#define ATTRIB_2    0xA 
+#define ATTRIB_3    0xC 
+
 enum pu_t {NOT_USED, IN_USE};
 
 typedef struct term {
