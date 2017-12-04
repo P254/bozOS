@@ -14,7 +14,7 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
   '9', '0', '-', '=', '\b', /* Backspace */
-  '\t',         /* Tab */
+  0,         /* Tab */
   'q', 'w', 'e', 'r',   /* 19 */
   't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', /* Enter key */
     0,          /* 29   - Control */
@@ -53,7 +53,7 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 
     0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */ /*SHIFT TABLE*/
   '(', ')', '_', '+', '\b', /* Backspace */
-  '\t',         /* Tab */
+  0,         /* Tab */
   'Q', 'W', 'E', 'R',   /* 19 */
   'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n', /* Enter key */
     0,          /* 29   - Control */
@@ -92,7 +92,7 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
     '9', '0', '-', '=', '\b',   /* Backspace */
-  '\t',         /* Tab */
+  0,         /* Tab */
   'Q', 'W', 'E', 'R',   /* 19 */
   'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\n', /* Enter key */
     0,          /* 29   - Control */
@@ -130,7 +130,7 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 
     0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */
     '(', ')', '_', '+', '\b',   /* Backspace */
-  '\t',         /* Tab */
+  0,         /* Tab */
   'q', 'w', 'e', 'r',   /* 19 */
   't', 'y', 'u', 'i', 'o', 'p', '{', '}', '\n', /* Enter key */
     0,          /* 29   - Control */
@@ -222,12 +222,16 @@ unsigned int get_scan_code() {
     unsigned char scanCode;
     unsigned int position;
     scanCode = inb(KB_DATA_PORT); //get data from port when key is pressed/released
+    //printf("%x", key_status);
+    //printf("%x", scanCode);
     if (scanCode & RELEASED_KEY_MASK) { //check if any key is released
 
         if (scanCode == SHIFT_RELEASE) {key_status &= CLEAR_SHIFT_FLAG;}
         //if shift is release, clear shift status
         else if (scanCode == CTRL_RELEASE)  {key_status &= CLEAR_CTRL_FLAG;}
         //if control is released, clear control status
+        else if (scanCode == ALT_RELEASE)  {key_status &= CLEAR_ALT_FLAG;}
+
     }
     else { //else if a key is pressed
         if (scanCode == SHIFT_PRESSED) { key_status += SHIFT_FLAG; }
@@ -240,12 +244,19 @@ unsigned int get_scan_code() {
             clear(); //clear screen
             kb_buf[0] = '\0'; //reset keyboard buffer
         }
+        else if(scanCode == F_ONE && (key_status & ALT_FLAG) ) {/*TERM1*/}
+        else if(scanCode == F_TWO && (key_status & ALT_FLAG) ) {/*TERM2*/}
+        else if(scanCode == F_THREE && (key_status & ALT_FLAG) ) {/*TERM3*/}
+
+        else if (scanCode == ALT_PRESSED) {key_status += ALT_FLAG;}
 
         else if (scanCode == ENTER_PRESSED) { //if \n is pressed
             terminal_read_release = 1; //allow terminal to be read if we are calling that function
             position  = (int) scanCode;
             return position; //send scan code to handler
         }
+
+
 
         else if (key_status == 0) { //if no special keys are pressed
             position = (int) (scanCode);
@@ -268,12 +279,13 @@ unsigned int get_scan_code() {
             }
         }
 
-        else if (key_status == BOTH_FLAG) {//if caps lock AND shift is pressed
+        else if (key_status && CAPS_FLAG && SHIFT_FLAG) {//if caps lock AND shift is pressed
             position = (int) (scanCode) + (CAPS_EXTEND*BASE_KB_SIZE); //acquire shift+caps lock table
             if(position < (BOTH_EXTEND*BASE_KB_SIZE) && (CAPS_EXTEND*BASE_KB_SIZE) <= position) { //check for invalid scan codes
                 return position; //send combined scan code to handler
             }
         }
+
     }
     return 0;
 }

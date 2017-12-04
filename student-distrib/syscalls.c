@@ -32,17 +32,17 @@ generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (gene
 /*
  * halt
  *   DESCRIPTION: Handler for 'halt' system call.
- *   INPUTS: status -- status for halt: 256 for exception, !0 for abnormal exit 
+ *   INPUTS: status -- status for halt: 256 for exception, !0 for abnormal exit
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
- *   SIDE EFFECTS: Jumps back to the parent's execute process. This function should never terminate. 
+ *   SIDE EFFECTS: Jumps back to the parent's execute process. This function should never terminate.
  */
 int32_t halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
     uint8_t i;
     uint32_t status_32 = status;
-    
+
     // Check if status_32 == 255 and return 256 if true
     if (status_32 == PROG_DIED_BY_EXCEPTION) {
         status_32 = PROG_DIED_BY_EXCEPTION + 1;
@@ -149,9 +149,9 @@ int32_t execute(const uint8_t* command) {
     if (i == KB_BUF_SIZE) {
         strncpy((int8_t*) cmd1, (int8_t*) command, KB_BUF_SIZE);
     }
-    // TODO: Employ getargs here, probably need to use 'nbytes' as a starting point/offset
-    // we should save argument 2 somewhere here. Do we need more than 1
-    i++;
+    while (command[i] == ' '){
+         i++;
+    }
     j = i;
     arg_nbytes = 0;
     memset(cmd2,'\0',KB_BUF_SIZE);
@@ -361,9 +361,9 @@ int32_t execute(const uint8_t* command) {
 int32_t read (int32_t fd, void* buf, int32_t nbytes) {
     // This function is called within a given user program.
     // Based on the file descriptor #, we index into the PCB's FD array and find the relevant FOTP
-    // In the read you look for the fd file in the fd_arr, 
+    // In the read you look for the fd file in the fd_arr,
     // then use the operations pointer to get the function
-    
+
     // printf("SYSCALL READ \n");
     // Check for invalid inputs
     pcb_t* PCB_base = get_PCB_base(process_number);
@@ -496,7 +496,7 @@ int32_t close (int32_t fd) {
 /*
  * getargs
  *   DESCRIPTION: Handler for 'getargs' system call.
- *   INPUTS: buf -- buffer to copy args from
+ *   INPUTS: buf -- buffer to copy args to
  *           nbytes -- number of bytes to copy
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
@@ -509,7 +509,10 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
     pcb_t* PCB_base = get_PCB_base(process_number);
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
-    if (PCB_base->fd_arr[0].arg == NULL) return -1;
+    // check for empty argument
+    int8_t* input_arg = (int8_t*) PCB_base->fd_arr[0].arg;
+    if (input_arg == NULL || strlen(input_arg) == 0) return -1;
+
     // clear the buffer
     memset(buf,'\0',BUF_SIZE);
     memcpy(buf,PCB_base->fd_arr[0].arg,nbytes);
@@ -519,7 +522,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
 /*
  * vidmap
  *   DESCRIPTION: Handler for 'vidmap' system call.
- *   INPUTS: double pointer to the start screen  
+ *   INPUTS: double pointer to the start screen
  *   OUTPUTS: none
  *   RETURN VALUE: int32_t -- 0 on success, -1 on failure
  *   SIDE EFFECTS: none
@@ -533,7 +536,7 @@ int32_t vidmap (uint8_t** screen_start) {
 
     // Set up new user-level paging
     // 4 KiB page, user access, r/w access, present
-    page_directory[(USER_VIDEO_MEM >> ALIGN_4MB)] = ((uint32_t) vidmap_ptable) | 0x7; 
+    page_directory[(USER_VIDEO_MEM >> ALIGN_4MB)] = ((uint32_t) vidmap_ptable) | 0x7;
 
     uint16_t i;
     for (i = 0; i < PAGE_SIZE; i++) {
