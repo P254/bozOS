@@ -244,6 +244,7 @@ unsigned int get_scan_code() {
         else if (scanCode == L_PRESSED && (key_status & CTRL_FLAG)) { //if CTRL+L is pressed
             clear_screen(); //clear screen
             kb_buf[0] = '\0'; //reset keyboard buffer
+            printf("391OS> ");
         }
         else if (scanCode == ALT_PRESSED) {key_status += ALT_FLAG;}
         else if (scanCode == FN_1 && (key_status & ALT_FLAG)) { switch_terminal(TERM_1); }

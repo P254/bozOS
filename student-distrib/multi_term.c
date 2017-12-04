@@ -8,7 +8,7 @@
 #include "i8259.h"
 
 /* Global Variables */
-static uint8_t active_terminal;
+volatile uint8_t active_terminal;
 static term_t terminal_table[TERM_SIZE];
 static enum pu_t process_usage[MAX_PROCESSES];
 
@@ -62,10 +62,8 @@ void switch_terminal(uint8_t new_terminal) {
     outgoing_pcb = get_PCB_tail(active_terminal);
 
     copy_terminal(new_terminal);
-    active_terminal = new_terminal;
+    set_active_terminal(new_terminal);
     
-    set_active_task(new_terminal); // TODO: Remove this for multi-tasking
-
     // Check if our terminal is empty - if yes, launch a new shell
     if (incoming_pcb == NULL) {
         // Save outgoing esp/ebp first
@@ -76,6 +74,9 @@ void switch_terminal(uint8_t new_terminal) {
         );
         // Execute new user program
         execute((uint8_t*) "shell");
+
+        // Execute might fail (return -1): we will need to return to old terminal 
+        // TODO: Add this later
     }
 }
 
@@ -109,7 +110,7 @@ void copy_terminal(uint8_t new_terminal) {
 }
 
 /*
- * get_terminal
+ * get_terminal_ptr
  *   DESCRIPTION: Returns the (read-only) pointer to the active terminal struct. 
  *                Used by functions outside the scope of this file's namespace. 
  *   INPUTS: terminal_n -- terminal # that we are interested in
@@ -117,12 +118,10 @@ void copy_terminal(uint8_t new_terminal) {
  *   RETURN VALUE: term_t -- pointer to active terminal struct
  *   SIDE EFFECTS: none
  */
-term_t* get_terminal(uint8_t terminal_n) {
+term_t* get_terminal_ptr(uint8_t terminal_n) {
     if (terminal_n > TERM_3) return NULL;
-    uint8_t n = (terminal_n == 0) ? active_terminal : terminal_n;
-    
     // NOTE: This pointer is read-only
-    return &terminal_table[n]; 
+    return &terminal_table[terminal_n]; 
 }
 
 /*
@@ -168,7 +167,7 @@ uint8_t get_active_terminal() {
 /*
  * get_PCB_tail
  *   DESCRIPTION: Returns the pointer to the tail of PCB linked list for a given terminal
- *   INPUTS: terminal_n -- the terminal # (1,2,3) we are interested in, or 0 for the active terminal
+ *   INPUTS: terminal_n -- the terminal # (0,1,2) we are interested in
  *   OUTPUTS: none
  *   RETURN VALUE: pcb_t
  *   SIDE EFFECTS: none
@@ -241,3 +240,14 @@ pcb_t* get_PCB_base(int8_t process_num) {
     else return NULL;
 }
 
+/*
+ * set_active_terminal
+ *   DESCRIPTION: Sets the active terminal.
+ *   INPUTS: uint8_t -- the new terminal # that we want to set 
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: none
+ */
+void set_active_terminal(uint8_t new_terminal) {
+    active_terminal = new_terminal;
+}

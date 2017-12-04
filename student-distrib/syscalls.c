@@ -26,7 +26,7 @@ generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (gene
 int32_t halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
-    uint8_t i;
+    uint8_t i, term_num;
     uint32_t status_32 = status;
 
     // Check if status_32 == 255 and return 256 if true
@@ -34,8 +34,8 @@ int32_t halt(uint8_t status) {
         status_32 = PROG_DIED_BY_EXCEPTION + 1;
     }
 
-    uint8_t term_num = get_active_task();
-    term_t* term_ptr = get_terminal(term_num);
+    term_num = get_active_task();
+    term_t* term_ptr = get_terminal_ptr(term_num);
     pcb_t* PCB_base_parent = term_ptr->pcb_head;
     pcb_t* PCB_base_self = get_PCB_tail(term_num);
 

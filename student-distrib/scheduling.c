@@ -10,7 +10,7 @@
 #include "multi_term.h"
 
 // Global variable that holds the terminal # where the task is active (1,2,3)
-static uint8_t active_task;   
+volatile uint8_t active_task;   
 
 /*
  * pit_init
@@ -21,6 +21,7 @@ static uint8_t active_task;
  *   SIDE EFFECTS: none
  */
 void pit_init() {
+    set_active_task(0);
     // Source: http://www.osdever.net/bkerndev/Docs/pit.htm
     outb(PIT_INIT_CMD, CMD_REG);        
     outb(SET_FREQ_L, CH0_PORT); // send low byte
@@ -28,7 +29,6 @@ void pit_init() {
     
     enable_irq(PIT_IRQ_NUM);    // enable IRQ line for PIT
     set_IDT_wrapper(SOFT_INT_START + PIT_IRQ_NUM, pit_handler_asm);
-    active_task = 0;
 }
 
 /*
@@ -40,26 +40,33 @@ void pit_init() {
  *   SIDE EFFECTS: Modifies the ESP, EBP, TSS and paging structure
  */
 void task_switch() {
-    // For use with mono-tasking
+    uint8_t outgoing_task, incoming_task;
     pcb_t* incoming_pcb;
     pcb_t* outgoing_pcb;
-    uint8_t new_task = get_active_terminal(); 
-    if (new_task == active_task) {
-        send_eoi(PIT_IRQ_NUM);
-        return;
-    }
+    
+    // For use with mono-tasking
+    // outgoing_task = get_active_task();
+    // incoming_task = get_active_terminal(); 
+    // if (incoming_task == outgoing_task) {
+    //     send_eoi(PIT_IRQ_NUM);
+    //     return;
+    // }
+
     // For use with multi-tasking
-    // uint8_t new_task = (active_task+1) % MAX_TERM_N; 
+    outgoing_task = get_active_task();
+    incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
 
     /******* TASK SWITCH CODE BEGINS HERE ******/
     // We want to block all other interrupts so that our task switch process is atomic
-    incoming_pcb = get_PCB_tail(new_task);
-    outgoing_pcb = get_PCB_tail(active_task);
+    incoming_pcb = get_PCB_tail(incoming_task);
+    outgoing_pcb = get_PCB_tail(outgoing_task);
 
-    if (incoming_pcb == NULL) {
+    if (incoming_pcb == NULL || outgoing_pcb == NULL) {
         send_eoi(PIT_IRQ_NUM);
         return;
     }
+    // Update bookkeeping information first
+    set_active_task(incoming_task);
 
     // Set up incoming paging and tss.esp0
     tss.esp0 = incoming_pcb->self_k_stack;
@@ -87,17 +94,16 @@ void task_switch() {
         : "r" (incoming_pcb->esp_switch), "r" (incoming_pcb->ebp_switch)
         : "esp", "ebp"
     );
-    active_task = new_task;
     send_eoi(PIT_IRQ_NUM);
 }
 
 /*
  * get_active_task
- *   DESCRIPTION: Returns the terminal that the current active task resides in.
+ *   DESCRIPTION: Returns the terminal # that the current active task resides in.
  *                To be called by external functions. 
  *   INPUTS: none
  *   OUTPUTS: none
- *   RETURN VALUE: uint8_t -- the terminal of the current active task
+ *   RETURN VALUE: uint8_t -- terminal # of the current active task
  *   SIDE EFFECTS: none
  */
 uint8_t get_active_task() {
@@ -106,13 +112,13 @@ uint8_t get_active_task() {
 
 /*
  * set_active_task
- *   DESCRIPTION: Sets the active task. For use with mono-tasking only.
- *                To be called by external functions. 
- *   INPUTS: none
+ *   DESCRIPTION: Sets the active task.
+ *   INPUTS: uint8_t -- the active task # that we want to set 
  *   OUTPUTS: none
- *   RETURN VALUE: uint8_t -- the terminal of the current active task
+ *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
 void set_active_task(uint8_t new_task) {
-    return; // TODO: Remove this function that does nothing
+    if (new_task >= MAX_TERM_N) return;
+    else active_task = new_task;
 }

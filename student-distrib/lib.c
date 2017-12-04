@@ -4,7 +4,7 @@
 #include "lib.h"
 #include "scheduling.h"
 #define ATTRIB      0x7 
-#define ATTRIB_1    ATTRIB 
+#define ATTRIB_1    0x7
 #define ATTRIB_2    0xA 
 #define ATTRIB_3    0xC 
 
