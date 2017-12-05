@@ -25,6 +25,7 @@ void multi_term_init() {
     for (i = 0; i < MAX_PROCESSES; i++) {
         process_usage[i] = NOT_USED;
     }
+    set_active_terminal(0);
 
     terminal_table[TERM_1].pcb_head = NULL;
     terminal_table[TERM_2].pcb_head = NULL;
@@ -55,33 +56,33 @@ void multi_term_init() {
  *   SIDE EFFECTS: Clears video memory to load new terminal
  */
 void switch_terminal(uint8_t new_terminal) {
-    pcb_t* incoming_pcb;
-    pcb_t* outgoing_pcb;
+    // pcb_t* incoming_pcb;
+    // pcb_t* outgoing_pcb;
     // Check for bad inputs
     if (new_terminal > TERM_3) return;
     // Switch terminals only if we're not already in the same terminal
     if (new_terminal == active_terminal) return;
     
-    incoming_pcb = get_PCB_tail(new_terminal);
-    outgoing_pcb = get_PCB_tail(active_terminal);
+    // incoming_pcb = get_PCB_tail(new_terminal);
+    // outgoing_pcb = get_PCB_tail(active_terminal);
 
     copy_terminal(new_terminal);
     set_active_terminal(new_terminal);
     
     // Check if our terminal is empty - if yes, launch a new shell
-    if (incoming_pcb == NULL) {
+    // if (incoming_pcb == NULL) {
         // Save outgoing esp/ebp first
-        asm volatile(
-            "movl %%esp, %0;"
-            "movl %%ebp, %1;"
-            : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
-        );
-        // Execute new user program
-        execute((uint8_t*) "shell");
+        // asm volatile(
+        //     "movl %%esp, %0;"
+        //     "movl %%ebp, %1;"
+        //     : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
+        // );
+        // // Execute new user program
+        // execute((uint8_t*) "shell");
 
         // Execute might fail (return -1): we will need to return to old terminal 
         // TODO: Add this later
-    }
+    // }
 }
 
 /*
@@ -198,7 +199,7 @@ pcb_t* get_PCB_tail(uint8_t terminal_n) {
  *                 adds a child_pcb to the PCB linked list of the active terminal
  */
 int8_t add_PCB() {
-    int i, process_num = -1;
+    int i, task_n, process_num = -1;
     for (i = 0; i < MAX_PROCESSES; i++) {
         if (process_usage[i] == NOT_USED) {
             process_num = i;
@@ -208,11 +209,12 @@ int8_t add_PCB() {
     if (process_num == -1) return -1;
 
     process_usage[process_num] = IN_USE;
-    pcb_t* pcb_ptr = terminal_table[active_terminal].pcb_head;
+    task_n = get_active_task();
+    pcb_t* pcb_ptr = terminal_table[task_n].pcb_head;
     
     // Adding the first process for a given terminal
     if (pcb_ptr == NULL) {
-        terminal_table[active_terminal].pcb_head = get_PCB_base(process_num);
+        terminal_table[task_n].pcb_head = get_PCB_base(process_num);
     }
     
     else {
