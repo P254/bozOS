@@ -47,7 +47,7 @@ void task_switch() {
     pcb_t* outgoing_pcb;
     
     // Initialize a shell for each terminal if we haven't done so already
-    init_shells();
+    if (init_flag == 0) init_shells();
     
     // For use with mono-tasking
     outgoing_task = get_active_task();
@@ -122,6 +122,7 @@ void init_shells() {
     // Reset active task # to 0 if we have finished initializing all the terminals 
     if (count == MAX_TERM_N) {
         set_active_task(0);
+        init_flag = 1;
     } 
 }
 
