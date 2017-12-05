@@ -233,8 +233,8 @@ int32_t execute(const uint8_t* command) {
         "movl %%ebp, %1;"
         : "=r" (PCB_base->self_esp), "=r" (PCB_base->self_ebp)
     );
-    PCB_base->esp_switch = PCB_base->self_esp;
-    PCB_base->ebp_switch = PCB_base->self_ebp;
+    PCB_base->esp_switch = NULL;
+    PCB_base->ebp_switch = NULL;
 
     // flush the argument buffer in stdin
     memset((int8_t*) PCB_base->fd_arr[0].arg, '\0' ,KB_BUF_SIZE);

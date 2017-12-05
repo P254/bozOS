@@ -5,11 +5,6 @@
 #include "scheduling.h"
 #include "multi_term.h"
 
-#define ATTRIB      0x7 
-
-static int screen_x;
-static int screen_y;
-
 /* clear_screen
  * Inputs: none
  * Return Value: none
@@ -171,31 +166,34 @@ int32_t puts(int8_t* s) {
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(uint8_t c) {
-    char* video_mem = get_video_mem();    
+    uint8_t task_n = get_active_task();
+    term_t* term_ptr = get_terminal_ptr(task_n);
+    char* video_mem = get_video_mem();
+
     if(c == '\n' || c == '\r') {
-        if (screen_y == NUM_ROWS-1) {
+        if (term_ptr->y == NUM_ROWS-1) {
             video_scroll();
-            screen_x = 0;
+            term_ptr->x = 0;
         }
         else {
-            screen_y++;
-            screen_x = 0;
+            term_ptr->y++;
+            term_ptr->x = 0;
         }
     } else {
-        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
-        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = get_terminal_color();
+        *(uint8_t *)(video_mem + ((NUM_COLS * term_ptr->y + term_ptr->x) << 1)) = c;
+        *(uint8_t *)(video_mem + ((NUM_COLS * term_ptr->y + term_ptr->x) << 1) + 1) = get_terminal_color();
 
         // Sean: Check if we have reached the bottom-right corner of the screen out-of-bounds, if yes, perform scrolling
-        if (screen_y == NUM_ROWS-1 && screen_x == NUM_COLS-1) {
+        if (term_ptr->y == NUM_ROWS-1 && term_ptr->x == NUM_COLS-1) {
             video_scroll();
-            screen_x = 0;
-            screen_y = NUM_ROWS-1;
+            term_ptr->x = 0;
+            term_ptr->y = NUM_ROWS-1;
         }
         else {
-            screen_x++;
-            screen_x %= NUM_COLS;
-            if (screen_x == 0) screen_y++;
-            screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+            term_ptr->x++;
+            term_ptr->x %= NUM_COLS;
+            if (term_ptr->x == 0) term_ptr->y++;
+            term_ptr->y = (term_ptr->y + (term_ptr->x / NUM_COLS)) % NUM_ROWS;
         }
     }
 }
@@ -500,54 +498,62 @@ void test_interrupts(void) {
 
 /*
  * get_screen_x
- *   DESCRIPTION: Returns the value of screen_x. Used by the keyboard driver.
+ *   DESCRIPTION: Returns the value of active screen_x. 
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int -- value of screen_x
  *   SIDE EFFECTS: none
  */
 int get_screen_x() {
-    return screen_x;
+    uint8_t task_n = get_active_task();
+    term_t* term_ptr = get_terminal_ptr(task_n);
+    return term_ptr->x;
 }
 
 /*
  * get_screen_y
- *   DESCRIPTION: Returns the value of screen_y. Used by the keyboard driver.
+ *   DESCRIPTION: Returns the value of active screen_y. 
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: int -- value of screen_y
  *   SIDE EFFECTS: none
  */
 int get_screen_y() {
-    return screen_y;
+    uint8_t task_n = get_active_task();
+    term_t* term_ptr = get_terminal_ptr(task_n);
+    return term_ptr->y;
 }
 
 /*
  * set_screen_x
- *   DESCRIPTION: sets the value of screen_x. Used by the keyboard driver.
+ *   DESCRIPTION: sets the value of active screen_x. 
  *   INPUTS: value of screen_x we want to set
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
 void set_screen_x(int val) {
+    uint8_t task_n = get_active_task();
+    term_t* term_ptr = get_terminal_ptr(task_n);
     if (val >= 0 && val < NUM_COLS) {
-        screen_x = val;
+        term_ptr->x = val;
     }
     return;
 }
 
 /*
  * set_screen_y
- *   DESCRIPTION: sets the value of screen_y. Used by the keyboard driver.
+ *   DESCRIPTION: sets the value of active screen_y. 
  *   INPUTS: value of screen_y we want to set
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
 void set_screen_y(int val) {
+    uint8_t task_n = get_active_task();
+    term_t* term_ptr = get_terminal_ptr(task_n);
     if (val >= 0 && val < NUM_ROWS) {
-        screen_y = val;
+        term_ptr->y = val;
     }
     return;
 }

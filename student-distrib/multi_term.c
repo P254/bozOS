@@ -56,62 +56,28 @@ void multi_term_init() {
  *   SIDE EFFECTS: Clears video memory to load new terminal
  */
 void switch_terminal(uint8_t new_terminal) {
-    // pcb_t* incoming_pcb;
-    // pcb_t* outgoing_pcb;
+    cli();
     // Check for bad inputs
     if (new_terminal > TERM_3) return;
     // Switch terminals only if we're not already in the same terminal
     if (new_terminal == active_terminal) return;
     
-    // incoming_pcb = get_PCB_tail(new_terminal);
-    // outgoing_pcb = get_PCB_tail(active_terminal);
-
-    copy_terminal(new_terminal);
-    set_active_terminal(new_terminal);
-    
-    // Check if our terminal is empty - if yes, launch a new shell
-    // if (incoming_pcb == NULL) {
-        // Save outgoing esp/ebp first
-        // asm volatile(
-        //     "movl %%esp, %0;"
-        //     "movl %%ebp, %1;"
-        //     : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
-        // );
-        // // Execute new user program
-        // execute((uint8_t*) "shell");
-
-        // Execute might fail (return -1): we will need to return to old terminal 
-        // TODO: Add this later
-    // }
-}
-
-/*
- * copy_terminal
- *   DESCRIPTION: Helper function for copy_terminal
- *   INPUTS: new_terminal -- new terminal number to switch to
- *   OUTPUTS: none
- *   RETURN VALUE: none
- *   SIDE EFFECTS: Clears video memory to load new terminal
- */
-void copy_terminal(uint8_t new_terminal) {
     // Copy active terminal data to the terminal table 
     char* active_video = (char*) VIDEO;
     uint8_t* active_kb_buf = get_kb_buffer();
 
     memcpy(terminal_table[active_terminal].video, active_video, VIDEO_SIZE);
     memcpy(terminal_table[active_terminal].kb_buf, active_kb_buf, KB_SIZE);
-    terminal_table[active_terminal].x = get_screen_x();
-    terminal_table[active_terminal].y = get_screen_y();
 
-    // Clear keyboard buffer and screen
+    // Clear keyboard buffer
     memset(active_kb_buf, '\0', KB_SIZE);
-    clear_screen();
 
     // Copy new terminal data from the terminal table 
     memcpy(active_video, terminal_table[new_terminal].video, VIDEO_SIZE);
     memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
-    set_screen_x(terminal_table[new_terminal].x);
-    set_screen_y(terminal_table[new_terminal].y);
+
+    set_active_terminal(new_terminal);
+    sti();    
 }
 
 /*

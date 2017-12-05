@@ -57,3 +57,6 @@ int* kb_read_release();
 unsigned char* get_kb_buffer();
 unsigned char* get_int_buffer();
 void copy_kb_buf();
+int get_active_term_x();
+int get_active_term_y();
+int get_active_terminal_color();

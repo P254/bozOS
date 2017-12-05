@@ -427,3 +427,46 @@ void copy_kb_buf() {
     }
   return;
 }
+
+/*
+ * get_active_term_x
+ *   DESCRIPTION: Returns the value of active terminal's screen_x.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: int -- value of screen_x
+ *   SIDE EFFECTS: none
+ */
+int get_active_term_x() {
+    uint8_t task_n = get_active_terminal();
+    term_t* term_ptr = get_terminal_ptr(task_n);
+    return term_ptr->x;
+}
+
+/*
+ * get_active_term_y
+ *   DESCRIPTION:  Returns the value of active terminal's screen_x.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: int -- value of screen_y
+ *   SIDE EFFECTS: none
+ */
+int get_active_term_y() {
+    uint8_t task_n = get_active_terminal();
+    term_t* term_ptr = get_terminal_ptr(task_n);
+    return term_ptr->y;
+}
+
+/*
+ * get_active_terminal_color
+ *   DESCRIPTION: Sets the text color depending on the active terminal #
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: int8_t -- the color of the text we want to set
+ *   SIDE EFFECTS: none
+ */
+int get_active_terminal_color() {
+    uint8_t task_n = get_active_terminal();
+    term_t* term_ptr = get_terminal_ptr(task_n);
+    if (term_ptr->color == 0) return ATTRIB;
+    else return (term_ptr->color);
+}
