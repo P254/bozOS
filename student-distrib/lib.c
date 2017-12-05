@@ -17,10 +17,11 @@ static int screen_y;
 void clear_screen() {
     int32_t i;
     char* video_mem = get_video_mem();
+    char term_color = get_terminal_color();
 
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
-        *(uint8_t *)(video_mem + (i << 1) + 1) = get_terminal_color();
+        *(uint8_t *)(video_mem + (i << 1) + 1) = term_color;
     }
     set_screen_y(0);
     set_screen_x(0);
@@ -563,6 +564,7 @@ void set_screen_y(int val) {
 void video_scroll() {
     char* video_mem = get_video_mem();
     char* video_mem_r1 = video_mem + VIDEO_MEM_ROW1;
+    char term_color = get_terminal_color();
 
     memcpy((void*) video_mem, (void*) video_mem_r1, SCROLL_SIZE);
     // Clear the botttommost line
@@ -570,7 +572,7 @@ void video_scroll() {
     for (i = 0; i < NUM_COLS; i++) {
         vid_idx = NUM_COLS*(NUM_ROWS-1) + i;
         *(uint8_t *)(video_mem + (vid_idx << 1)) = ' ';
-        *(uint8_t *)(video_mem + (vid_idx << 1) + 1) = get_terminal_color();
+        *(uint8_t *)(video_mem + (vid_idx << 1) + 1) = term_color;
     }
 }
 
