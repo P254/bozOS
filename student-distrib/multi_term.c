@@ -42,9 +42,9 @@ void multi_term_init() {
     terminal_table[TERM_3].x = 0;
     terminal_table[TERM_3].y = 0;
 
-    terminal_table[TERM_1].color = ATTRIB_1;
-    terminal_table[TERM_2].color = ATTRIB_2;
-    terminal_table[TERM_3].color = ATTRIB_3;
+    terminal_table[TERM_1].color = COLOR_1;
+    terminal_table[TERM_2].color = COLOR_2;
+    terminal_table[TERM_3].color = COLOR_3;
 }
 
 /*
@@ -56,7 +56,6 @@ void multi_term_init() {
  *   SIDE EFFECTS: Clears video memory to load new terminal
  */
 void switch_terminal(uint8_t new_terminal) {
-    cli();
     // Check for bad inputs
     if (new_terminal > TERM_3) return;
     // Switch terminals only if we're not already in the same terminal
@@ -77,7 +76,6 @@ void switch_terminal(uint8_t new_terminal) {
     memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
 
     set_active_terminal(new_terminal);
-    sti();    
 }
 
 /*
@@ -165,7 +163,7 @@ pcb_t* get_PCB_tail(uint8_t terminal_n) {
  *                 adds a child_pcb to the PCB linked list of the active terminal
  */
 int8_t add_PCB() {
-    int i, task_n, process_num = -1;
+    int i, task_n, terminal_n, process_num = -1;
     for (i = 0; i < MAX_PROCESSES; i++) {
         if (process_usage[i] == NOT_USED) {
             process_num = i;
@@ -176,6 +174,7 @@ int8_t add_PCB() {
 
     process_usage[process_num] = IN_USE;
     task_n = get_active_task();
+    terminal_n = get_active_terminal();
     pcb_t* pcb_ptr = terminal_table[task_n].pcb_head;
     
     // Adding the first process for a given terminal
@@ -184,6 +183,7 @@ int8_t add_PCB() {
     }
     
     else {
+        pcb_ptr = terminal_table[terminal_n].pcb_head;
         while (pcb_ptr->child_pcb != NULL) {
             pcb_ptr = pcb_ptr->child_pcb;
         }

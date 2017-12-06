@@ -175,8 +175,9 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
-    // switch_terminal(TERM_1);
-    // execute((uint8_t*) "shell"); 
+    clear_screen();
+    switch_terminal(TERM_1);
+    execute((uint8_t*) "shell"); 
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

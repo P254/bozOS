@@ -11,15 +11,15 @@
  * Function: Clears video memory */
 void clear_screen() {
     int32_t i;
-    char* video_mem = get_video_mem();
-    char term_color = get_terminal_color();
+    char* video_mem = get_video_mem(ACTIVE_TASK);
+    char term_color = get_terminal_color(ACTIVE_TASK);
 
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
         *(uint8_t *)(video_mem + (i << 1) + 1) = term_color;
     }
-    set_screen_y(0);
-    set_screen_x(0);
+    set_screen_y(0, ACTIVE_TASK);
+    set_screen_x(0, ACTIVE_TASK);
 }
 
 /* Standard printf().
@@ -168,11 +168,11 @@ int32_t puts(int8_t* s) {
 void putc(uint8_t c) {
     uint8_t task_n = get_active_task();
     term_t* term_ptr = get_terminal_ptr(task_n);
-    char* video_mem = get_video_mem();
+    char* video_mem = get_video_mem(ACTIVE_TASK);
 
     if(c == '\n' || c == '\r') {
         if (term_ptr->y == NUM_ROWS-1) {
-            video_scroll();
+            video_scroll(ACTIVE_TASK);
             term_ptr->x = 0;
         }
         else {
@@ -181,11 +181,11 @@ void putc(uint8_t c) {
         }
     } else {
         *(uint8_t *)(video_mem + ((NUM_COLS * term_ptr->y + term_ptr->x) << 1)) = c;
-        *(uint8_t *)(video_mem + ((NUM_COLS * term_ptr->y + term_ptr->x) << 1) + 1) = get_terminal_color();
+        *(uint8_t *)(video_mem + ((NUM_COLS * term_ptr->y + term_ptr->x) << 1) + 1) = get_terminal_color(ACTIVE_TASK);
 
         // Sean: Check if we have reached the bottom-right corner of the screen out-of-bounds, if yes, perform scrolling
         if (term_ptr->y == NUM_ROWS-1 && term_ptr->x == NUM_COLS-1) {
-            video_scroll();
+            video_scroll(ACTIVE_TASK);
             term_ptr->x = 0;
             term_ptr->y = NUM_ROWS-1;
         }
@@ -488,7 +488,7 @@ int8_t* strncpy(int8_t* dest, const int8_t* src, uint32_t n) {
  * Function: increments video memory. To be used to test rtc */
 void test_interrupts(void) {
     int32_t i;
-    char* video_mem = get_video_mem();
+    char* video_mem = get_video_mem(ACTIVE_TASK);
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         video_mem[i << 1]++;
     }
@@ -499,13 +499,16 @@ void test_interrupts(void) {
 /*
  * get_screen_x
  *   DESCRIPTION: Returns the value of active screen_x. 
- *   INPUTS: none
+ *   INPUTS: arg -- ACTIVE_TASK or ACTIVE_TERM
  *   OUTPUTS: none
  *   RETURN VALUE: int -- value of screen_x
  *   SIDE EFFECTS: none
  */
-int get_screen_x() {
-    uint8_t task_n = get_active_task();
+int get_screen_x(enum active_t arg) {
+    uint8_t task_n;
+    if (arg == ACTIVE_TASK) task_n = get_active_task();
+    else if (arg == ACTIVE_TERM) task_n = get_active_terminal();
+
     term_t* term_ptr = get_terminal_ptr(task_n);
     return term_ptr->x;
 }
@@ -513,13 +516,16 @@ int get_screen_x() {
 /*
  * get_screen_y
  *   DESCRIPTION: Returns the value of active screen_y. 
- *   INPUTS: none
+ *   INPUTS: arg -- ACTIVE_TASK or ACTIVE_TERM
  *   OUTPUTS: none
  *   RETURN VALUE: int -- value of screen_y
  *   SIDE EFFECTS: none
  */
-int get_screen_y() {
-    uint8_t task_n = get_active_task();
+int get_screen_y(enum active_t arg) {
+    uint8_t task_n;
+    if (arg == ACTIVE_TASK) task_n = get_active_task();
+    else if (arg == ACTIVE_TERM) task_n = get_active_terminal();
+
     term_t* term_ptr = get_terminal_ptr(task_n);
     return term_ptr->y;
 }
@@ -528,12 +534,16 @@ int get_screen_y() {
  * set_screen_x
  *   DESCRIPTION: sets the value of active screen_x. 
  *   INPUTS: value of screen_x we want to set
+ *           arg -- ACTIVE_TASK or ACTIVE_TERM
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
-void set_screen_x(int val) {
-    uint8_t task_n = get_active_task();
+void set_screen_x(int val, enum active_t arg) {
+    uint8_t task_n;
+    if (arg == ACTIVE_TASK) task_n = get_active_task();
+    else if (arg == ACTIVE_TERM) task_n = get_active_terminal();
+
     term_t* term_ptr = get_terminal_ptr(task_n);
     if (val >= 0 && val < NUM_COLS) {
         term_ptr->x = val;
@@ -544,13 +554,17 @@ void set_screen_x(int val) {
 /*
  * set_screen_y
  *   DESCRIPTION: sets the value of active screen_y. 
- *   INPUTS: value of screen_y we want to set
+ *   INPUTS: val -- value of screen_y we want to set
+ *           arg -- ACTIVE_TASK or ACTIVE_TERM
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: none
  */
-void set_screen_y(int val) {
-    uint8_t task_n = get_active_task();
+void set_screen_y(int val, enum active_t arg) {
+    uint8_t task_n;
+    if (arg == ACTIVE_TASK) task_n = get_active_task();
+    else if (arg == ACTIVE_TERM) task_n = get_active_terminal();
+
     term_t* term_ptr = get_terminal_ptr(task_n);
     if (val >= 0 && val < NUM_ROWS) {
         term_ptr->y = val;
@@ -562,15 +576,15 @@ void set_screen_y(int val) {
 /*
  * video_scroll
  *   DESCRIPTION: Performs scrolling of the window
- *   INPUTS: none
+ *   INPUTS: arg -- ACTIVE_TASK or ACTIVE_TERM
  *   OUTPUTS: none
  *   RETURN VALUE: vooid
  *   SIDE EFFECTS: scrolls the main terminal window by one line
  */
-void video_scroll() {
-    char* video_mem = get_video_mem();
+void video_scroll(enum active_t arg) {
+    char* video_mem = get_video_mem(arg);
     char* video_mem_r1 = video_mem + VIDEO_MEM_ROW1;
-    char term_color = get_terminal_color();
+    char term_color = get_terminal_color(arg);
 
     memcpy((void*) video_mem, (void*) video_mem_r1, SCROLL_SIZE);
     // Clear the botttommost line
@@ -585,14 +599,20 @@ void video_scroll() {
 /*
  * get_terminal_color
  *   DESCRIPTION: Sets the text color depending on the terminal #
- *   INPUTS: none
+ *   INPUTS: arg -- ACTIVE_TASK or ACTIVE_TERM
  *   OUTPUTS: none
  *   RETURN VALUE: int8_t -- the color of the text we want to set
  *   SIDE EFFECTS: none
  */
-int8_t get_terminal_color() {
-    uint8_t task_n = get_active_task();
-    term_t* term_ptr = get_terminal_ptr(task_n);
+int8_t get_terminal_color(enum active_t arg) {
+    term_t* term_ptr;
+    uint8_t task_n;
+
+    if (arg == ACTIVE_TASK) task_n = get_active_task();
+    else if (arg == ACTIVE_TERM) task_n = get_active_terminal();
+
+    term_ptr = get_terminal_ptr(task_n);
+
     if (term_ptr->color == 0) return ATTRIB;
     else return (term_ptr->color);
 }
@@ -600,16 +620,20 @@ int8_t get_terminal_color() {
 /*
  * get_video_mem
  *   DESCRIPTION: Returns the video memory pointer to write to, depending on the active task.
- *   INPUTS: none
+ *   INPUTS: arg -- ACTIVE_TASK or ACTIVE_TERM
  *   OUTPUTS: none
  *   RETURN VALUE: char* -- pointer to the video page we want to write to
  *   SIDE EFFECTS: none
  */
-char* get_video_mem() {
-    uint8_t task_n = get_active_task();
-    uint8_t terminal_n = get_active_terminal();
-    term_t* term_ptr = get_terminal_ptr(task_n);
+char* get_video_mem(enum active_t arg) {
+    if (arg == ACTIVE_TERM) return (char*) VIDEO;
     
-    if (task_n == terminal_n) return (char*) VIDEO;
-    else return (char*) term_ptr->video;   
+    else { 
+        uint8_t task_n = get_active_task();
+        uint8_t terminal_n = get_active_terminal();
+        term_t* term_ptr = get_terminal_ptr(task_n);
+        
+        if (task_n == terminal_n) return (char*) VIDEO;
+        else return (char*) term_ptr->video;   
+    }
 }
