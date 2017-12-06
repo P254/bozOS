@@ -15,7 +15,7 @@ enum pu_t {NOT_USED, IN_USE};
 typedef struct term {
     pcb_t* pcb_head;                // Pointer to head of PCB linked list
     uint8_t kb_buf[KB_BUF_SIZE];    // Keyboard buffer
-
+    
     char* video;            // Pointer to video memory
     int x;                  // X-position for printing
     int y;                  // Y-position for printing
