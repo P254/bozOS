@@ -3,6 +3,7 @@
 #include "syscalls.h"
 #include "scheduling.h"
 #include "multi_term.h"
+#include "pcb.h"
 
 /*
  * fs_init
