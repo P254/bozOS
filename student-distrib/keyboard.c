@@ -4,6 +4,7 @@
 #include "IDT.h"
 #include "i8259.h"
 #include "x86_desc.h"
+#include "multi_term.h"
 
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
 static unsigned char int_buf[KB_SIZE]; // Intermediate buffer for copying to terminal buffer
@@ -14,7 +15,7 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
   '9', '0', '-', '=', '\b', /* Backspace */
-  '\t',         /* Tab */
+  0,         /* Tab */
   'q', 'w', 'e', 'r',   /* 19 */
   't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', /* Enter key */
     0,          /* 29   - Control */
@@ -53,7 +54,7 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 
     0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */ /*SHIFT TABLE*/
   '(', ')', '_', '+', '\b', /* Backspace */
-  '\t',         /* Tab */
+  0,         /* Tab */
   'Q', 'W', 'E', 'R',   /* 19 */
   'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n', /* Enter key */
     0,          /* 29   - Control */
@@ -92,7 +93,7 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
     '9', '0', '-', '=', '\b',   /* Backspace */
-  '\t',         /* Tab */
+  0,         /* Tab */
   'Q', 'W', 'E', 'R',   /* 19 */
   'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\n', /* Enter key */
     0,          /* 29   - Control */
@@ -130,7 +131,7 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 
     0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */
     '(', ')', '_', '+', '\b',   /* Backspace */
-  '\t',         /* Tab */
+  0,         /* Tab */
   'q', 'w', 'e', 'r',   /* 19 */
   't', 'y', 'u', 'i', 'o', 'p', '{', '}', '\n', /* Enter key */
     0,          /* 29   - Control */
@@ -200,9 +201,9 @@ void kb_int_handler() {
         del_char_from_buf(); //if backspace, delete char
     }
     else if(scanCodeTable[c] == '\n'){
-        //Chec for new line
-      add_char_to_buf(scanCodeTable[c]); //if new line, add it to buffer
-      copy_kb_buf(); //then clear keybaord buffer and add to intermidate buffer
+        // Check for newline character
+        add_char_to_buf(scanCodeTable[c]); //if new line, add it to buffer
+        copy_kb_buf(); //then clear keybaord buffer and add to intermidate buffer
     }
     else if (scanCodeTable[c] != 0) { //all other scancodes
         // Adds characters, including the line feed '\n' character
@@ -222,12 +223,16 @@ unsigned int get_scan_code() {
     unsigned char scanCode;
     unsigned int position;
     scanCode = inb(KB_DATA_PORT); //get data from port when key is pressed/released
+    //printf("%x", key_status);
+    //printf("%x", scanCode);
     if (scanCode & RELEASED_KEY_MASK) { //check if any key is released
 
         if (scanCode == SHIFT_RELEASE) {key_status &= CLEAR_SHIFT_FLAG;}
         //if shift is release, clear shift status
         else if (scanCode == CTRL_RELEASE)  {key_status &= CLEAR_CTRL_FLAG;}
         //if control is released, clear control status
+        else if (scanCode == ALT_RELEASE)  {key_status &= CLEAR_ALT_FLAG;}
+
     }
     else { //else if a key is pressed
         if (scanCode == SHIFT_PRESSED) { key_status += SHIFT_FLAG; }
@@ -237,15 +242,23 @@ unsigned int get_scan_code() {
         else if (scanCode == CTRL_PRESSED) { key_status += CTRL_FLAG; }
         //if ctrl is pressed, set ctrl status
         else if (scanCode == L_PRESSED && (key_status & CTRL_FLAG)) { //if CTRL+L is pressed
-            clear(); //clear screen
+            clear_screen(); //clear screen
             kb_buf[0] = '\0'; //reset keyboard buffer
+            printf("391OS> ");
         }
+        else if (scanCode == ALT_PRESSED) {key_status += ALT_FLAG;}
+        else if (scanCode == FN_1 && (key_status & ALT_FLAG)) { switch_terminal(TERM_1); }
+        else if (scanCode == FN_2 && (key_status & ALT_FLAG)) { switch_terminal(TERM_2); }
+        else if (scanCode == FN_3 && (key_status & ALT_FLAG)) { switch_terminal(TERM_3); }
+
 
         else if (scanCode == ENTER_PRESSED) { //if \n is pressed
             terminal_read_release = 1; //allow terminal to be read if we are calling that function
             position  = (int) scanCode;
             return position; //send scan code to handler
         }
+
+
 
         else if (key_status == 0) { //if no special keys are pressed
             position = (int) (scanCode);
@@ -268,12 +281,13 @@ unsigned int get_scan_code() {
             }
         }
 
-        else if (key_status == BOTH_FLAG) {//if caps lock AND shift is pressed
+        else if (key_status && CAPS_FLAG && SHIFT_FLAG) {//if caps lock AND shift is pressed
             position = (int) (scanCode) + (CAPS_EXTEND*BASE_KB_SIZE); //acquire shift+caps lock table
             if(position < (BOTH_EXTEND*BASE_KB_SIZE) && (CAPS_EXTEND*BASE_KB_SIZE) <= position) { //check for invalid scan codes
                 return position; //send combined scan code to handler
             }
         }
+
     }
     return 0;
 }
@@ -295,8 +309,8 @@ void add_char_to_buf(unsigned char c) {
 
         int add_idx, x, y;
         char* video_mem = (char *) VIDEO; //get mem loc
-        x = get_screen_x(); //get screen coordinates
-        y = get_screen_y();
+        x = get_screen_x(ACTIVE_TERM); //get screen coordinates
+        y = get_screen_y(ACTIVE_TERM);
 
         if (c == '\n') { // if new line
             putc('\n'); //print new line
@@ -307,11 +321,12 @@ void add_char_to_buf(unsigned char c) {
             add_idx = convert_to_vid_idx(x, y, buf_len);   
             // write the character from the buffer to video mem
             *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+            *(uint8_t *)(video_mem + (add_idx << 1) + 1) = get_terminal_color(ACTIVE_TERM);
         }
 
         if (y == NUM_ROWS-1 && (buf_len + x) == NUM_COLS-1) { // if we are at bottom-right of screen
-            video_scroll(); // scroll down
-            set_screen_y(y-1); // set "cursor" to second-last line
+            video_scroll(ACTIVE_TERM); // scroll down
+            set_screen_y(y-1, ACTIVE_TERM); // set "cursor" to second-last line
         }
     }
     // Deals with the case when the buffer is full
@@ -335,8 +350,8 @@ void del_char_from_buf() {
 
         int erase_idx, x, y;
         char* video_mem = (char *) VIDEO; //get mem loc
-        x = get_screen_x(); //get screen coordinates
-        y = get_screen_y();
+        x = get_screen_x(ACTIVE_TERM); //get screen coordinates
+        y = get_screen_y(ACTIVE_TERM);
 
         erase_idx = convert_to_vid_idx(x, y, buf_len) - 1; // Calculate index that we should erase the character from
         *(uint8_t *)(video_mem + (erase_idx << 1)) = ' '; //erase char from video mem loc
@@ -369,14 +384,27 @@ int* kb_read_release() {
 
 /*
  * get_kb_buffer
- *   DESCRIPTION: Returns the pointer of terminal_read_release. For use by terminal driver.
+ *   DESCRIPTION: Returns the pointer of the keyboard buffer. Used for terminal-switching.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: unsigned char -- pointer to keyboard buffer
+ *   SIDE EFFECTS: none
+ */
+unsigned char* get_kb_buffer() {
+    return (unsigned char*) kb_buf;
+}
+
+
+/*
+ * get_int_buffer
+ *   DESCRIPTION: Returns the pointer of the intermediate buffer. For use by terminal driver.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: unsigned char -- pointer to intermediate buffer
  *   SIDE EFFECTS: none
  */
-unsigned char* get_kb_buffer() {
-  return (unsigned char*) int_buf;
+unsigned char* get_int_buffer() {
+    return (unsigned char*) int_buf;
 }
 
 /*
@@ -388,14 +416,14 @@ unsigned char* get_kb_buffer() {
  *   SIDE EFFECTS: modifies int_buf
  */
 void copy_kb_buf() {
-      int i = 0;
-      for (i = 0; i < KB_SIZE; i++) { //max copy length is kb size
+    int i = 0;
+    for (i = 0; i < KB_SIZE; i++) { //max copy length is kb size
         int_buf[i] = kb_buf[i]; //copy char by char
         if (kb_buf[i] == '\n') {
             kb_buf[i] = '\0'; //we must also remove the new line from the kb  buffer
             break; //if we encounter a new line, we stop copying
         }
         else kb_buf[i] = '\0'; // Flush-as-you-go
-      }
+    }
   return;
 }

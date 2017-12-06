@@ -346,67 +346,67 @@ int rtc_handler_test() {
     result = FAIL;
     rtc_open(NULL);
 
-    clear();
+    clear_screen();
     buf=2;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=10);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=4;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=20);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=8;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=40);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=8;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=80);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=16;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=120);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=32;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=200);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=64;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=300);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=128;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=500);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=256;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=800);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     buf=512;
     rtc_write(NULL, &buf, 0);
     while(rtc_count!=1000);
     rtc_count = 0;
 
-    clear();
+    clear_screen();
     cli();
 
     result = PASS;
@@ -426,7 +426,7 @@ int rtc_handler_test() {
  */
 void launch_tests() {
     #if (CLEAR_SCREEN_FOR_TEST == 1)
-    clear();
+    clear_screen();
     #endif
 
     /************ Checkpoint 1 Tests **********************/

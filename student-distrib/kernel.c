@@ -15,6 +15,9 @@
 #include "terminal.h"
 #include "filesystem.h"
 #include "syscalls.h"
+#include "scheduling.h"
+#include "multi_term.h"
+#include "pcb.h"
 
 #define RUN_TESTS       0
 
@@ -31,7 +34,7 @@ void entry(unsigned long magic, unsigned long addr) {
     multiboot_info_t *mbi;
 
     /* Clear the screen. */
-    clear();
+    clear_screen();
 
     /* Am I booted by a Multiboot-compliant boot loader? */
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -149,13 +152,16 @@ void entry(unsigned long magic, unsigned long addr) {
     module_t* mod = (module_t*)mbi->mods_addr;
     fs_init((uint32_t)mod->mod_start); /* Init filesystem */
 
-    i8259_init(); /* Init the PIC */
-    kb_init(); /* Init the keyboard */
-    rtc_init(); /* Init the RTC */
-    paging_init(); /* Init the paging */
-
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
+
+    i8259_init();   // PIC
+    kb_init();      // Keyboard
+    rtc_init();     // RTC
+    pit_init();     // PIT
+    paging_init();  // Paging
+    multi_term_init(); // Multiple Terminals
+    pit_init();     // PIT
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
@@ -171,6 +177,8 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
+    clear_screen();
+    switch_terminal(TERM_1);
     execute((uint8_t*) "shell");
 
     /* Spin (nicely, so we don't chew up cycles) */

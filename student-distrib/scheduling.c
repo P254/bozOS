@@ -56,70 +56,69 @@ void task_switch() {
     // }
 
     // For use with multi-tasking
-    // outgoing_task = get_active_task();
-    // incoming_task = (outgoing_task + 1) % MAX_TERM_N;
+    outgoing_task = get_active_task();
+    incoming_task = (outgoing_task + 1) % MAX_TERM_N;
 
-    // while(1){
-    //   incoming_task = (outgoing_task + 1) % MAX_TERM_N;
-    //   incoming_pcb = get_PCB_tail(incoming_task);
-    //
-    //   if (incoming_pcb!=NULL)
-    //     break;
-    //
-    //   if (incoming_task==outgoing_task){
-    //     same_flag_task= 1;
-    //     if(incoming_pcb!=NULL){
-    //       send_eoi(PIT_IRQ_NUM);
-    //       return;
-    //     }
-    //     break;
-    //   }
-    // }
-    // if (same_flag_task){
-    //   TODO: do smthing since we can't allocate another terminal for some reason.
-    //   send_eoi(PIT_IRQ_NUM);
-    //   return;
-    // }
-
-    /******* TASK SWITCH CODE BEGINS HERE ******/
-    // We want to block all other interrupts so that our task switch process is atomic
     incoming_pcb = get_PCB_tail(incoming_task);
     outgoing_pcb = get_PCB_tail(outgoing_task);
 
-    if (incoming_pcb == NULL || outgoing_pcb == NULL) {
+    // Check that we have launched our first shell in terminal.c
+    if (outgoing_pcb == NULL) {
         send_eoi(PIT_IRQ_NUM);
         return;
     }
+
     // Update bookkeeping information first
     set_active_task(incoming_task);
 
-    // Set up incoming paging and tss.esp0
-    tss.esp0 = incoming_pcb->self_k_stack;
-    page_directory[(USER_MEM_V >> ALIGN_4MB)] = (incoming_pcb->self_page) | USER_PAGE_SET_BITS;
-    asm volatile(
-        "movl %%cr3, %%eax;"
-        "movl %%eax, %%cr3;"
-        : /* no outputs */
-        : /* no inputs */
-        : "eax"
-    );
+    if (incoming_pcb == NULL) {
+        // Launch a new shell
+        // Save outgoing esp/ebp first
+        asm volatile(
+            "movl %%esp, %0;"
+            "movl %%ebp, %1;"
+            : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
+        );
+        send_eoi(PIT_IRQ_NUM);
 
-    // Save outgoing esp/ebp
-    asm volatile(
-        "movl %%esp, %0;"
-        "movl %%ebp, %1;"
-        : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
-    );
+        // Execute new user program
+        execute((uint8_t*) "shell");
 
-    // Load incoming esp/ebp
-    asm volatile(
-        "movl %0, %%esp;"
-        "movl %1, %%ebp;"
-        : /* no outputs */
-        : "r" (incoming_pcb->esp_switch), "r" (incoming_pcb->ebp_switch)
-        : "esp", "ebp"
-    );
-    send_eoi(PIT_IRQ_NUM);
+        // Execute might fail (return -1): we will need to return to old terminal
+        // TODO: Add this later
+    }
+
+    else {
+        /******* TASK SWITCH CODE BEGINS HERE ******/
+        // Set up incoming paging and tss.esp0
+        tss.esp0 = incoming_pcb->self_k_stack;
+        page_directory[(USER_MEM_V >> ALIGN_4MB)] = (incoming_pcb->self_page) | USER_PAGE_SET_BITS;
+        asm volatile(
+            "movl %%cr3, %%eax;"
+            "movl %%eax, %%cr3;"
+            : /* no outputs */
+            : /* no inputs */
+            : "eax"
+        );
+
+        // Save outgoing esp/ebp
+        asm volatile(
+            "movl %%esp, %0;"
+            "movl %%ebp, %1;"
+            : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
+        );
+
+
+        // Load incoming esp/ebp
+        asm volatile(
+            "movl %0, %%esp;"
+            "movl %1, %%ebp;"
+            : /* no outputs */
+            : "r" (incoming_pcb->esp_switch), "r" (incoming_pcb->ebp_switch)
+            : "esp", "ebp"
+        );
+        send_eoi(PIT_IRQ_NUM);
+    }
 }
 
 /*

@@ -3,6 +3,9 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "syscalls.h"
+#include "scheduling.h"
+#include "multi_term.h"
+#include "pcb.h"
 
 /*
  * terminal_open
@@ -42,7 +45,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
     // Check for bad inputs
     if (buf == NULL || nbytes < 0) return -1; //check invalid input
 
-    unsigned char* source = get_kb_buffer(); //get intermidate buffer
+    unsigned char* source = get_int_buffer(); //get intermediate buffer
     unsigned char* dest = (unsigned char*) buf; //set system buffer as dest
 
     int32_t i, bytes_copied, bytes_to_copy, c = 0;
@@ -85,7 +88,8 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
     // Check for bad inputs
     if (buf == NULL || nbytes < 0) return -1; //check invalid input
 
-    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t term_num = get_active_task();
+    pcb_t* PCB_base = get_PCB_tail(term_num);
     uint8_t text_file_flag = PCB_base->fd_arr[fd].text_file_flag;
 
     uint32_t i, bytes_to_write;
@@ -100,4 +104,9 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
         i++;
     }
     return i;
+}
+
+// Does nothing - just used to fill in the FOTP
+int32_t terminal_empty() {
+    return 0;
 }

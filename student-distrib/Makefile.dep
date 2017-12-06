@@ -1,0 +1,29 @@
+boot.o: boot.S multiboot.h x86_desc.h types.h
+IDT_asm.o: IDT_asm.S
+x86_desc.o: x86_desc.S x86_desc.h types.h
+filesystem.o: filesystem.c filesystem.h types.h lib.h syscalls.h paging.h \
+  x86_desc.h scheduling.h multi_term.h pcb.h
+i8259.o: i8259.c i8259.h types.h lib.h
+IDT.o: IDT.c lib.h types.h IDT.h x86_desc.h syscalls.h paging.h
+kernel.o: kernel.c multiboot.h types.h x86_desc.h lib.h i8259.h \
+  keyboard.h RTC_handler.h debug.h tests.h IDT.h paging.h terminal.h \
+  filesystem.h syscalls.h scheduling.h multi_term.h pcb.h
+keyboard.o: keyboard.c keyboard.h lib.h types.h IDT.h i8259.h x86_desc.h \
+  multi_term.h syscalls.h paging.h
+lib.o: lib.c lib.h types.h scheduling.h
+multi_term.o: multi_term.c multi_term.h types.h syscalls.h paging.h \
+  x86_desc.h pcb.h lib.h terminal.h keyboard.h scheduling.h i8259.h
+paging.o: paging.c paging.h x86_desc.h types.h multi_term.h syscalls.h \
+  pcb.h
+pcb.o: pcb.c pcb.h types.h syscalls.h paging.h x86_desc.h multi_term.h \
+  lib.h terminal.h keyboard.h scheduling.h i8259.h
+RTC_handler.o: RTC_handler.c lib.h types.h RTC_handler.h i8259.h IDT.h \
+  tests.h
+scheduling.o: scheduling.c i8259.h types.h scheduling.h IDT.h syscalls.h \
+  paging.h x86_desc.h lib.h multi_term.h
+syscalls.o: syscalls.c syscalls.h types.h paging.h x86_desc.h lib.h \
+  filesystem.h RTC_handler.h terminal.h multi_term.h scheduling.h pcb.h
+terminal.o: terminal.c keyboard.h terminal.h types.h x86_desc.h lib.h \
+  syscalls.h paging.h scheduling.h multi_term.h pcb.h
+tests.o: tests.c tests.h x86_desc.h types.h lib.h paging.h filesystem.h \
+  terminal.h RTC_handler.h

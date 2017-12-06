@@ -1,6 +1,9 @@
 #include "filesystem.h"
 #include "lib.h"
 #include "syscalls.h"
+#include "scheduling.h"
+#include "multi_term.h"
+#include "pcb.h"
 
 /*
  * fs_init
@@ -53,7 +56,8 @@ int32_t fclose(uint8_t *fname) {
  *   SIDE EFFECTS: changes buf
  */
 int32_t fread(uint8_t fd, uint8_t *buf, int32_t nbytes) {
-    pcb_t* PCB_base = get_PCB_base(process_number);
+    uint8_t term_num = get_active_task();
+    pcb_t* PCB_base = get_PCB_tail(term_num);
     uint8_t inode_number = PCB_base->fd_arr[fd].inode_number;
     uint32_t file_position = PCB_base->fd_arr[fd].file_position;
 
