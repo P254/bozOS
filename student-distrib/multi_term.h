@@ -22,7 +22,7 @@ typedef struct term {
     int x;                  // X-position for printing
     int y;                  // Y-position for printing
     int color;              // Makes it easier to see which terminal I'm in
-    uint32_t* vidmap_addr;  // For use with vidmap
+    // uint32_t* vidmap_addr;  // For use with vidmap
 } term_t;
 
 /* Global Variables */
@@ -33,7 +33,6 @@ static enum pu_t process_usage[MAX_PROCESSES];
 /*Forward declarations*/
 term_t* get_terminal_ptr(uint8_t terminal_n);
 void switch_terminal(uint8_t new_terminal);
-void copy_terminal(uint8_t new_terminal);
 void multi_term_init();
 void unset_process_usage(uint8_t pid);
 uint8_t get_active_terminal();

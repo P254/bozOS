@@ -161,6 +161,7 @@ void entry(unsigned long magic, unsigned long addr) {
     pit_init();     // PIT
     paging_init();  // Paging
     multi_term_init(); // Multiple Terminals
+    pit_init();     // PIT
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
@@ -176,6 +177,7 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
+    clear_screen();
     switch_terminal(TERM_1);
     execute((uint8_t*) "shell");
 

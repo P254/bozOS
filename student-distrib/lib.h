@@ -11,9 +11,12 @@
 #define NUM_COLS    80
 #define NUM_ROWS    25
 #define VIDEO_SIZE  (NUM_COLS * NUM_ROWS) * 2
+#define ATTRIB      0x7 
 /* Define constants. Added by Sean */
-#define VIDEO_MEM_ROW1  (VIDEO + 2*NUM_COLS)
-#define SCROLL_SIZE ((NUM_ROWS-1) * NUM_COLS * 2)
+#define VIDEO_MEM_ROW1  (2*NUM_COLS)
+#define SCROLL_SIZE     ((NUM_ROWS-1) * NUM_COLS * 2)
+
+enum active_t {ACTIVE_TASK, ACTIVE_TERM}; // ACTIVE_TASK for lib.c, ACTIVE_TERM for keyboard.c
 
 void test_interrupts(void);
 int32_t printf(int8_t *format, ...);
@@ -34,12 +37,13 @@ int8_t* strncpy(int8_t* dest, const int8_t*src, uint32_t n);
 
 /* Functions added by Sean */
 void clear_screen();
-int get_screen_x(); // Used by terminal driver
-int get_screen_y(); // Used by terminal driver
-void set_screen_x(int val); // Used by terminal driver
-void set_screen_y(int val); // Used by terminal and keyboard driver 
-void video_scroll(); // Performs scrolling
-int8_t terminal_color(); 
+int get_screen_x(enum active_t arg); // Used by terminal driver and keyboard driver
+int get_screen_y(enum active_t arg); // Used by terminal driver and keyboard driver
+void set_screen_x(int val, enum active_t arg); // Used by terminal driver and keyboard driver
+void set_screen_y(int val, enum active_t arg); // Used by terminal driver and keyboard driver
+void video_scroll(enum active_t arg); // Performs scrolling
+int8_t get_terminal_color(enum active_t arg); 
+char* get_video_mem(enum active_t arg);
 
 /* Userspace address-check functions */
 int32_t bad_userspace_addr(const void* addr, int32_t len);
