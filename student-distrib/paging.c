@@ -1,6 +1,5 @@
 #include "paging.h"
 #include "multi_term.h"
-#include "pcb.h"
 
 // Source: http://wiki.osdev.org/Setting_Up_Paging
 /* Instantiation of our page directory and page table */
@@ -91,11 +90,11 @@ void paging_init() {
     }
     // We want to allocate a 4KiB page for VIDEO MEMORY
     page_table[(VIDEO_MEM >> ALIGN_4KB)] = VIDEO_MEM | 0x3; // give page r/w access, mark as present
-
+    
     // Allocate memory for the 3 terminal video buffers
-    page_table[(TERM_1_VIDEO >> ALIGN_4KB)] = TERM_1_VIDEO | 0x3;
-    page_table[(TERM_2_VIDEO >> ALIGN_4KB)] = TERM_2_VIDEO | 0x3;
-    page_table[(TERM_3_VIDEO >> ALIGN_4KB)] = TERM_3_VIDEO | 0x3;
+    page_table[(TERM_1_VIDEO >> ALIGN_4KB)] = TERM_1_VIDEO | 0x3; 
+    page_table[(TERM_2_VIDEO >> ALIGN_4KB)] = TERM_2_VIDEO | 0x3; 
+    page_table[(TERM_3_VIDEO >> ALIGN_4KB)] = TERM_3_VIDEO | 0x3; 
 
     // Last step: See http://wiki.osdev.org/Setting_Up_Paging#Enable_Paging
     load_page_directory();

@@ -6,7 +6,6 @@
 #include "terminal.h"
 #include "multi_term.h"
 #include "scheduling.h"
-#include "pcb.h"
 
 /* File Operations Table Pointers */
 generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, (generic_fp*) terminal_empty, (generic_fp*) terminal_close};
@@ -191,7 +190,7 @@ int32_t execute(const uint8_t* command) {
         printf("Maximum number of processes exceeded.\n");
         return (PROG_DIED_BY_EXCEPTION + 1);
     }
-    user_prog_physical_mem = USER_MEM_P + process_num * USER_PROG_SIZE;
+    user_prog_physical_mem = USER_MEM_P + process_num * USER_PROG_SIZE; 
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_prog_physical_mem | USER_PAGE_SET_BITS;
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
@@ -590,3 +589,4 @@ int32_t sigreturn (void) {
 
     return 0;
 }
+
