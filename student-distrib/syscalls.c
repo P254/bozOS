@@ -8,8 +8,8 @@
 #include "scheduling.h"
 
 /* File Operations Table Pointers */
-generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, NULL, (generic_fp*) terminal_close};
-generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, NULL, (generic_fp*) terminal_write, (generic_fp*) terminal_close};
+generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, (generic_fp*) terminal_empty, (generic_fp*) terminal_close};
+generic_fp* stdout_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_empty, (generic_fp*) terminal_write, (generic_fp*) terminal_close};
 
 generic_fp* file_fotp[4] = {(generic_fp*) fopen, (generic_fp*) fread, (generic_fp*) fwrite,(generic_fp*) fclose};
 generic_fp* dir_fotp[4] = {(generic_fp*) dopen, (generic_fp*) dread, (generic_fp*) dwrite, (generic_fp*) dclose};
@@ -233,8 +233,8 @@ int32_t execute(const uint8_t* command) {
         "movl %%ebp, %1;"
         : "=r" (PCB_base->self_esp), "=r" (PCB_base->self_ebp)
     );
-    PCB_base->esp_switch = PCB_base->self_esp;
-    PCB_base->ebp_switch = PCB_base->self_ebp;
+    PCB_base->esp_switch = NULL;
+    PCB_base->ebp_switch = NULL;
 
     // flush the argument buffer in stdin
     memset((int8_t*) PCB_base->fd_arr[0].arg, '\0' ,KB_BUF_SIZE);

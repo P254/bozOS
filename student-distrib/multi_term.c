@@ -25,6 +25,7 @@ void multi_term_init() {
     for (i = 0; i < MAX_PROCESSES; i++) {
         process_usage[i] = NOT_USED;
     }
+    set_active_terminal(0);
 
     terminal_table[TERM_1].pcb_head = NULL;
     terminal_table[TERM_2].pcb_head = NULL;
@@ -40,6 +41,10 @@ void multi_term_init() {
     terminal_table[TERM_2].y = 0;
     terminal_table[TERM_3].x = 0;
     terminal_table[TERM_3].y = 0;
+
+    terminal_table[TERM_1].color = COLOR_1;
+    terminal_table[TERM_2].color = COLOR_2;
+    terminal_table[TERM_3].color = COLOR_3;
 }
 
 /*
@@ -51,8 +56,6 @@ void multi_term_init() {
  *   SIDE EFFECTS: Clears video memory to load new terminal
  */
 void switch_terminal(uint8_t new_terminal) {
-    pcb_t* incoming_pcb;
-    pcb_t* outgoing_pcb;
     // Check for bad inputs
     if (new_terminal > TERM_3) return;
     // Switch terminals only if we're not already in the same terminal
@@ -95,18 +98,15 @@ void copy_terminal(uint8_t new_terminal) {
 
     memcpy(terminal_table[active_terminal].video, active_video, VIDEO_SIZE);
     memcpy(terminal_table[active_terminal].kb_buf, active_kb_buf, KB_SIZE);
-    terminal_table[active_terminal].x = get_screen_x();
-    terminal_table[active_terminal].y = get_screen_y();
 
-    // Clear keyboard buffer and screen
+    // Clear keyboard buffer
     memset(active_kb_buf, '\0', KB_SIZE);
-    clear_screen();
 
     // Copy new terminal data from the terminal table
     memcpy(active_video, terminal_table[new_terminal].video, VIDEO_SIZE);
     memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
-    set_screen_x(terminal_table[new_terminal].x);
-    set_screen_y(terminal_table[new_terminal].y);
+
+    set_active_terminal(new_terminal);
 }
 
 /*
@@ -197,7 +197,7 @@ pcb_t* get_PCB_tail(uint8_t terminal_n) {
  *                 adds a child_pcb to the PCB linked list of the active terminal
  */
 int8_t add_PCB() {
-    int i, process_num = -1;
+    int i, task_n, terminal_n, process_num = -1;
     for (i = 0; i < MAX_PROCESSES; i++) {
         if (process_usage[i] == NOT_USED) {
             process_num = i;
@@ -211,10 +211,11 @@ int8_t add_PCB() {
 
     // Adding the first process for a given terminal
     if (pcb_ptr == NULL) {
-        terminal_table[active_terminal].pcb_head = get_PCB_base(process_num);
+        terminal_table[task_n].pcb_head = get_PCB_base(process_num);
     }
 
     else {
+        pcb_ptr = terminal_table[terminal_n].pcb_head;
         while (pcb_ptr->child_pcb != NULL) {
             pcb_ptr = pcb_ptr->child_pcb;
         }

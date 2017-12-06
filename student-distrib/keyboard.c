@@ -201,9 +201,9 @@ void kb_int_handler() {
         del_char_from_buf(); //if backspace, delete char
     }
     else if(scanCodeTable[c] == '\n'){
-        //Chec for new line
-      add_char_to_buf(scanCodeTable[c]); //if new line, add it to buffer
-      copy_kb_buf(); //then clear keybaord buffer and add to intermidate buffer
+        // Check for newline character
+        add_char_to_buf(scanCodeTable[c]); //if new line, add it to buffer
+        copy_kb_buf(); //then clear keybaord buffer and add to intermidate buffer
     }
     else if (scanCodeTable[c] != 0) { //all other scancodes
         // Adds characters, including the line feed '\n' character
@@ -309,8 +309,8 @@ void add_char_to_buf(unsigned char c) {
 
         int add_idx, x, y;
         char* video_mem = (char *) VIDEO; //get mem loc
-        x = get_screen_x(); //get screen coordinates
-        y = get_screen_y();
+        x = get_screen_x(ACTIVE_TERM); //get screen coordinates
+        y = get_screen_y(ACTIVE_TERM);
 
         if (c == '\n') { // if new line
             putc('\n'); //print new line
@@ -321,11 +321,12 @@ void add_char_to_buf(unsigned char c) {
             add_idx = convert_to_vid_idx(x, y, buf_len);
             // write the character from the buffer to video mem
             *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
+            *(uint8_t *)(video_mem + (add_idx << 1) + 1) = get_terminal_color(ACTIVE_TERM);
         }
 
         if (y == NUM_ROWS-1 && (buf_len + x) == NUM_COLS-1) { // if we are at bottom-right of screen
-            video_scroll(); // scroll down
-            set_screen_y(y-1); // set "cursor" to second-last line
+            video_scroll(ACTIVE_TERM); // scroll down
+            set_screen_y(y-1, ACTIVE_TERM); // set "cursor" to second-last line
         }
     }
     // Deals with the case when the buffer is full
@@ -349,8 +350,8 @@ void del_char_from_buf() {
 
         int erase_idx, x, y;
         char* video_mem = (char *) VIDEO; //get mem loc
-        x = get_screen_x(); //get screen coordinates
-        y = get_screen_y();
+        x = get_screen_x(ACTIVE_TERM); //get screen coordinates
+        y = get_screen_y(ACTIVE_TERM);
 
         erase_idx = convert_to_vid_idx(x, y, buf_len) - 1; // Calculate index that we should erase the character from
         *(uint8_t *)(video_mem + (erase_idx << 1)) = ' '; //erase char from video mem loc

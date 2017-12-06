@@ -18,6 +18,9 @@
 void pit_init();
 void task_switch();
 uint8_t get_active_task();
+void init_shells();
 void set_active_task(uint8_t new_task);
+
+volatile uint8_t init_complete;
 
 #endif /*SCHEDULING_H*/
