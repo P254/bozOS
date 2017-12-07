@@ -68,13 +68,15 @@ void switch_terminal(uint8_t new_terminal) {
     memcpy(terminal_table[active_terminal].video, active_video, VIDEO_SIZE);
     memcpy(terminal_table[active_terminal].kb_buf, active_kb_buf, KB_SIZE);
 
-    // Clear keyboard buffer
+    // Clear keyboard buffer and terminal video buffer
     memset(active_kb_buf, '\0', KB_SIZE);
+    memset(active_video, '\0', VIDEO_SIZE);
 
     // Copy new terminal data from the terminal table 
     memcpy(active_video, terminal_table[new_terminal].video, VIDEO_SIZE);
     memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
 
+    // Update bookkeeping information 
     set_active_terminal(new_terminal);
 }
 
