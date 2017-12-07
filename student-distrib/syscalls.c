@@ -34,7 +34,7 @@ int32_t halt(uint8_t status) {
         status_32 = PROG_DIED_BY_EXCEPTION + 1;
     }
 
-    term_num = get_active_terminal();
+    term_num = get_active_task();
     term_t* term_ptr = get_terminal_ptr(term_num);
     pcb_t* PCB_base_parent = term_ptr->pcb_head;
     pcb_t* PCB_base_self = get_PCB_tail(term_num);
@@ -190,7 +190,7 @@ int32_t execute(const uint8_t* command) {
         printf("Maximum number of processes exceeded.\n");
         return (PROG_DIED_BY_EXCEPTION + 1);
     }
-    user_prog_physical_mem = USER_MEM_P + process_num * USER_PROG_SIZE;
+    user_prog_physical_mem = USER_MEM_P + process_num * USER_PROG_SIZE; 
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_prog_physical_mem | USER_PAGE_SET_BITS;
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
@@ -361,10 +361,8 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
 
     // printf("SYSCALL READ \n");
     // Check for invalid inputs
-    uint8_t term_num = get_active_terminal(); // you want the ones that is actually being executed
-
+    uint8_t term_num = get_active_task();
     pcb_t* PCB_base = get_PCB_tail(term_num);
-    // all of these syscalls needs to be the ones that being executing
 
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
     if (buf == NULL || fd < 0 || fd > MAX_FILES-1 || nbytes < 0) return -1;
@@ -391,7 +389,7 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
 int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
     // printf("System call WRITE.\n");
     // if file's buffer is NULLL or fd is nto in range then we return -1
-    uint8_t term_num = get_active_terminal();
+    uint8_t term_num = get_active_task();
     pcb_t* PCB_base = get_PCB_tail(term_num);
 
     // Check for invalid inputs
@@ -420,7 +418,7 @@ int32_t open (const uint8_t* filename) {
     // This function is called within a given user program.
     // Finds the first 'fd' that is not in use and opens the file and puts it there
     // by setting the appropriate inode numbers!
-    uint8_t term_num = get_active_terminal();
+    uint8_t term_num = get_active_task();
     pcb_t* PCB_base = get_PCB_tail(term_num);
     // Check for invalid inputs
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
@@ -477,7 +475,7 @@ int32_t close (int32_t fd) {
     // printf("System call CLOSE.\n");
     // This function is called within a given user program.
     // Finds the corredsponding fd and sets all its elements in the struct equal to nothing
-    uint8_t term_num = get_active_terminal();
+    uint8_t term_num = get_active_task();
     pcb_t* PCB_base = get_PCB_tail(term_num);
     // Check for invalid inputs
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
@@ -507,7 +505,7 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
     // printf("System call GETARGS.\n");
 
     // get the stdin argument which is fd_0
-    uint8_t term_num = get_active_terminal();
+    uint8_t term_num = get_active_task();
     pcb_t* PCB_base = get_PCB_tail(term_num);
     if (PCB_base == NULL || PCB_base >= (pcb_t*) USER_MEM_P) return -1;
 
@@ -591,3 +589,4 @@ int32_t sigreturn (void) {
 
     return 0;
 }
+
