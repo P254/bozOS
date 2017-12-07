@@ -8,7 +8,7 @@
 
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
 static unsigned char int_buf[KB_SIZE]; // Intermediate buffer for copying to terminal buffer
-static int terminal_read_release;
+static enum kb_t terminal_read_release[3]; // Keep track of enter being released for which keyboard
 static int key_status;
 
 unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
@@ -179,10 +179,10 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 void kb_init(void){
     enable_irq(KB_IRQ); // the keyboard interrupt
     set_IDT_wrapper(KB_IDT_ENTRY, keyboard_handler_asm); //add handler to IDT table
-    kb_buf[0] = '\0';//NULL terminate intermediate and keyboard buffer
-    int_buf[0] = '\0';
-    terminal_read_release = 0; //set flags
     key_status = 0;
+    terminal_read_release[TERM_1] = ENTER_WAITING;
+    terminal_read_release[TERM_2] = ENTER_WAITING;
+    terminal_read_release[TERM_3] = ENTER_WAITING;
 }
 
 /*
@@ -202,8 +202,8 @@ void kb_int_handler() {
     }
     else if(scanCodeTable[c] == '\n'){
         // Check for newline character
-        add_char_to_buf(scanCodeTable[c]); //if new line, add it to buffer
-        copy_kb_buf(); //then clear keybaord buffer and add to intermidate buffer
+        add_char_to_buf(scanCodeTable[c]);  // if new line, add it to buffer, then
+        copy_kb_buf();                      // clear keyboard buf and add to intermediate buf
     }
     else if (scanCodeTable[c] != 0) { //all other scancodes
         // Adds characters, including the line feed '\n' character
@@ -222,9 +222,10 @@ void kb_int_handler() {
 unsigned int get_scan_code() {
     unsigned char scanCode;
     unsigned int position;
+    
+    // We want to write to the KB buffer that corresponds to the active terminal 
+    uint8_t term_num = get_active_terminal();
     scanCode = inb(KB_DATA_PORT); //get data from port when key is pressed/released
-    //printf("%x", key_status);
-    //printf("%x", scanCode);
     if (scanCode & RELEASED_KEY_MASK) { //check if any key is released
 
         if (scanCode == SHIFT_RELEASE) {key_status &= CLEAR_SHIFT_FLAG;}
@@ -253,12 +254,10 @@ unsigned int get_scan_code() {
 
 
         else if (scanCode == ENTER_PRESSED) { //if \n is pressed
-            terminal_read_release = 1; //allow terminal to be read if we are calling that function
-            position  = (int) scanCode;
+            terminal_read_release[term_num] = ENTER_RELEASED; //allow terminal to be read if we are calling that function
+            position = (int) scanCode;
             return position; //send scan code to handler
         }
-
-
 
         else if (key_status == 0) { //if no special keys are pressed
             position = (int) (scanCode);
@@ -378,8 +377,8 @@ int convert_to_vid_idx(int x, int y, int buf_len) {
  *   RETURN VALUE: int -- pointer to terminal_read_release
  *   SIDE EFFECTS: none
  */
-int* kb_read_release() {
-    return (int*) &terminal_read_release;
+enum kb_t* kb_read_release() {
+    return terminal_read_release;
 }
 
 /*
