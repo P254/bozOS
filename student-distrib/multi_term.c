@@ -21,12 +21,12 @@ static enum pu_t process_usage[MAX_PROCESSES];
  *   SIDE EFFECTS: Starts 3 terminals (each with shell), with #1 as active 
  */
 void multi_term_init() {
-    uint8_t i;
+    int32_t i, j;
     for (i = 0; i < MAX_PROCESSES; i++) {
         process_usage[i] = NOT_USED;
     }
     set_active_terminal(0);
-
+    
     terminal_table[TERM_1].pcb_head = NULL;
     terminal_table[TERM_2].pcb_head = NULL;
     terminal_table[TERM_3].pcb_head = NULL;
@@ -45,6 +45,21 @@ void multi_term_init() {
     terminal_table[TERM_1].color = COLOR_1;
     terminal_table[TERM_2].color = COLOR_2;
     terminal_table[TERM_3].color = COLOR_3;
+    
+    terminal_table[TERM_1].vidmap_addr = (uint32_t) (USER_VIDEO_MEM + (1 << ALIGN_4KB)*TERM_1);
+    terminal_table[TERM_2].vidmap_addr = (uint32_t) (USER_VIDEO_MEM + (1 << ALIGN_4KB)*TERM_2);
+    terminal_table[TERM_3].vidmap_addr = (uint32_t) (USER_VIDEO_MEM + (1 << ALIGN_4KB)*TERM_3);
+
+    // We want to initialize the correct colors
+    for (j = TERM_1; j <= TERM_3; j++) {
+        char* video_mem = terminal_table[j].video;
+        uint8_t term_color = terminal_table[j].color;
+        
+        for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
+            *(uint8_t *)(video_mem + (i << 1)) = ' ';
+            *(uint8_t *)(video_mem + (i << 1) + 1) = term_color;
+        }
+    }
 }
 
 /*
@@ -70,11 +85,26 @@ void switch_terminal(uint8_t new_terminal) {
 
     // Clear keyboard buffer and terminal video buffer
     memset(active_kb_buf, '\0', KB_SIZE);
-    memset(active_video, '\0', VIDEO_SIZE);
+    memset(active_video, ' ', VIDEO_SIZE);
 
     // Copy new terminal data from the terminal table 
     memcpy(active_video, terminal_table[new_terminal].video, VIDEO_SIZE);
     memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
+
+    // Update paging for vidmap
+    vidmap_ptable[TERM_1] = (TERM_1_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present
+    vidmap_ptable[TERM_2] = (TERM_2_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present
+    vidmap_ptable[TERM_3] = (TERM_3_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present
+    vidmap_ptable[new_terminal] = (VIDEO_MEM) | 0x7; // 4 KiB page, user access, r/w access, present
+
+    // Flush the TLB
+    asm volatile(
+        "movl %%cr3, %%eax;"
+        "movl %%eax, %%cr3;"
+        : /*no outputs*/
+        : /*no inputs*/
+        : "eax"
+    );
 
     // Update bookkeeping information 
     set_active_terminal(new_terminal);

@@ -24,7 +24,7 @@ typedef struct term {
     int x;                  // X-position for printing
     int y;                  // Y-position for printing
     int color;              // Makes it easier to see which terminal I'm in
-    uint32_t* vidmap_addr;  // For use with vidmap
+    uint32_t vidmap_addr;   // For use with vidmap
 } term_t;
 
 /*Forward declarations*/
