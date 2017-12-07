@@ -62,3 +62,4 @@ int get_active_term_y();
 int get_active_terminal_color();
 unsigned char* get_kb_buffer();
 unsigned char* get_int_buffer();
+void put_newln_kb();

@@ -312,8 +312,8 @@ void add_char_to_buf(unsigned char c) {
         y = get_screen_y(ACTIVE_TERM);
 
         if (c == '\n') { // if new line
-            putc('\n'); //print new line
-            if ((buf_len + x) >= NUM_COLS) putc('\n'); //if we have an extended logical string, print another new line
+            put_newln_kb();
+            if ((buf_len + x) >= NUM_COLS) put_newln_kb(); //if we have an extended logical string, print another new line
         }
         else if (c != '\n') { // if not new line
             // calculate the index that we should write the character to
@@ -330,7 +330,9 @@ void add_char_to_buf(unsigned char c) {
     }
     // Deals with the case when the buffer is full
     else if (c == '\n'){ //if new line
-        printf("\n\n"); //print two new lines as we have exceeded buffer limit and terminal line limit.
+        //print two new lines as we have exceeded buffer limit and terminal line limit
+        put_newln_kb();
+        put_newln_kb();
     }
 }
 
@@ -425,4 +427,24 @@ void copy_kb_buf() {
         else kb_buf[i] = '\0'; // Flush-as-you-go
     }
   return;
+}
+
+/*
+ * put_newln_kb
+ *   DESCRIPTION: Puts a new line onto the active terminal. For use by keyboard driver ONLY. 
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: modifies the video memory of the active terminal
+ */
+void put_newln_kb() {
+    int y = get_screen_y(ACTIVE_TERM);
+    if (y == NUM_ROWS-1) {
+        video_scroll(ACTIVE_TERM);
+        set_screen_x(0, ACTIVE_TERM);
+    }
+    else {
+        set_screen_y(y+1, ACTIVE_TERM);
+        set_screen_x(0, ACTIVE_TERM);
+    }
 }
