@@ -247,9 +247,9 @@ unsigned int get_scan_code() {
             printf("391OS> ");
         }
         else if (scanCode == ALT_PRESSED) {key_status += ALT_FLAG;}
-        else if (scanCode == FN_1 && (key_status & ALT_FLAG)) { set_terminal_flag(0); switch_terminal(TERM_1); }
-        else if (scanCode == FN_2 && (key_status & ALT_FLAG)) { set_terminal_flag(1); switch_terminal(TERM_2); }
-        else if (scanCode == FN_3 && (key_status & ALT_FLAG)) { set_terminal_flag(2); switch_terminal(TERM_3); }
+        else if (scanCode == FN_1 && (key_status & ALT_FLAG)) { switch_terminal(TERM_1); }
+        else if (scanCode == FN_2 && (key_status & ALT_FLAG)) { switch_terminal(TERM_2); }
+        else if (scanCode == FN_3 && (key_status & ALT_FLAG)) { switch_terminal(TERM_3); }
 
 
         else if (scanCode == ENTER_PRESSED) { //if \n is pressed
@@ -318,7 +318,7 @@ void add_char_to_buf(unsigned char c) {
         }
         else if (c != '\n') { // if not new line
             // calculate the index that we should write the character to
-            add_idx = convert_to_vid_idx(x, y, buf_len);
+            add_idx = convert_to_vid_idx(x, y, buf_len);   
             // write the character from the buffer to video mem
             *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
             *(uint8_t *)(video_mem + (add_idx << 1) + 1) = get_terminal_color(ACTIVE_TERM);
