@@ -107,5 +107,5 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
 
 // Does nothing - just used to fill in the FOTP
 int32_t terminal_empty() {
-    return 0;
+    return -1;
 }

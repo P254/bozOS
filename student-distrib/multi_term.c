@@ -155,15 +155,16 @@ pcb_t* get_PCB_tail(uint8_t terminal_n) {
 
 /*
  * add_PCB
- *   DESCRIPTION: Adds a process to the active terminal. Used by system call EXECUTE.
- *   INPUTS: none
+ *   DESCRIPTION: Adds a process to a given terminal. Used by system call EXECUTE.
+ *   INPUTS: term_num -- the terminal # we want to add the process to
  *   OUTPUTS: none
  *   RETURN VALUE: process number of the newly-added PCB, else -1 on failure
  *   SIDE EFFECTS: Modifies the process_usage table, terminal_table and
  *                 adds a child_pcb to the PCB linked list of the active terminal
  */
-int8_t add_PCB() {
-    int i, task_n, terminal_n, process_num = -1;
+int8_t add_PCB(uint8_t term_num) {
+    // int i, task_n, terminal_n, process_num = -1;
+    int i, process_num = -1;
     for (i = 0; i < MAX_PROCESSES; i++) {
         if (process_usage[i] == NOT_USED) {
             process_num = i;
@@ -173,17 +174,17 @@ int8_t add_PCB() {
     if (process_num == -1) return -1;
 
     process_usage[process_num] = IN_USE;
-    task_n = get_active_task();
-    terminal_n = get_active_terminal();
-    pcb_t* pcb_ptr = terminal_table[task_n].pcb_head;
+    // task_n = get_active_task();
+    // terminal_n = get_active_terminal();
+    pcb_t* pcb_ptr = terminal_table[term_num].pcb_head;
     
     // Adding the first process for a given terminal
     if (pcb_ptr == NULL) {
-        terminal_table[task_n].pcb_head = get_PCB_base(process_num);
+        terminal_table[term_num].pcb_head = get_PCB_base(process_num);
     }
     
     else {
-        pcb_ptr = terminal_table[terminal_n].pcb_head;
+        pcb_ptr = terminal_table[term_num].pcb_head;
         while (pcb_ptr->child_pcb != NULL) {
             pcb_ptr = pcb_ptr->child_pcb;
         }

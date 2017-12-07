@@ -26,6 +26,7 @@ generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (gene
 int32_t halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
+    cli();
     uint8_t i, term_num;
     uint32_t status_32 = status;
 
@@ -112,7 +113,7 @@ int32_t execute(const uint8_t* command) {
     cli(); // We want to supppress interrupts until our syscall is complete. IF is restored below
 
     // printf("System call EXECUTE.\n");
-    uint8_t i, j, nbytes, arg_nbytes, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
+    uint8_t i, j, nbytes, arg_nbytes, task_num, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
     uint8_t * data_buf;
     uint32_t entry_pt_addr, user_prog_physical_mem, new_esp0, ret_halt_status;
     dentry_t cmd_dentry;
@@ -185,7 +186,8 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
     // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
-    process_num = add_PCB();
+    task_num = get_active_task();
+    process_num = add_PCB(task_num);
     if (process_num == -1) {
         printf("Maximum number of processes exceeded.\n");
         return (PROG_DIED_BY_EXCEPTION + 1);
@@ -233,8 +235,8 @@ int32_t execute(const uint8_t* command) {
         "movl %%ebp, %1;"
         : "=r" (PCB_base->self_esp), "=r" (PCB_base->self_ebp)
     );
-    PCB_base->esp_switch = NULL;
-    PCB_base->ebp_switch = NULL;
+    PCB_base->esp_switch = PCB_base->self_esp;
+    PCB_base->ebp_switch = PCB_base->self_ebp;
 
     // flush the argument buffer in stdin
     memset((int8_t*) PCB_base->fd_arr[0].arg, '\0' ,KB_BUF_SIZE);

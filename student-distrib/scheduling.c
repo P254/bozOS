@@ -10,7 +10,7 @@
 #include "multi_term.h"
 
 // Global variable that holds the terminal # where the task is active (1,2,3)
-volatile uint8_t active_task;   
+volatile uint8_t active_task;
 
 /*
  * pit_init
@@ -45,21 +45,22 @@ void task_switch() {
     pcb_t* outgoing_pcb;
     
     // For use with mono-tasking
-    outgoing_task = get_active_task();
-    incoming_task = get_active_terminal(); 
-    if (incoming_task == outgoing_task) {
-        send_eoi(PIT_IRQ_NUM);
-        return;
-    }
+    // outgoing_task = get_active_task();
+    // incoming_task = get_active_terminal(); 
+    // if (incoming_task == outgoing_task) {
+    //     send_eoi(PIT_IRQ_NUM);
+    //     return;
+    // }
 
     // For use with multi-tasking
-    // outgoing_task = get_active_task();
-    // incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
+    outgoing_task = get_active_task();
+    incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
 
     incoming_pcb = get_PCB_tail(incoming_task);
     outgoing_pcb = get_PCB_tail(outgoing_task);
 
     // Check that we have launched our first shell in terminal.c 
+    // The first shell is launched from kernel.c
     if (outgoing_pcb == NULL) {
         send_eoi(PIT_IRQ_NUM);
         return;

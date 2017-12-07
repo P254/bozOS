@@ -37,7 +37,7 @@ void unset_process_usage(uint8_t pid);
 uint8_t get_active_terminal();
 void set_active_terminal(uint8_t new_terminal);
 
-int8_t add_PCB();
+int8_t add_PCB(uint8_t term_num);
 pcb_t* get_PCB_base(int8_t process_num);
 
 #endif /*MULTI_TERM_H*/
