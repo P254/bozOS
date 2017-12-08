@@ -3,9 +3,11 @@
 #include "i8259.h"
 #include "IDT.h"
 #include "tests.h"
+#include "scheduling.h"
+#include "multi_term.h"
 
 volatile int rtc_count = 0;
-volatile int interrupt_flag = 0;
+volatile int interrupt_flag[3];
 
 /*
  * rtc_init
@@ -41,7 +43,9 @@ void rtc_handler(void) {
     rtc_count++;
     #endif
 
-    interrupt_flag = 1;     // set the interrupt flag
+    interrupt_flag[0] = 1;     // set the interrupt flag
+    interrupt_flag[1] = 1;     // set the interrupt flag
+    interrupt_flag[2] = 1;     // set the interrupt flag
     send_eoi(RTC_IRQ_ADDR); // end 8th IRQ
     outb(REG_C, RTC_REG);   // select register C
     inb(RTC_REG + 1);       // just throw away contents, we must do this otherwise IRQ8 will never be called again.
@@ -56,8 +60,9 @@ void rtc_handler(void) {
  *   SIDE EFFECTS: none
  */
 int32_t rtc_read (int32_t fd, void* buf, int32_t nbytes){
-    while (interrupt_flag == 0);    // Wait (block) for flag to be set by rtc_handler
-    interrupt_flag = 0;             // Reset the flag 
+    uint8_t curr_task= get_active_task();
+    while (interrupt_flag[curr_task] == 0);    // Wait (block) for flag to be set by rtc_handler
+    interrupt_flag[curr_task] = 0;             // Reset the flag
     return 0;
 }
 

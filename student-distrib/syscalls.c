@@ -191,7 +191,7 @@ int32_t execute(const uint8_t* command) {
         printf("Maximum number of processes exceeded.\n");
         return (PROG_DIED_BY_EXCEPTION + 1);
     }
-    user_prog_physical_mem = USER_MEM_P + process_num * USER_PROG_SIZE; 
+    user_prog_physical_mem = USER_MEM_P + process_num * USER_PROG_SIZE;
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = user_prog_physical_mem | USER_PAGE_SET_BITS;
 
     // Tadas pointed out that we don't need to reload page_directory into CR3
@@ -219,7 +219,7 @@ int32_t execute(const uint8_t* command) {
     PCB_base->pid = process_num;                    // Process ID
     PCB_base->self_k_stack = new_esp0;              // Store it's own kernel stack
     PCB_base->self_page = user_prog_physical_mem;   // Store it's own user stack
-
+    // PCB_base->rtc_frequecy=
     fd_array = PCB_base->fd_arr;
     for (i = 0 ; i < MAX_FILES ; i++) {  // initalize file descriptor array
         fd_array[i].fotp = NULL;
@@ -554,7 +554,7 @@ int32_t vidmap (uint8_t** screen_start) {
     // Finally: Reassign screen_start to point to the USER_VIDEO_MEMORY
     // The idea is to assign some address outside the already allocated space to be used as a pointer to video memory
     // Sean: I choose 136 MiB as a starting point
-    *screen_start = (uint8_t*) (USER_VIDEO_MEM + (1 << ALIGN_4KB)*term_num); 
+    *screen_start = (uint8_t*) (USER_VIDEO_MEM + (1 << ALIGN_4KB)*term_num);
     return 0;
 }
 /*
@@ -587,4 +587,3 @@ int32_t sigreturn (void) {
 
     return 0;
 }
-

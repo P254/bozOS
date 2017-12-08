@@ -5,7 +5,7 @@
 
 /*Magic Numbers*/
 #define MAX_TERM_N      3
-#define CLOCK_RATE      100     // 100 Hz <--> 10 ms
+#define CLOCK_RATE      128     // 100 Hz <--> 10 ms
 #define DEFAULT_FREQ    1193182 // From the documentation
 #define SET_FREQ_L      ((DEFAULT_FREQ / CLOCK_RATE) & 0xFF)
 #define SET_FREQ_H      ((DEFAULT_FREQ / CLOCK_RATE) >> 8)

@@ -11,15 +11,15 @@
 #define TERM_SIZE   3
 
 #define COLOR_1    0x7
-#define COLOR_2    0xA 
-#define COLOR_3    0xC 
+#define COLOR_2    0xA
+#define COLOR_3    0xC
 
 enum pu_t {NOT_USED, IN_USE};
 
 typedef struct term {
     pcb_t* pcb_head;                // Pointer to head of PCB linked list
     uint8_t kb_buf[KB_BUF_SIZE];    // Keyboard buffer
-    
+    // uint8_t rtc_frequecy; 
     char* video;            // Pointer to video memory
     int x;                  // X-position for printing
     int y;                  // Y-position for printing

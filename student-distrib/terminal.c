@@ -98,7 +98,7 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
     unsigned char* dest = (unsigned char*) buf; //set system buffer as dest
 
     while (i < nbytes){
-        putc(dest[i]); //write buffer to terminal
+        putc(dest[i]); //write buffer to terminal 
 
         if (text_file_flag == 1 && dest[i] == '\0') return (i+1); //stop if we encounter null or new line
         i++;
