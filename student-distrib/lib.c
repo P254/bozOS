@@ -11,15 +11,15 @@
  * Function: Clears video memory */
 void clear_screen() {
     int32_t i;
-    char* video_mem = get_video_mem(ACTIVE_TASK);
-    char term_color = get_terminal_color(ACTIVE_TASK);
+    char* video_mem = get_video_mem(ACTIVE_TERM);
+    char term_color = get_terminal_color(ACTIVE_TERM);
 
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
         *(uint8_t *)(video_mem + (i << 1) + 1) = term_color;
     }
-    set_screen_y(0, ACTIVE_TASK);
-    set_screen_x(0, ACTIVE_TASK);
+    set_screen_y(0, ACTIVE_TERM);
+    set_screen_x(0, ACTIVE_TERM);
 }
 
 /* Standard printf().
