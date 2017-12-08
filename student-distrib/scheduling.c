@@ -10,7 +10,7 @@
 #include "multi_term.h"
 
 // Global variable that holds the terminal # where the task is active (1,2,3)
-volatile uint8_t active_task;   
+volatile uint8_t active_task;
 
 /*
  * pit_init
@@ -26,9 +26,7 @@ void pit_init() {
     outb(PIT_INIT_CMD, CMD_REG);        
     outb(SET_FREQ_L, CH0_PORT); // send low byte
     outb(SET_FREQ_H, CH0_PORT); // send high byte
-
-
-
+    
     enable_irq(PIT_IRQ_NUM);    // enable IRQ line for PIT
     set_IDT_wrapper(SOFT_INT_START + PIT_IRQ_NUM, pit_handler_asm);
 }
@@ -45,24 +43,24 @@ void task_switch() {
     uint8_t outgoing_task, incoming_task;
     pcb_t* incoming_pcb;
     pcb_t* outgoing_pcb;
-    uint8_t same_flag_task=0;
-
+    
     // For use with mono-tasking
-    outgoing_task = get_active_task();
-    incoming_task = get_active_terminal(); 
-    if (incoming_task == outgoing_task) {
-        send_eoi(PIT_IRQ_NUM);
-        return;
-    }
+    // outgoing_task = get_active_task();
+    // incoming_task = get_active_terminal(); 
+    // if (incoming_task == outgoing_task) {
+    //     send_eoi(PIT_IRQ_NUM);
+    //     return;
+    // }
 
     // For use with multi-tasking
-    // outgoing_task = get_active_task();
-    // incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
+    outgoing_task = get_active_task();
+    incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
 
     incoming_pcb = get_PCB_tail(incoming_task);
     outgoing_pcb = get_PCB_tail(outgoing_task);
 
-    // Check that we have launched our first shell in terminal.c
+    // Check that we have launched our first shell in terminal.c 
+    // The first shell is launched from kernel.c
     if (outgoing_pcb == NULL) {
         send_eoi(PIT_IRQ_NUM);
         return;
@@ -72,7 +70,7 @@ void task_switch() {
     set_active_task(incoming_task);
 
     if (incoming_pcb == NULL) {
-        // Launch a new shell
+        // Launch a new shell 
         // Save outgoing esp/ebp first
         asm volatile(
             "movl %%esp, %0;"

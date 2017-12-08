@@ -6,6 +6,7 @@
 #include "terminal.h"
 #include "multi_term.h"
 #include "scheduling.h"
+#include "paging.h"
 
 /* File Operations Table Pointers */
 generic_fp* stdin_fotp[4] = {(generic_fp*) terminal_open, (generic_fp*) terminal_read, (generic_fp*) terminal_empty, (generic_fp*) terminal_close};
@@ -26,6 +27,7 @@ generic_fp* rtc_fotp[4] = {(generic_fp*) rtc_open, (generic_fp*) rtc_read, (gene
 int32_t halt(uint8_t status) {
     // Store ESP and EBP of the parent process, we can call a normal ret
     // Then we can resume at the parent program where we left off
+    cli();
     uint8_t i, term_num;
     uint32_t status_32 = status;
 
@@ -47,7 +49,6 @@ int32_t halt(uint8_t status) {
         reset_pcb_head(term_num);// We set it to NULL so we can call add_PCB in EXECUTE
 
         // Call execute again
-        // clear_screen();
         execute((uint8_t*) "shell");
     }
 
@@ -111,8 +112,7 @@ int32_t halt(uint8_t status) {
 int32_t execute(const uint8_t* command) {
     cli(); // We want to supppress interrupts until our syscall is complete. IF is restored below
 
-    // printf("System call EXECUTE.\n");
-    uint8_t i, j, nbytes, arg_nbytes, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
+    uint8_t i, j, nbytes, arg_nbytes, task_num, cmd1[KB_BUF_SIZE], cmd2[KB_BUF_SIZE], exe_buf[BYTES_4], entry_pt_buf[BYTES_4];
     uint8_t * data_buf;
     uint32_t entry_pt_addr, user_prog_physical_mem, new_esp0, ret_halt_status;
     dentry_t cmd_dentry;
@@ -185,7 +185,8 @@ int32_t execute(const uint8_t* command) {
     /*********** Step 3: Set up paging ***********/
     // 'page_directory' is defined in paging.h
     // We map virtual address USER_MEM_V (128 MiB) to physical address USER_MEM_P + (process #) * 4 MiB
-    process_num = add_PCB();
+    task_num = get_active_task();
+    process_num = add_PCB(task_num);
     if (process_num == -1) {
         printf("Maximum number of processes exceeded.\n");
         return (PROG_DIED_BY_EXCEPTION + 1);
@@ -233,8 +234,8 @@ int32_t execute(const uint8_t* command) {
         "movl %%ebp, %1;"
         : "=r" (PCB_base->self_esp), "=r" (PCB_base->self_ebp)
     );
-    PCB_base->esp_switch = NULL;
-    PCB_base->ebp_switch = NULL;
+    PCB_base->esp_switch = PCB_base->self_esp;
+    PCB_base->ebp_switch = PCB_base->self_ebp;
 
     // flush the argument buffer in stdin
     memset((int8_t*) PCB_base->fd_arr[0].arg, '\0' ,KB_BUF_SIZE);
@@ -359,7 +360,6 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
     // In the read you look for the fd file in the fd_arr,
     // then use the operations pointer to get the function
 
-    // printf("SYSCALL READ \n");
     // Check for invalid inputs
     uint8_t term_num = get_active_task();
     pcb_t* PCB_base = get_PCB_tail(term_num);
@@ -387,7 +387,6 @@ int32_t read (int32_t fd, void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: none
  */
 int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
-    // printf("System call WRITE.\n");
     // if file's buffer is NULLL or fd is nto in range then we return -1
     uint8_t term_num = get_active_task();
     pcb_t* PCB_base = get_PCB_tail(term_num);
@@ -414,7 +413,6 @@ int32_t write (int32_t fd, const void* buf, int32_t nbytes) {
  *   SIDE EFFECTS: sets the in_use_flag of the file
  */
 int32_t open (const uint8_t* filename) {
-    // printf("System call OPEN.\n");
     // This function is called within a given user program.
     // Finds the first 'fd' that is not in use and opens the file and puts it there
     // by setting the appropriate inode numbers!
@@ -472,7 +470,6 @@ int32_t open (const uint8_t* filename) {
  *   SIDE EFFECTS: none
  */
 int32_t close (int32_t fd) {
-    // printf("System call CLOSE.\n");
     // This function is called within a given user program.
     // Finds the corredsponding fd and sets all its elements in the struct equal to nothing
     uint8_t term_num = get_active_task();
@@ -502,8 +499,6 @@ int32_t close (int32_t fd) {
  *   SIDE EFFECTS: none
  */
 int32_t getargs (uint8_t* buf, int32_t nbytes) {
-    // printf("System call GETARGS.\n");
-
     // get the stdin argument which is fd_0
     uint8_t term_num = get_active_task();
     pcb_t* PCB_base = get_PCB_tail(term_num);
@@ -528,8 +523,8 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
  *   SIDE EFFECTS: none
  */
 int32_t vidmap (uint8_t** screen_start) {
-    // printf("System call VIDMAP.\n");
     // Check for bad pointers
+    uint8_t term_num = get_active_task();
     uint32_t screen_start_casted = (uint32_t) screen_start;
     if (screen_start_casted == 0x0) return -1;
     if (screen_start_casted >= KERNEL_TOP && screen_start_casted < KERNEL_BASE) return -1;
@@ -542,7 +537,10 @@ int32_t vidmap (uint8_t** screen_start) {
     for (i = 0; i < PAGE_SIZE; i++) {
         vidmap_ptable[i] = 0x6; // 4 KiB page, user access, r/w access, not present
     }
-    vidmap_ptable[0] = (VIDEO_MEM) | 0x7; // 4 KiB page, user access, r/w access, present
+    vidmap_ptable[TERM_1] = (TERM_1_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present
+    vidmap_ptable[TERM_2] = (TERM_2_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present
+    vidmap_ptable[TERM_3] = (TERM_3_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present
+    vidmap_ptable[term_num] = (VIDEO_MEM) | 0x7; // 4 KiB page, user access, r/w access, present
 
     // Flush the TLB
     asm volatile(
@@ -556,7 +554,7 @@ int32_t vidmap (uint8_t** screen_start) {
     // Finally: Reassign screen_start to point to the USER_VIDEO_MEMORY
     // The idea is to assign some address outside the already allocated space to be used as a pointer to video memory
     // Sean: I choose 136 MiB as a starting point
-    *screen_start = (uint8_t*) (USER_VIDEO_MEM); // TODO: USER_VIDEO_MEM will have to change depending on active terminal
+    *screen_start = (uint8_t*) (USER_VIDEO_MEM + (1 << ALIGN_4KB)*term_num); 
     return 0;
 }
 /*

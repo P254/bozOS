@@ -8,7 +8,7 @@
 
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
 static unsigned char int_buf[KB_SIZE]; // Intermediate buffer for copying to terminal buffer
-static int terminal_read_release;
+static enum kb_t terminal_read_release[3]; // Keep track of enter being released for which keyboard
 static int key_status;
 
 unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
@@ -179,10 +179,10 @@ unsigned char scanCodeTable[EXPANDED_KB_SIZE] =
 void kb_init(void){
     enable_irq(KB_IRQ); // the keyboard interrupt
     set_IDT_wrapper(KB_IDT_ENTRY, keyboard_handler_asm); //add handler to IDT table
-    kb_buf[0] = '\0';//NULL terminate intermediate and keyboard buffer
-    int_buf[0] = '\0';
-    terminal_read_release = 0; //set flags
     key_status = 0;
+    terminal_read_release[TERM_1] = ENTER_WAITING;
+    terminal_read_release[TERM_2] = ENTER_WAITING;
+    terminal_read_release[TERM_3] = ENTER_WAITING;
 }
 
 /*
@@ -202,8 +202,8 @@ void kb_int_handler() {
     }
     else if(scanCodeTable[c] == '\n'){
         // Check for newline character
-        add_char_to_buf(scanCodeTable[c]); //if new line, add it to buffer
-        copy_kb_buf(); //then clear keybaord buffer and add to intermidate buffer
+        add_char_to_buf(scanCodeTable[c]);  // if new line, add it to buffer, then
+        copy_kb_buf();                      // clear keyboard buf and add to intermediate buf
     }
     else if (scanCodeTable[c] != 0) { //all other scancodes
         // Adds characters, including the line feed '\n' character
@@ -222,9 +222,10 @@ void kb_int_handler() {
 unsigned int get_scan_code() {
     unsigned char scanCode;
     unsigned int position;
+    
+    // We want to write to the KB buffer that corresponds to the active terminal 
+    uint8_t term_num = get_active_terminal();
     scanCode = inb(KB_DATA_PORT); //get data from port when key is pressed/released
-    //printf("%x", key_status);
-    //printf("%x", scanCode);
     if (scanCode & RELEASED_KEY_MASK) { //check if any key is released
 
         if (scanCode == SHIFT_RELEASE) {key_status &= CLEAR_SHIFT_FLAG;}
@@ -253,12 +254,10 @@ unsigned int get_scan_code() {
 
 
         else if (scanCode == ENTER_PRESSED) { //if \n is pressed
-            terminal_read_release = 1; //allow terminal to be read if we are calling that function
-            position  = (int) scanCode;
+            terminal_read_release[term_num] = ENTER_RELEASED; //allow terminal to be read if we are calling that function
+            position = (int) scanCode;
             return position; //send scan code to handler
         }
-
-
 
         else if (key_status == 0) { //if no special keys are pressed
             position = (int) (scanCode);
@@ -313,8 +312,8 @@ void add_char_to_buf(unsigned char c) {
         y = get_screen_y(ACTIVE_TERM);
 
         if (c == '\n') { // if new line
-            putc('\n'); //print new line
-            if ((buf_len + x) >= NUM_COLS) putc('\n'); //if we have an extended logical string, print another new line
+            put_newln_kb();
+            if ((buf_len + x) >= NUM_COLS) put_newln_kb(); //if we have an extended logical string, print another new line
         }
         else if (c != '\n') { // if not new line
             // calculate the index that we should write the character to
@@ -331,7 +330,9 @@ void add_char_to_buf(unsigned char c) {
     }
     // Deals with the case when the buffer is full
     else if (c == '\n'){ //if new line
-        printf("\n\n"); //print two new lines as we have exceeded buffer limit and terminal line limit.
+        //print two new lines as we have exceeded buffer limit and terminal line limit
+        put_newln_kb();
+        put_newln_kb();
     }
 }
 
@@ -378,8 +379,8 @@ int convert_to_vid_idx(int x, int y, int buf_len) {
  *   RETURN VALUE: int -- pointer to terminal_read_release
  *   SIDE EFFECTS: none
  */
-int* kb_read_release() {
-    return (int*) &terminal_read_release;
+enum kb_t* kb_read_release() {
+    return terminal_read_release;
 }
 
 /*
@@ -426,4 +427,24 @@ void copy_kb_buf() {
         else kb_buf[i] = '\0'; // Flush-as-you-go
     }
   return;
+}
+
+/*
+ * put_newln_kb
+ *   DESCRIPTION: Puts a new line onto the active terminal. For use by keyboard driver ONLY. 
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: modifies the video memory of the active terminal
+ */
+void put_newln_kb() {
+    int y = get_screen_y(ACTIVE_TERM);
+    if (y == NUM_ROWS-1) {
+        video_scroll(ACTIVE_TERM);
+        set_screen_x(0, ACTIVE_TERM);
+    }
+    else {
+        set_screen_y(y+1, ACTIVE_TERM);
+        set_screen_x(0, ACTIVE_TERM);
+    }
 }

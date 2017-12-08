@@ -46,6 +46,8 @@
 #define FN_2 0x3C
 #define FN_3 0x3D
 
+enum kb_t {ENTER_WAITING, ENTER_RELEASED}; 
+
 /* Forward Declarations */
 void kb_init(void);
 unsigned int get_scan_code(void);
@@ -53,10 +55,11 @@ void kb_int_handler(void);
 void add_char_to_buf(unsigned char c);
 void del_char_from_buf(void);
 int convert_to_vid_idx(int x, int y, int buf_len);
-int* kb_read_release();
-unsigned char* get_kb_buffer();
-unsigned char* get_int_buffer();
+enum kb_t* kb_read_release();
 void copy_kb_buf();
 int get_active_term_x();
 int get_active_term_y();
 int get_active_terminal_color();
+unsigned char* get_kb_buffer();
+unsigned char* get_int_buffer();
+void put_newln_kb();

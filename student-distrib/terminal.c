@@ -46,12 +46,13 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
 
     unsigned char* source = get_int_buffer(); //get intermediate buffer
     unsigned char* dest = (unsigned char*) buf; //set system buffer as dest
+    uint8_t term_num = get_active_task();
 
     int32_t i, bytes_copied, bytes_to_copy, c = 0;
     bytes_to_copy = (nbytes < KB_BUF_SIZE) ? nbytes : KB_BUF_SIZE; //check how much we need to copy
 
-    int* enter_flag = kb_read_release();
-    while(!(*enter_flag)); //spin until \n is pressed
+    enum kb_t* enter_flag = kb_read_release();
+    while(enter_flag[term_num] != ENTER_RELEASED); //spin until \n is pressed
 
     for (i = 0; i < bytes_to_copy; i++) {
         dest[i] = source[i]; //copy over into system buffer
@@ -59,7 +60,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
         else source[i] = '\0'; // Flush-as-you-go
     }
     dest[bytes_to_copy-1] = '\n'; // We want to terminate our intermediate buffer with '\n' instead of '\0'
-    *enter_flag = 0; // Reset the keyboard flag
+    enter_flag[term_num] = ENTER_WAITING; // Reset the keyboard flag
     bytes_copied = i;
     i++;
 
@@ -107,5 +108,5 @@ int32_t terminal_write(int32_t fd, const void* buf, int32_t nbytes) {
 
 // Does nothing - just used to fill in the FOTP
 int32_t terminal_empty() {
-    return 0;
+    return -1;
 }
