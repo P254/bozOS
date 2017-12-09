@@ -7,11 +7,12 @@
 #include "multi_term.h"
 
 volatile int rtc_count = 0;
-volatile int interrupt_flag[3];
+volatile int interrupt_flag[MAX_TERM_N];
 
 /*
  * rtc_init
- *   DESCRIPTION: Enables periodic interrupts and changes frequency of RTC. Also writes RTC handler into IDT table.
+ *   DESCRIPTION: Enables periodic interrupts and changes frequency of RTC. 
+ *                Also writes RTC handler into IDT table.
  *   INPUTS: void
  *   OUTPUTS: value of RTC_REGs are changed.
  *   RETURN VALUE: void
@@ -43,9 +44,11 @@ void rtc_handler(void) {
     rtc_count++;
     #endif
 
-    interrupt_flag[0] = 1;     // set the interrupt flag
-    interrupt_flag[1] = 1;     // set the interrupt flag
-    interrupt_flag[2] = 1;     // set the interrupt flag
+    // Set the RTC interrupt flags for each terminal
+    interrupt_flag[TERM_1] = 1;     
+    interrupt_flag[TERM_2] = 1;     
+    interrupt_flag[TERM_3] = 1;     
+    
     send_eoi(RTC_IRQ_ADDR); // end 8th IRQ
     outb(REG_C, RTC_REG);   // select register C
     inb(RTC_REG + 1);       // just throw away contents, we must do this otherwise IRQ8 will never be called again.
@@ -53,14 +56,16 @@ void rtc_handler(void) {
 
 /*
  * rtc_read
- *   DESCRIPTION: Blocks RTC interuppts until next one arrives
- *   INPUTS: file descriptor, buffer, bytes to write
+ *   DESCRIPTION: Blocks RTC interrupts until next one arrives
+ *   INPUTS: fd -- ignored
+ *           buf -- ignored
+ *           nbytes -- ignored
  *   OUTPUTS: none
  *   RETURN VALUE: 0
  *   SIDE EFFECTS: none
  */
 int32_t rtc_read (int32_t fd, void* buf, int32_t nbytes){
-    uint8_t curr_task= get_active_task();
+    uint8_t curr_task = get_active_task();
     while (interrupt_flag[curr_task] == 0);    // Wait (block) for flag to be set by rtc_handler
     interrupt_flag[curr_task] = 0;             // Reset the flag
     return 0;
@@ -69,7 +74,9 @@ int32_t rtc_read (int32_t fd, void* buf, int32_t nbytes){
 /*
  * rtc_write
  *   DESCRIPTION: converts rate to HZ and writes it to RTC device
- *   INPUTS: file descriptor, buffer containing rate, bytes to write
+ *   INPUTS: fd -- ignored
+ *           buf -- pointer to an int holding the input rate
+ *           nbytes -- ignored
  *   OUTPUTS: changed rate of RTC
  *   RETURN VALUE: 0 or -1 if invalid rate
  *   SIDE EFFECTS: none
@@ -78,9 +85,8 @@ int32_t rtc_write (int32_t fd, const void* buf, int32_t nbytes) {
     char previous;
     unsigned int rate, input_rate;
 
-    if(buf == NULL) return -1;  // make sure input buffer is valid
-
-    input_rate= (int)(*(int*)buf);
+    if (buf == NULL) return -1;  // make sure input buffer is valid
+    input_rate = (int)(*(int*)buf);
 
     switch (input_rate) {
         case IN_RATE_2:
@@ -124,14 +130,13 @@ int32_t rtc_write (int32_t fd, const void* buf, int32_t nbytes) {
 /*
  * rtc_open
  *   DESCRIPTION: opens RTC device, sets RTC to intial rate.
- *   INPUTS: file descriptor
- *   OUTPUTS: 0
- *   RETURN VALUE: void
+ *   INPUTS: filename -- ignored
+ *   OUTPUTS: none
+ *   RETURN VALUE: 0
  *   SIDE EFFECTS: none
  */
 int32_t rtc_open (const uint8_t* filename){
-    unsigned int rate;
-    rate = INIT_RATE;
+    unsigned int rate = INIT_RATE;
     rtc_write(NULL, &rate, 0);
     return 0; //success
 }
@@ -139,9 +144,9 @@ int32_t rtc_open (const uint8_t* filename){
 /*
  * rtc_close
  *   DESCRIPTION: closes RTC device
- *   INPUTS: file descriptor
- *   OUTPUTS: 0
- *   RETURN VALUE: void
+ *   INPUTS: fd -- ignored
+ *   OUTPUTS: none
+ *   RETURN VALUE: 0
  *   SIDE EFFECTS: none
  */
 int32_t rtc_close (int32_t fd){

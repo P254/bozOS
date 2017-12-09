@@ -37,27 +37,15 @@ void pit_init() {
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: none
- *   SIDE EFFECTS: Modifies the ESP, EBP, TSS and paging structure
+ *   SIDE EFFECTS: Modifies the ESP, EBP, TSS and paging structure to switch to a new task.
+ *                 Also spins up new shells in the other terminals upon launch.
  */
 void task_switch() {
-    uint8_t outgoing_task, incoming_task;
-    pcb_t* incoming_pcb;
-    pcb_t* outgoing_pcb;
-    
-    // For use with mono-tasking
-    // outgoing_task = get_active_task();
-    // incoming_task = get_active_terminal(); 
-    // if (incoming_task == outgoing_task) {
-    //     send_eoi(PIT_IRQ_NUM);
-    //     return;
-    // }
+    uint8_t outgoing_task = get_active_task();
+    uint8_t incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
 
-    // For use with multi-tasking
-    outgoing_task = get_active_task();
-    incoming_task = (outgoing_task + 1) % MAX_TERM_N; 
-
-    incoming_pcb = get_PCB_tail(incoming_task);
-    outgoing_pcb = get_PCB_tail(outgoing_task);
+    pcb_t* incoming_pcb = get_PCB_tail(incoming_task);
+    pcb_t* outgoing_pcb = get_PCB_tail(outgoing_task);
 
     // Check that we have launched our first shell in terminal.c 
     // The first shell is launched from kernel.c
@@ -82,8 +70,7 @@ void task_switch() {
         // Execute new user program
         execute((uint8_t*) "shell");
 
-        // Execute might fail (return -1): we will need to return to old terminal
-        // TODO: Add this later
+        /* We shouldn't reach here: Execute should not fail */
     }
 
     else {
@@ -91,6 +78,8 @@ void task_switch() {
         // Set up incoming paging and tss.esp0
         tss.esp0 = incoming_pcb->self_k_stack;
         page_directory[(USER_MEM_V >> ALIGN_4MB)] = (incoming_pcb->self_page) | USER_PAGE_SET_BITS;
+        
+        // Flush the TLB
         asm volatile(
             "movl %%cr3, %%eax;"
             "movl %%eax, %%cr3;"
@@ -105,7 +94,6 @@ void task_switch() {
             "movl %%ebp, %1;"
             : "=r" (outgoing_pcb->esp_switch), "=r" (outgoing_pcb->ebp_switch)
         );
-
 
         // Load incoming esp/ebp
         asm volatile(

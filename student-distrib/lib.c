@@ -8,7 +8,7 @@
 /* clear_screen
  * Inputs: none
  * Return Value: none
- * Function: Clears video memory */
+ * Function: Clears video memory of the active terminal */
 void clear_screen() {
     int32_t i;
     char* video_mem = get_video_mem(ACTIVE_TERM);

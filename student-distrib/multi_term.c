@@ -18,7 +18,7 @@ static enum pu_t process_usage[MAX_PROCESSES];
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: none
- *   SIDE EFFECTS: Starts 3 terminals (each with shell), with #1 as active 
+ *   SIDE EFFECTS: none
  */
 void multi_term_init() {
     int32_t i, j;
@@ -68,7 +68,7 @@ void multi_term_init() {
  *   INPUTS: new_terminal -- new terminal number to switch to
  *   OUTPUTS: none
  *   RETURN VALUE: none
- *   SIDE EFFECTS: Clears video memory to load new terminal
+ *   SIDE EFFECTS: Clears video memory and keyboard buffer to load new terminal
  */
 void switch_terminal(uint8_t new_terminal) {
     // Check for bad inputs
@@ -164,13 +164,13 @@ uint8_t get_active_terminal() {
     return active_terminal;
 }
 
-// TODO: Move all PCB-related things to a PCB.c file
+
 /*
  * get_PCB_tail
  *   DESCRIPTION: Returns the pointer to the tail of PCB linked list for a given terminal
  *   INPUTS: terminal_n -- the terminal # (0,1,2) we are interested in
  *   OUTPUTS: none
- *   RETURN VALUE: pcb_t
+ *   RETURN VALUE: pcb_t -- pointer to the tail of the PCB linked list
  *   SIDE EFFECTS: none
  */
 pcb_t* get_PCB_tail(uint8_t terminal_n) {
@@ -195,7 +195,6 @@ pcb_t* get_PCB_tail(uint8_t terminal_n) {
  *                 adds a child_pcb to the PCB linked list of the active terminal
  */
 int8_t add_PCB(uint8_t term_num) {
-    // int i, task_n, terminal_n, process_num = -1;
     int i, process_num = -1;
     for (i = 0; i < MAX_PROCESSES; i++) {
         if (process_usage[i] == NOT_USED) {
@@ -206,8 +205,6 @@ int8_t add_PCB(uint8_t term_num) {
     if (process_num == -1) return -1;
 
     process_usage[process_num] = IN_USE;
-    // task_n = get_active_task();
-    // terminal_n = get_active_terminal();
     pcb_t* pcb_ptr = terminal_table[term_num].pcb_head;
     
     // Adding the first process for a given terminal

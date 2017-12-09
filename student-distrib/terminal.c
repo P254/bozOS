@@ -77,7 +77,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes) {
 /*
  * terminal_write
  *   DESCRIPTION: Writes data from terminal buffer to the screen
- *   INPUTS: fd -- ignored
+ *   INPUTS: fd -- file desciptor to check for text file flag
  *           buf -- pointer to terminal buffer
  *           nbytes -- number of bytes we want to write
  *   OUTPUTS: none

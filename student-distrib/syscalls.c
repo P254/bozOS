@@ -62,7 +62,6 @@ int32_t halt(uint8_t status) {
     uint32_t parent_physical_mem = PCB_base_parent->self_page;
     page_directory[(USER_MEM_V >> ALIGN_4MB)] = parent_physical_mem | USER_PAGE_SET_BITS;
 
-    // Tadas pointed out that we don't need to reload page_directory into CR3
     // Flush the TLB (flushing happens whenever we reload CR3)
     asm volatile(
         "movl %%cr3, %%eax;"
@@ -144,7 +143,7 @@ int32_t execute(const uint8_t* command) {
     if (i == KB_BUF_SIZE) {
         strncpy((int8_t*) cmd1, (int8_t*) command, KB_BUF_SIZE);
     }
-    while (command[i] == ' '){
+    while (command[i] == ' ') {
          i++;
     }
     j = i;
@@ -219,7 +218,6 @@ int32_t execute(const uint8_t* command) {
     PCB_base->pid = process_num;                    // Process ID
     PCB_base->self_k_stack = new_esp0;              // Store it's own kernel stack
     PCB_base->self_page = user_prog_physical_mem;   // Store it's own user stack
-    // PCB_base->rtc_frequecy=
     fd_array = PCB_base->fd_arr;
     for (i = 0 ; i < MAX_FILES ; i++) {  // initalize file descriptor array
         fd_array[i].fotp = NULL;
@@ -268,7 +266,8 @@ int32_t execute(const uint8_t* command) {
     PCB_base->fd_arr[1].in_use_flag = FILE_IN_USE;
 
     /*********** Step 6: Set up IRET context ***********/
-    /* The only things that really change here upon each syscall are: 1) tss.esp0, 2) ESP-on-stack (in IRET context), 3) page table
+    /* The only things that really change here upon each syscall are: 
+     * 1) tss.esp0, 2) ESP-on-stack (in IRET context), 3) page table
      *
      * The IRET instruction expects, when executed, the stack to have the following contents
      * (starting from the stack pointer - lowermost address upwards):
@@ -290,16 +289,6 @@ int32_t execute(const uint8_t* command) {
      * ----------
      *     SS      <-- User-mode Stack Segment
      * ----------
-     *
-     * Sources:
-     * https://stackoverflow.com/questions/6892421/switching-to-user-mode-using-iret
-     * http://jamesmolloy.co.uk/tutorial_html/10.-User%20Mode.html
-     * http://x86.renejeschke.de/html/file_module_x86_id_145.html
-     * http://www.felixcloutier.com/x86/IRET:IRETD.html
-     * http://wiki.osdev.org/Getting_to_Ring_3
-     * http://wiki.osdev.org/System_Calls
-     * http://wiki.osdev.org/Task_State_Segment
-     * http://wiki.osdev.org/Context_Switching
      */
 
     tss.ss0 = KERNEL_DS; // Segment selector
@@ -509,8 +498,8 @@ int32_t getargs (uint8_t* buf, int32_t nbytes) {
     if (input_arg == NULL || strlen(input_arg) == 0) return -1;
 
     // clear the buffer
-    memset(buf,'\0',BUF_SIZE);
-    memcpy(buf,PCB_base->fd_arr[0].arg,nbytes);
+    memset(buf, '\0', BUF_SIZE);
+    memcpy(buf, input_arg, nbytes);
     return 0;
 }
 
