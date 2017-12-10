@@ -222,8 +222,8 @@ void kb_int_handler() {
 unsigned int get_scan_code() {
     unsigned char scanCode;
     unsigned int position;
-    
-    // We want to write to the KB buffer that corresponds to the active terminal 
+
+    // We want to write to the KB buffer that corresponds to the active terminal
     uint8_t term_num = get_active_terminal();
     scanCode = inb(KB_DATA_PORT); //get data from port when key is pressed/released
     if (scanCode & RELEASED_KEY_MASK) { //check if any key is released
@@ -245,7 +245,6 @@ unsigned int get_scan_code() {
         else if (scanCode == L_PRESSED && (key_status & CTRL_FLAG)) { //if CTRL+L is pressed
             clear_screen(); //clear screen
             kb_buf[0] = '\0'; //reset keyboard buffer
-            printf("391OS> ");
         }
         else if (scanCode == ALT_PRESSED) {key_status += ALT_FLAG;}
         else if (scanCode == FN_1 && (key_status & ALT_FLAG)) { switch_terminal(TERM_1); }
@@ -317,7 +316,7 @@ void add_char_to_buf(unsigned char c) {
         }
         else if (c != '\n') { // if not new line
             // calculate the index that we should write the character to
-            add_idx = convert_to_vid_idx(x, y, buf_len);   
+            add_idx = convert_to_vid_idx(x, y, buf_len);
             // write the character from the buffer to video mem
             *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
             *(uint8_t *)(video_mem + (add_idx << 1) + 1) = get_terminal_color(ACTIVE_TERM);
@@ -431,7 +430,7 @@ void copy_kb_buf() {
 
 /*
  * put_newln_kb
- *   DESCRIPTION: Puts a new line onto the active terminal. For use by keyboard driver ONLY. 
+ *   DESCRIPTION: Puts a new line onto the active terminal. For use by keyboard driver ONLY.
  *   INPUTS: none
  *   OUTPUTS: none
  *   RETURN VALUE: none
