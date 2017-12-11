@@ -4,7 +4,6 @@
 #include "lib.h"
 #include "scheduling.h"
 #include "multi_term.h"
-#include "cursor.h"
 
 /* clear_screen
  * Inputs: none
@@ -197,7 +196,8 @@ void putc(uint8_t c) {
             term_ptr->y = (term_ptr->y + (term_ptr->x / NUM_COLS)) % NUM_ROWS;
         }
     }
-    update_cursor(term_ptr->x, term_ptr->y);
+    // Update the cursor on the active terminal only
+    if (get_active_terminal() == task_n) update_cursor(term_ptr->x, term_ptr->y);
 }
 
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
@@ -640,4 +640,22 @@ char* get_video_mem(enum active_t arg) {
         if (task_n == terminal_n) return (char*) VIDEO;
         else return (char*) term_ptr->video;   
     }
+}
+
+/*
+ * update_cursor
+ *   DESCRIPTION: Updates the cursor position based on x,y. 
+ *                If the position is out of range, the cursor won't appear onscreen.
+ *   INPUTS: x -- x position,  y -- y position
+ *   OUTPUTS: none
+ *   RETURN VALUE: void
+ *   SIDE EFFECTS: 
+ */
+void update_cursor(int x, int y) {
+    uint16_t pos = y * NUM_COLS + x;
+    
+    outb(CURSOR_LOW, VGA_CMD_PORT); // Cursor low
+	outb((uint8_t) (pos & MASK_8_BIT), VGA_DATA_PORT);
+	outb(CURSOR_HIGH, VGA_CMD_PORT); // Cursor high
+	outb((uint8_t) ((pos >> SHIFT_8) & MASK_8_BIT), VGA_DATA_PORT);
 }

@@ -5,7 +5,6 @@
 #include "i8259.h"
 #include "x86_desc.h"
 #include "multi_term.h"
-#include "cursor.h"
 
 static unsigned char kb_buf[KB_SIZE]; // Text buffer that holds whatever we've typed so far
 static unsigned char int_buf[KB_SIZE]; // Intermediate buffer for copying to terminal buffer

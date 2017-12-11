@@ -17,7 +17,6 @@
 #include "syscalls.h"
 #include "scheduling.h"
 #include "multi_term.h"
-#include "cursor.h"
 
 #define RUN_TESTS       0
 
@@ -161,7 +160,6 @@ void entry(unsigned long magic, unsigned long addr) {
     paging_init();  // Paging
     multi_term_init(); // Multiple Terminals
     pit_init();     // PIT
-    cursor_init();
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
@@ -177,8 +175,8 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
-    clear_screen();
     switch_terminal(TERM_1);
+    clear_screen();
     execute((uint8_t*) "shell"); 
 
     /* Spin (nicely, so we don't chew up cycles) */
