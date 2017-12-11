@@ -14,6 +14,9 @@
 #define CURSOR_INIT_E 	0xE0
 #define CURSOR_INIT_3E 	0x03E0
 
+#define CURSOR_LOW		0x0F
+#define CURSOR_HIGH		0x0E
+
 #define MASK_8_BIT		0xFF
 #define SHIFT_8			8
 
