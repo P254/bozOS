@@ -6,6 +6,7 @@
 #include "keyboard.h"
 #include "scheduling.h"
 #include "i8259.h"
+#include "cursor.h"
 
 /* Global Variables */
 volatile uint8_t active_terminal;
@@ -90,6 +91,7 @@ void switch_terminal(uint8_t new_terminal) {
     // Copy new terminal data from the terminal table 
     memcpy(active_video, terminal_table[new_terminal].video, VIDEO_SIZE);
     memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
+    update_cursor(terminal_table[new_terminal].x, terminal_table[new_terminal].y);
 
     // Update paging for vidmap
     vidmap_ptable[TERM_1] = (TERM_1_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present

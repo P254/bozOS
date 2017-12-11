@@ -4,6 +4,7 @@
 #include "lib.h"
 #include "scheduling.h"
 #include "multi_term.h"
+#include "cursor.h"
 
 /* clear_screen
  * Inputs: none
@@ -196,6 +197,7 @@ void putc(uint8_t c) {
             term_ptr->y = (term_ptr->y + (term_ptr->x / NUM_COLS)) % NUM_ROWS;
         }
     }
+    update_cursor(term_ptr->x, term_ptr->y);
 }
 
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
@@ -547,6 +549,7 @@ void set_screen_x(int val, enum active_t arg) {
     term_t* term_ptr = get_terminal_ptr(task_n);
     if (val >= 0 && val < NUM_COLS) {
         term_ptr->x = val;
+        update_cursor(term_ptr->x, term_ptr->y);
     }
     return;
 }
@@ -568,6 +571,7 @@ void set_screen_y(int val, enum active_t arg) {
     term_t* term_ptr = get_terminal_ptr(task_n);
     if (val >= 0 && val < NUM_ROWS) {
         term_ptr->y = val;
+        update_cursor(term_ptr->x, term_ptr->y);
     }
     return;
 }

@@ -17,6 +17,7 @@
 #include "syscalls.h"
 #include "scheduling.h"
 #include "multi_term.h"
+#include "cursor.h"
 
 #define RUN_TESTS       0
 
@@ -160,6 +161,7 @@ void entry(unsigned long magic, unsigned long addr) {
     paging_init();  // Paging
     multi_term_init(); // Multiple Terminals
     pit_init();     // PIT
+    cursor_init();
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
