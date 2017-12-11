@@ -5,43 +5,68 @@ Bug Log
 Last updated 12/11/2017
 
 --- Checkpoint 1 ---
-Issue       : Paging wasn't working despite having set up the page directory correctly. 
-Resolution  : To enable paging, we must set CR4 before CR0 before CR3 and not in any other sequence. 
+Issue       : Paging wasn't working despite having set up the page directory correctly.
+Resolution  : To enable paging, we must set CR4 before CR0 before CR3 and not in any other sequence.
+Fixed by    : Pranav, Sean, Abhishek
+Time Taken: 1 Hr
 
 Issue       : GP faults happening due to IDT entries not being set up right.
-Resolution  : The "reserved" bits in each IDT entry had to be set to read '01110', as well as the "seg_selector" being set to KERNEL_CS. 
-
+Resolution  : The "reserved" bits in each IDT entry had to be set to read '01110', as well as the "seg_selector" being set to KERNEL_CS.
+Fixed by    : Sean
+Time Taken  : 2 Hr
 
 --- Checkpoint 2 ---
-Issue       : Non-deterministic page faults started to happen when we merged filesystem, keyboard and RTC driver code. 
-Resolution  : It turns out that when Sean changed the interrupt handler code to support assembly linkage, he updated the IDT for all relevant entries except the RTC. 
+Issue       : Non-deterministic page faults started to happen when we merged filesystem, keyboard and RTC driver code.
+Resolution  : It turns out that when Sean changed the interrupt handler code to support assembly linkage, he updated the IDT for all relevant entries except the RTC.
+Fixed by    : Abhishek
+Time Taken  : 1 Hr
 
 Issue       : Keyboard driver setup was extremely buggy, especially when moving back and forth between 1 and 2 lines of text.
-Resolution  : Instead of using a "scroll flag", we permanently scroll the view window by one line. 
+Resolution  : Instead of using a "scroll flag", we permanently scroll the view window by one line.
+Fixed by    : Abhishek
+Time Taken  : 1 Hr
 
+Issue       : Filesystem would not properly read last byte of one block and 1 byte of its consequent block
+Resolution  : Fix up the fread algorithm and account for all test cases
+Fixed by    : Pranav
+Time Taken  : 2 Hr
 
 --- Checkpoint 3 ---
 Issue       : Page faults when attempting to perform system call "halt".
-Resolution  : It turns out that the mistake lay in our bookkeeping process. We used an integer "process_number" to keep track of the NEXT available process, but in halt we confused ourselves and used it to keep track of the CURRENT process, resulting in page faults due to off-by-one error when the code attempted to index into an area outside the 4-8 MiB page. 
+Resolution  : It turns out that the mistake lay in our bookkeeping process. We used an integer "process_number" to keep track of the NEXT available process, but in halt we confused ourselves and used it to keep track of the CURRENT process, resulting in page faults due to off-by-one error when the code attempted to index into an area outside the 4-8 MiB page.
+Fixed by    : Sean, Pranav , Adam (Friend in 3026)
+Time Taken  : 12 Hr
+
 
 Issue       : GP faults when attempting to perform system call "execute".
-Resolution  : If we don't indicate that "eax" is being modified in a "asm volatile" code window, sometimes there can be unexpected results. In this case, it resulted in the stack prior to IRET not being set up correctly. 
-
+Resolution  : If we don't indicate that "eax" is being modified in a "asm volatile" code window, sometimes there can be unexpected results. In this case, it resulted in the stack prior to IRET not being set up correctly.
+Fixed by    : Pranav , Abhishek
+Time Taken  : 1 Hr
 
 --- Checkpoint 4 ---
 Issue       : User programs "grep" and "cat" produce garbage output when no arguments are fed.
-Resolution  : We forgot to add a check for no arguments (strlen(buf) == 0) in getargs. 
+Resolution  : We forgot to add a check for no arguments (strlen(buf) == 0) in getargs.
+Fixed by    : Sean
+Time Taken  : 30 seconds
 
 
 --- Checkpoint 5 ---
 Issue       : Constant page faults at some small address (e.g. 0x5) when we were trying to run multitasking.
 Resolution  : The PIT sometimes triggers a process switch into a terminal with no active processes. So we designed the PIT to execute a new shell if we're in a terminal that doesn't have any user-level prorgams yet. This way, it looks like our OS executes a shell for each terminal upon initialization.
+Fixed by    : Abhishek
+Time Taken  : 3 Hr
 
-Issue       : Encountering problems where a program in terminal x would read input from terminal y and write output to terminal z. 
-Resolution  : We kept conflating ACTIVE_TERMINAL and ACTIVE_TASK. Turns out that ACTIVE_TERMINAL should be used only for the keyboard and terminal driver, everywhere else (lib.c, syscalls.c) should be using ACTIVE_TASK. 
- 
+Issue       : Encountering problems where a program in terminal x would read input from terminal y and write output to terminal z.
+Resolution  : We kept conflating ACTIVE_TERMINAL and ACTIVE_TASK. Turns out that ACTIVE_TERMINAL should be used only for the keyboard and terminal driver, everywhere else (lib.c, syscalls.c) should be using ACTIVE_TASK.
+Fixed by    : Abhishek, Kush, Sean
+Time Taken  : 3 Hr
+
 Issue       : Pressing "enter" on the keyboard would sometimes result in the buffer data being fed into a non-active terminal.
-Resolution  : Since we were moving from 1 to 3 terminals, we need to have 3 flags for the ENTER key being pressed, instead of just 1. 
+Resolution  : Since we were moving from 1 to 3 terminals, we need to have 3 flags for the ENTER key being pressed, instead of just 1.
+Fixed by    : Kush
+Time Taken  : 1 Hr
 
 Issue       : Running "pingpong" or "fish" simultaneously on 3 terminals was slow and laggy.
-Resolution  : Since we were moving from 1 to 3 terminals, we need to have 3 flags for the RTC interrupt being raised, instead of just 1. 
+Resolution  : Since we were moving from 1 to 3 terminals, we need to have 3 flags for the RTC interrupt being raised, instead of just 1.
+Fixed by    : Kush
+Time Taken  : 1 Hr
