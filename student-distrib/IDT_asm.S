@@ -20,6 +20,7 @@
 .globl keyboard_handler_asm, kb_int_handler
 .globl rtc_handler_asm, rtc_handler
 .globl pit_handler_asm, task_switch
+.globl mouse_handler_asm, mouse_handler
 
 .globl handle_e0_asm, handle_e0
 .globl handle_e1_asm, handle_e1
@@ -89,6 +90,18 @@ handle_syscall_asm:
 syscall_negative_ret:
     movl $RETVAL_ERR, %eax
     iret
+
+# mouse_handler_asm
+#    DESCRIPTION : Assembly linkage for mouse-generated interrupt
+#    INPUTS : none
+#    OUTPUT : none
+#    RETURN : none
+#    SIDE EFFECTS : none
+mouse_handler_asm:
+    pushal
+    call mouse_handler # Calling interrupt handler defined in C
+    popal
+    iret # Return control to interrupted program
 
 # keyboard_handler_asm
 #    DESCRIPTION : Assembly linkage for keyboard-generated interrupt
