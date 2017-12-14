@@ -5,14 +5,21 @@
 #include "keyboard.h"
 #include "multi_term.h"
 
-// Source: https://houbysoft.com/download/ps2mouse.html
-uint8_t mouse_cycle = 0;    
-int8_t mouse_byte[MOUSE_BYTES];
+static int mouse_x, mouse_y;
 
+// Source: https://houbysoft.com/download/ps2mouse.html
 void mouse_handler() {
-    static uint8_t cycle = 0;
+    send_eoi(MOUSE_IRQ);
+
+    static unsigned char cycle = 0;
     static char mouse_bytes[MOUSE_N_BYTES];
-    int mouse_x, mouse_y;
+
+    char* video_mem = get_video_mem(ACTIVE_TERM);
+    char term_color = get_terminal_color(ACTIVE_TERM);
+    static int old_idx, new_idx;
+    static char storage_char = 'S'; // Storage bit which is overwritten
+
+    int32_t delta_x, delta_y;
     mouse_bytes[cycle++] = inb(KB_DATA_PORT);
 
     /* The mouse sends three 1-byte packets:
@@ -24,15 +31,20 @@ void mouse_handler() {
     if (cycle == MOUSE_N_BYTES) { // if we have all the 3 bytes...
         cycle = 0; // reset the counter
 
+        // To use the coordinate data, use mouse_bytes[1] for delta-x, and mouse_bytes[2] for delta-y
+        delta_x = mouse_bytes[1];
+        delta_y = mouse_bytes[2];
+
         // do what you wish with the bytes, this is just a sample
-        if ((mouse_bytes[0] & 0x80) || (mouse_bytes[0] & 0x40))
+        if ((mouse_bytes[0] & 0x80) || (mouse_bytes[0] & 0x40)) {
             return; // the mouse only sends information about overflowing, do not care about it and return
-        if (!(mouse_bytes[0] & 0x20))
-            // y |= 0xFFFFFF00; //delta-y is a negative value
-            puts("Delta-y.\n");
-        if (!(mouse_bytes[0] & 0x10))
-            // x |= 0xFFFFFF00; //delta-x is a negative value
-            puts("Delta-x.\n");
+        }
+        if (!(mouse_bytes[0] & 0x20)) {
+            delta_y |= 0xFFFFFF00; // delta-y is a negative value
+        }
+        if (!(mouse_bytes[0] & 0x10)) {
+            delta_x |= 0xFFFFFF00; // delta-x is a negative value
+        }
 
         // Middle button is pressed
         if (mouse_bytes[0] & 0x4) {
@@ -47,11 +59,35 @@ void mouse_handler() {
             switch_terminal(TERM_1);
         }
 
-        printf("(%d,%d)\n", mouse_bytes[1], mouse_bytes[2]);
+        // We quantize the delta's into 5 buckets: [-2, -1, 0, 1, 2]
+        if (delta_x > 0 && delta_x <= THR_X) delta_x = -1;
+        else if (delta_x > THR_X) delta_x = -2;
+        else if (delta_x >= -THR_X && delta_x < 0) delta_x = 1;
+        else if (delta_x < -THR_X) delta_x = 2;
         
-        // to use the coordinate data, use mouse_bytes[1] for delta-x, and mouse_bytes[2] for delta-y
+        if (delta_y > 0 && delta_y <= THR_Y) delta_y = 1;
+        else if (delta_y > THR_Y) delta_y = 2;
+        else if (delta_y >= -THR_Y && delta_y < 0) delta_y = -1;
+        else if (delta_y < -THR_Y) delta_y = -2;
+
+        // Update mouse_x and mouse_y
+        mouse_x += delta_x;
+        mouse_y += delta_y;
+        if (mouse_x >= NUM_COLS) mouse_x = NUM_COLS-1;
+        if (mouse_x < 0) mouse_x = 0;
+        if (mouse_y >= NUM_ROWS) mouse_y = NUM_ROWS-1;
+        if (mouse_y < 0) mouse_y = 0;
+
+        // Draw the mouse on the screen
+        new_idx = mouse_y * NUM_COLS + mouse_x;
+
+        *(uint8_t *)(video_mem + (old_idx << 1)) = storage_char;
+        storage_char = *(uint8_t *)(video_mem + (new_idx << 1));
+
+        *(uint8_t *)(video_mem + (new_idx << 1)) = '*';
+        *(uint8_t *)(video_mem + (new_idx << 1) + 1) = term_color;
+        old_idx = new_idx;
     }
-    send_eoi(MOUSE_IRQ);
 }
 
 void mouse_wait(uint8_t type) {
@@ -112,4 +148,8 @@ void mouse_init() {
     // Setup the mouse handler and eanble interrupts
     enable_irq(MOUSE_IRQ);
     set_IDT_wrapper(MOUSE_IDT_ENTRY , mouse_handler_asm);
+
+    // Initialize mouse coordinates to center of screen
+    mouse_x = NUM_ROWS / 2;
+    mouse_y = NUM_COLS / 2;
 }

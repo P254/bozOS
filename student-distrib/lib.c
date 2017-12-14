@@ -653,9 +653,9 @@ char* get_video_mem(enum active_t arg) {
  */
 void update_cursor(int x, int y) {
     uint16_t pos = y * NUM_COLS + x;
-    
+
     outb(CURSOR_LOW, VGA_CMD_PORT); // Cursor low
-	outb((uint8_t) (pos & MASK_8_BIT), VGA_DATA_PORT);
-	outb(CURSOR_HIGH, VGA_CMD_PORT); // Cursor high
-	outb((uint8_t) ((pos >> SHIFT_8) & MASK_8_BIT), VGA_DATA_PORT);
+    outb((uint8_t) (pos & MASK_8_BIT), VGA_DATA_PORT);
+    outb(CURSOR_HIGH, VGA_CMD_PORT); // Cursor high
+    outb((uint8_t) ((pos >> SHIFT_8) & MASK_8_BIT), VGA_DATA_PORT);
 }

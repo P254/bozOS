@@ -8,6 +8,9 @@
 #define MOUSE_IDT_ENTRY (SOFT_INT_START + MOUSE_IRQ)
 #define TIMEOUT         100000
 
+#define THR_X     20
+#define THR_Y     10
+
 extern void mouse_handler_asm();
 void mouse_wait(uint8_t type);
 void mouse_handler();
