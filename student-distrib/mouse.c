@@ -79,7 +79,7 @@ void mouse_handler() {
         if (mouse_y < 0) mouse_y = 0;
 
         // Draw the mouse on the screen
-        new_idx = mouse_y * NUM_COLS + mouse_x;
+        new_idx = convert_to_vid_idx(mouse_x, mouse_y, 0);
 
         *(uint8_t *)(video_mem + (old_idx << 1)) = storage_char;
         storage_char = *(uint8_t *)(video_mem + (new_idx << 1));
@@ -150,6 +150,6 @@ void mouse_init() {
     set_IDT_wrapper(MOUSE_IDT_ENTRY , mouse_handler_asm);
 
     // Initialize mouse coordinates to center of screen
-    mouse_x = NUM_ROWS / 2;
-    mouse_y = NUM_COLS / 2;
+    mouse_x = NUM_COLS / 2;
+    mouse_y = NUM_ROWS / 2;
 }
