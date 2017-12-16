@@ -320,6 +320,7 @@ void add_char_to_buf(unsigned char c) {
             // write the character from the buffer to video mem
             *(uint8_t *)(video_mem + (add_idx << 1)) = kb_buf[buf_len];
             *(uint8_t *)(video_mem + (add_idx << 1) + 1) = get_terminal_color(ACTIVE_TERM);
+            update_cursor(x+1 + (buf_len % NUM_COLS), y + (buf_len / NUM_COLS));
         }
 
         if (y == NUM_ROWS-1 && (buf_len + x) == NUM_COLS-1) { // if we are at bottom-right of screen
@@ -355,6 +356,7 @@ void del_char_from_buf() {
 
         erase_idx = convert_to_vid_idx(x, y, buf_len) - 1; // Calculate index that we should erase the character from
         *(uint8_t *)(video_mem + (erase_idx << 1)) = ' '; //erase char from video mem loc
+        update_cursor(x-1 + (buf_len % NUM_COLS), y + (buf_len / NUM_COLS));
     }
 }
 

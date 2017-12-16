@@ -16,6 +16,14 @@
 #define VIDEO_MEM_ROW1  (2*NUM_COLS)
 #define SCROLL_SIZE     ((NUM_ROWS-1) * NUM_COLS * 2)
 
+/* For use with update_cursor */
+#define VGA_CMD_PORT    0x3D4
+#define VGA_DATA_PORT   0x3D5
+#define CURSOR_LOW		0x0F
+#define CURSOR_HIGH		0x0E
+#define MASK_8_BIT		0xFF
+#define SHIFT_8			8
+
 enum active_t {ACTIVE_TASK, ACTIVE_TERM}; // ACTIVE_TASK for lib.c, ACTIVE_TERM for keyboard.c
 
 void test_interrupts(void);
@@ -44,6 +52,7 @@ void set_screen_y(int val, enum active_t arg); // Used by terminal driver and ke
 void video_scroll(enum active_t arg); // Performs scrolling
 int8_t get_terminal_color(enum active_t arg); 
 char* get_video_mem(enum active_t arg);
+void update_cursor(int x, int y);
 
 /* Userspace address-check functions */
 int32_t bad_userspace_addr(const void* addr, int32_t len);

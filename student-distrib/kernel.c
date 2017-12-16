@@ -175,8 +175,8 @@ void entry(unsigned long magic, unsigned long addr) {
 #endif
     /* Execute the first program ("shell") ... */
     // Alternativly we can set EAX, EBX, ECX, EDX etc and call "int $0x80"
-    clear_screen();
     switch_terminal(TERM_1);
+    clear_screen();
     execute((uint8_t*) "shell"); 
 
     /* Spin (nicely, so we don't chew up cycles) */

@@ -91,6 +91,10 @@ void switch_terminal(uint8_t new_terminal) {
     memcpy(active_video, terminal_table[new_terminal].video, VIDEO_SIZE);
     memcpy(active_kb_buf, terminal_table[new_terminal].kb_buf, KB_SIZE);
 
+    // Update cursor status
+    int buf_len = strlen((int8_t*) active_kb_buf);
+    update_cursor(terminal_table[new_terminal].x + buf_len % NUM_COLS, terminal_table[new_terminal].y + buf_len / NUM_COLS);
+
     // Update paging for vidmap
     vidmap_ptable[TERM_1] = (TERM_1_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present
     vidmap_ptable[TERM_2] = (TERM_2_VIDEO) | 0x7; // 4 KiB page, user access, r/w access, present
